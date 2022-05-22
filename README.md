@@ -10,9 +10,27 @@
 
 * [x] `julia set`: coloring
 
-* [ ] unified cli instead of binaries
+* [x] `julia set`: smooth coloring
+
+* [ ] 1d color maps with spline curves
+
+* [ ] curvature estimation
+
+* [ ] statistical methods (mean, avg, etc.)
+
+* [ ] `julia set`: exponentially mapped color space
+
+* [ ] `julia set`: escape angle coloring
+
+* [ ] `julia set`: LCH coloring
+
+* [ ] `julia set`: (interior/exterior) distance estimates
+
+* [ ] `julia set`: border tracing
 
 * [ ] `julia set`: field lines
+
+* [ ] unified cli instead of binaries
 
 * [ ] mandelbrot
 
