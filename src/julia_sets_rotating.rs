@@ -17,6 +17,8 @@ fn create_frame(frame: &mut Frame, a: f32) {
   let scalex = 3.0 / imgx as f32;
   let scaley = 3.0 / imgy as f32;
 
+  let c = num_complex::Complex::from_polar(0.7785, a);
+
   for x in 0..imgx {
     for y in 0..imgy {
       let cx = x as f32 * scalex - 1.5;
@@ -24,7 +26,6 @@ fn create_frame(frame: &mut Frame, a: f32) {
 
       //println!("x: {}, y: {}, cx: {}, cy: {}", x, y, cx, cy);
 
-      //let c = num_complex::Complex::new(-0.4, 0.6);
       let mut z = num_complex::Complex::new(cx, cy);
 
       let mut i = 0;

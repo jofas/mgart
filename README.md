@@ -6,9 +6,15 @@
 
 * [x] `julia set`: zoom around a point
 
-* [ ] `julia set`: coloring
+* [x] 1d color maps
 
-* [ ] `julia set`: cli
+* [x] `julia set`: coloring
+
+* [ ] unified cli instead of binaries
+
+* [ ] `julia set`: field lines
+
+* [ ] mandelbrot
 
 * [ ] multibrot
 
