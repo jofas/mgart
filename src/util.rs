@@ -113,11 +113,11 @@ impl Into<u32> for RgbaColor {
 /// So [ComplexNumber] does not implement any math operations,
 /// but supports the conversion to [Complex].
 ///
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum ComplexNumber {
-  Cartesian { re: f32, im: f32 },
-  Polar { r: f32, theta: f32 },
+  Cartesian { re: f64, im: f64 },
+  Polar { r: f64, theta: f64 },
 }
 
 impl FromStr for ComplexNumber {
@@ -128,8 +128,8 @@ impl FromStr for ComplexNumber {
   }
 }
 
-impl Into<Complex<f32>> for &ComplexNumber {
-  fn into(self) -> Complex<f32> {
+impl Into<Complex<f64>> for &ComplexNumber {
+  fn into(self) -> Complex<f64> {
     match self {
       ComplexNumber::Cartesian { re, im } => Complex::new(*re, *im),
       ComplexNumber::Polar { r, theta } => {
@@ -158,11 +158,11 @@ impl ColorMap1D {
     Self(colors)
   }
 
-  pub fn value(&self, x: f32) -> RgbaColor {
-    let x = 0.0_f32.max(0.99_f32.min(x));
+  pub fn value(&self, x: f64) -> RgbaColor {
+    let x = 0.0_f32.max(0.99_f32.min(x as f32));
 
     let interval = x * (self.0.len() - 1) as f32;
-    let pos = interval.fract();
+    let pos = interval.fract() as f32;
 
     let c1 = &self.0[interval as usize];
     let c2 = &self.0[interval as usize + 1];

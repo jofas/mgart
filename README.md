@@ -16,7 +16,13 @@
 
 * [x] mandelbrot
 
-* [ ] from config file cli option
+* [x] from config file cli option
+
+* [x] double precision
+
+* [x] `julia set`: parallelize
+
+* [x] `julia set` progress report
 
 * [ ] find cool points and colormaps where I can see the effect of
   the following visualization methods

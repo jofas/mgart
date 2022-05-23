@@ -1,6 +1,8 @@
 use clap::Args;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+use display_json::DisplayAsJsonPretty;
 
 use crate::util::{ColorMap1D, ComplexNumber};
 
@@ -17,23 +19,23 @@ impl Config {
   }
 }
 
-#[derive(Args, Deserialize)]
+#[derive(Args, Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSetArgs {
   #[clap(long, default_value_t = default_width())]
   #[serde(default = "default_width")]
-  pub width: u32,
+  pub width: usize,
   #[clap(long, default_value_t = default_height())]
   #[serde(default = "default_height")]
-  pub height: u32,
+  pub height: usize,
   #[clap(long, default_value_t = default_zoom())]
   #[serde(default = "default_zoom")]
-  pub zoom: f32,
+  pub zoom: f64,
   #[clap(long, default_value_t = default_zpx())]
   #[serde(default = "default_zpx")]
-  pub zpx: f32,
+  pub zpx: f64,
   #[clap(long, default_value_t = default_zpy())]
   #[serde(default = "default_zpy")]
-  pub zpy: f32,
+  pub zpy: f64,
   #[clap(long, default_value_t = default_iter())]
   #[serde(default = "default_iter")]
   pub iter: u32,
@@ -48,23 +50,23 @@ pub struct JuliaSetArgs {
   pub c: Option<ComplexNumber>,
 }
 
-fn default_width() -> u32 {
+fn default_width() -> usize {
   1920
 }
 
-fn default_height() -> u32 {
+fn default_height() -> usize {
   1080
 }
 
-fn default_zoom() -> f32 {
+fn default_zoom() -> f64 {
   0.5
 }
 
-fn default_zpx() -> f32 {
+fn default_zpx() -> f64 {
   0.
 }
 
-fn default_zpy() -> f32 {
+fn default_zpy() -> f64 {
   0.
 }
 
