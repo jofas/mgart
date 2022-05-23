@@ -12,6 +12,10 @@
 
 * [x] `julia set`: smooth coloring
 
+* [ ] unified cli instead of binaries
+
+* [ ] mandelbrot
+
 * [ ] curvature estimation
 
 * [ ] statistical methods (mean, avg, etc.)
@@ -28,9 +32,7 @@
 
 * [ ] `julia set`: field lines
 
-* [ ] unified cli instead of binaries
-
-* [ ] mandelbrot
+* [ ] progressive iteration visualization
 
 * [ ] multibrot
 

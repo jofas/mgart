@@ -1,91 +1,72 @@
-use cgmath::Vector3;
+use image::{Rgba, RgbaImage};
 
-#[derive(Clone, Copy)]
-pub struct RgbaColor {
-  r: u8,
-  g: u8,
-  b: u8,
-  a: u8,
-}
+pub mod util;
 
-impl RgbaColor {
-  pub fn new_hex(color: u32) -> Self {
-    Self {
-      r: ((color & 0xFF000000) >> 24) as u8,
-      g: ((color & 0xFF0000) >> 16) as u8,
-      b: ((color & 0xFF00) >> 8) as u8,
-      a: (color & 0xFF) as u8,
+use util::{RgbaColor, ColorMap1D};
+
+fn julia_set() {
+  //let imgx = 7680;
+  //let imgy = 4320;
+
+  let imgx = 1920;
+  let imgy = 1080;
+
+  let mut imgbuf = RgbaImage::new(imgx, imgy);
+
+  let (norm_x, norm_y) = if imgx > imgy {
+    (imgx as f32 / imgy as f32, 1.)
+  } else {
+    (1., imgy as f32 / imgx as f32)
+  };
+
+  let color_map = ColorMap1D::new(vec![
+    RgbaColor::new_hex(0x000000FF),
+    RgbaColor::new_hex(0x14213DFF),
+    RgbaColor::new_hex(0xFCA311FF),
+    RgbaColor::new_hex(0xE5E5E5FF),
+    RgbaColor::new_hex(0xFFFFFFFF),
+  ]);
+
+  let c = num_complex::Complex::new(-0.4, 0.6);
+
+  let zoom = 0.5;
+  let zpx = 0.;
+  let zpy = 0.;
+
+  let zoom = 150.;
+  let zpx = 0.138;
+  let zpy = 0.142;
+
+  let vp = 1. / zoom;
+
+  let iter = 250;
+
+  for x in 0..imgx {
+    for y in 0..imgy {
+      let zx = x as f32 / imgx as f32;
+      let zx = zx * vp - vp / 2. + zpx;
+      let zx = zx * norm_x;
+
+      let zy = y as f32 / imgy as f32;
+      let zy = zy * vp - vp / 2. + zpy;
+      let zy = zy * norm_y;
+
+      let mut z = num_complex::Complex::new(zx, zy);
+      let mut color = (-z.norm()).exp();
+
+      let mut i = 0;
+      while i < iter && z.norm() <= 2.0 {
+        z = z * z + c;
+        color += (-z.norm()).exp();
+        i += 1;
+      }
+
+      let color = color_map.value(color / iter as f32);
+
+      let pixel = imgbuf.get_pixel_mut(x, y);
+      *pixel = Rgba(color.as_vec());
     }
   }
 
-  pub fn new_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
-    Self { r, g, b, a }
-  }
-
-  pub fn r(&self) -> u8 {
-    self.r
-  }
-
-  pub fn g(&self) -> u8 {
-    self.g
-  }
-
-  pub fn b(&self) -> u8 {
-    self.b
-  }
-
-  pub fn a(&self) -> u8 {
-    self.a
-  }
-
-  pub fn as_vec(&self) -> [u8; 4] {
-    [self.r, self.g, self.b, self.a]
-  }
-}
-
-pub struct ColorMap1D {
-  colors: Vec<RgbaColor>,
-}
-
-impl ColorMap1D {
-  pub fn new(colors: Vec<RgbaColor>) -> Self {
-    let colors = if colors.len() >= 2 {
-      colors
-    } else if colors.len() == 1 {
-      vec![RgbaColor::new_hex(0xFFFFFFFF), colors[0]]
-    } else {
-      vec![
-        RgbaColor::new_hex(0xFFFFFFFF),
-        RgbaColor::new_hex(0x000000FF),
-      ]
-    };
-
-    Self { colors }
-  }
-
-  pub fn value(&self, x: f32) -> RgbaColor {
-    let x = 0.0_f32.max(0.99_f32.min(x));
-
-    let interval = x * (self.colors.len() - 1) as f32;
-    let pos = interval.fract();
-
-    let c1 = &self.colors[interval as usize];
-    let c2 = &self.colors[interval as usize + 1];
-
-    let v1: Vector3<f32> = self.color_to_vec3(&c1);
-    let v2: Vector3<f32> = self.color_to_vec3(&c2);
-
-    let res = (v2 - v1) * pos + v1;
-
-    RgbaColor::new_rgba(
-      res.x.abs() as u8,
-      res.y.abs() as u8,
-      res.z.abs() as u8,
-      255,
-    )
-  }
-
-  fn color_to_vec3(&self, c: &RgbaColor) -> Vector3<f32> {
-    Vector3::new(c.r() as f32, c.g() as f32, c.b() as f32)
-  }
+  imgbuf.save("fractal.png").unwrap();
 }
