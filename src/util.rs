@@ -196,16 +196,16 @@ impl ColorMap1d {
   }
 
   pub fn linear(&self, x: f64) -> RgbaColor {
-    let x = 0.0_f32.max(0.99_f32.min(x as f32));
+    let x = 0.0_f64.max(0.99_f64.min(x));
 
-    let interval = x * (self.0.len() - 1) as f32;
-    let pos = interval.fract() as f32;
+    let interval = x * (self.0.len() - 1) as f64;
+    let pos = interval.fract() as f64;
 
     let c1 = &self.0[interval as usize];
     let c2 = &self.0[interval as usize + 1];
 
-    let v1: Vector3<f32> = self.color_to_vec3(&c1);
-    let v2: Vector3<f32> = self.color_to_vec3(&c2);
+    let v1 = self.color_to_vec3(&c1);
+    let v2 = self.color_to_vec3(&c2);
 
     let res = (v2 - v1) * pos + v1;
 
@@ -233,8 +233,8 @@ impl ColorMap1d {
     }
   }
 
-  fn color_to_vec3(&self, c: &RgbaColor) -> Vector3<f32> {
-    Vector3::new(c.r() as f32, c.g() as f32, c.b() as f32)
+  fn color_to_vec3(&self, c: &RgbaColor) -> Vector3<f64> {
+    Vector3::new(c.r() as f64, c.g() as f64, c.b() as f64)
   }
 }
 
