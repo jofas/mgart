@@ -18,25 +18,19 @@ pub fn julia_set(args: JuliaSetArgs) {
 
   let pixel_created = Arc::new(AtomicUsize::new(0));
 
-  let (norm_x, norm_y) = if args.width > args.height {
-    (args.width as f64 / args.height as f64, 1.)
-  } else {
-    (1., args.height as f64 / args.width as f64)
-  };
+  let (w, h) = (args.width as f64, args.height as f64);
+
+  let aspect_ratio = w / h;
 
   let vp = 1. / args.zoom;
 
   buf.par_iter_mut().enumerate().for_each(|(i, pixel)| {
-    let x = i % args.width;
-    let y = i / args.width;
-
-    let zx = x as f64 / args.width as f64;
+    let zx = (i % args.width) as f64 / w;
     let zx = zx * vp - vp / 2. + args.zpx;
-    let zx = zx * norm_x;
+    let zx = zx * aspect_ratio;
 
-    let zy = y as f64 / args.height as f64;
+    let zy = (i / args.width) as f64 / h;
     let zy = zy * vp - vp / 2. + args.zpy;
-    let zy = zy * norm_y;
 
     let mut z = num_complex::Complex::new(zx, zy);
 
