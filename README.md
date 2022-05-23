@@ -12,9 +12,9 @@
 
 * [x] `julia set`: smooth coloring
 
-* [ ] unified cli instead of binaries
+* [x] unified cli instead of binaries
 
-* [ ] mandelbrot
+* [x] mandelbrot
 
 * [ ] curvature estimation
 

@@ -14,9 +14,6 @@ pub fn julia_set(args: JuliaSetArgs) {
     (1., args.height as f32 / args.width as f32)
   };
 
-  // TODO: from args
-  let c = num_complex::Complex::new(-0.4, 0.6);
-
   let vp = 1. / args.zoom;
 
   for x in 0..args.width {
@@ -30,6 +27,10 @@ pub fn julia_set(args: JuliaSetArgs) {
       let zy = zy * norm_y;
 
       let mut z = num_complex::Complex::new(zx, zy);
+
+      // if no complex number is given, compute the mandelbrot set
+      let c = if let Some(c) = &args.c { c.into() } else { z };
+
       let mut color = (-z.norm()).exp();
 
       let mut i = 0;

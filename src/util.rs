@@ -1,5 +1,7 @@
 use cgmath::Vector3;
 
+use num_complex::Complex;
+
 use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
@@ -101,6 +103,39 @@ impl From<u32> for RgbaColor {
 impl Into<u32> for RgbaColor {
   fn into(self) -> u32 {
     self.as_u32()
+  }
+}
+
+/// Representation of a complex number.
+///
+/// This is intended to be used as means for parsing user input,
+/// not for doing calculations.
+/// So [ComplexNumber] does not implement any math operations,
+/// but supports the conversion to [Complex].
+///
+#[derive(Deserialize)]
+#[serde(untagged)]
+pub enum ComplexNumber {
+  Cartesian { re: f32, im: f32 },
+  Polar { r: f32, theta: f32 },
+}
+
+impl FromStr for ComplexNumber {
+  type Err = serde_json::Error;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    serde_json::from_str(s)
+  }
+}
+
+impl Into<Complex<f32>> for &ComplexNumber {
+  fn into(self) -> Complex<f32> {
+    match self {
+      ComplexNumber::Cartesian { re, im } => Complex::new(*re, *im),
+      ComplexNumber::Polar { r, theta } => {
+        Complex::from_polar(*r, *theta)
+      }
+    }
   }
 }
 
