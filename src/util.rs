@@ -196,7 +196,11 @@ impl ColorMap1d {
   }
 
   pub fn linear(&self, x: f64) -> RgbaColor {
-    let x = 0.0_f64.max(0.99_f64.min(x));
+    let x = 0.0_f64.max(1.0_f64.min(x));
+
+    if 1.0 - x <= f64::EPSILON {
+      return self.0[self.0.len() - 1];
+    }
 
     let interval = x * (self.0.len() - 1) as f64;
     let pos = interval.fract() as f64;
