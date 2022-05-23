@@ -12,8 +12,6 @@
 
 * [x] `julia set`: smooth coloring
 
-* [ ] 1d color maps with spline curves
-
 * [ ] curvature estimation
 
 * [ ] statistical methods (mean, avg, etc.)
