@@ -4,6 +4,19 @@ use serde::Deserialize;
 
 use crate::util::{ColorMap1D, ComplexNumber};
 
+#[derive(Deserialize)]
+pub struct Config(Vec<JuliaSetArgs>);
+
+impl Config {
+  pub fn inner(&self) -> &[JuliaSetArgs] {
+    &self.0
+  }
+
+  pub fn into_inner(self) -> Vec<JuliaSetArgs> {
+    self.0
+  }
+}
+
 #[derive(Args, Deserialize)]
 pub struct JuliaSetArgs {
   #[clap(long, default_value_t = default_width())]
