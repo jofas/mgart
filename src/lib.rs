@@ -43,16 +43,17 @@ pub fn julia_set(args: JuliaSetArgs) {
     // if no complex number is given, compute the mandelbrot set
     let c = if let Some(c) = &args.c { c.into() } else { z };
 
-    let mut color = (-z.norm()).exp();
-
     let mut j = 0;
-    while j < args.iter && z.norm() <= 2.0 {
+    while j < args.iter && z.norm_sqr() <= 4.0 {
       z = z * z + c;
-      color += (-z.norm()).exp();
       j += 1;
     }
 
-    *pixel = args.color_map.value(color / args.iter as f64).as_vec();
+    let nu = ((z.norm_sqr().ln() / 2.) / 2.0_f64.ln()).ln() / 2.0_f64.ln();
+
+    let j = j as f64 + 1. - nu;
+
+    *pixel = args.color_map.value(j / args.iter as f64).as_vec();
 
     let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
@@ -67,11 +68,13 @@ pub fn julia_set(args: JuliaSetArgs) {
   let buf: Vec<u8> = buf.into_iter().flatten().collect();
 
   image::save_buffer(
-    args.filename,
+    &args.filename,
     &buf,
     args.width as u32,
     args.height as u32,
     image::ColorType::Rgba8,
   )
-  .unwrap()
+  .unwrap();
+
+  println!("successfully written: {}", args.filename);
 }

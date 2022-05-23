@@ -24,6 +24,8 @@
 
 * [x] `julia set` progress report
 
+* [x] `julia set` optimize
+
 * [ ] find cool points and colormaps where I can see the effect of
   the following visualization methods
 
