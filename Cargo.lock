@@ -20,6 +20,7 @@ version = "0.1.0"
 dependencies = [
  "cgmath",
  "clap",
+ "display_json",
  "image",
  "num-complex",
  "rayon",
@@ -205,6 +206,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c86f7e25f518f4b81808a2cf1c50996a61f5c2eb394b2393bd87f2a4780a432f"
 dependencies = [
  "adler32",
+]
+
+[[package]]
+name = "display_json"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "84515ed15ef33bfbeab42f87c92a9d556dcb8b6266b74d041f539db590c7f60a"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_json",
+ "syn",
 ]
 
 [[package]]

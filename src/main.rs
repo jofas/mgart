@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 use algorithmic_art::args::JuliaSetArgs;
+use algorithmic_art::julia_set;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -17,7 +18,7 @@ enum Commands {
 fn main() {
   let cli = Cli::parse();
 
-  match &cli.command {
-    Commands::JuliaSet(_) => println!("julia set"),
+  match cli.command {
+    Commands::JuliaSet(args) => julia_set(args),
   }
 }
