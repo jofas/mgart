@@ -16,6 +16,11 @@
 
 * [x] mandelbrot
 
+* [ ] from config file cli option
+
+* [ ] find cool points and colormaps where I can see the effect of
+  the following visualization methods
+
 * [ ] curvature estimation
 
 * [ ] statistical methods (mean, avg, etc.)
