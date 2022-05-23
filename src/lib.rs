@@ -22,18 +22,18 @@ pub fn julia_set(args: JuliaSetArgs) {
 
   let aspect_ratio = w / h;
 
-  let vp = 1. / args.zoom;
+  let vp_height = 1. / args.zoom;
+  let vp_width = vp_height * aspect_ratio;
+
+  let vp_height_half = vp_height * 0.5;
+  let vp_width_half = vp_width * 0.5;
 
   buf.par_iter_mut().enumerate().for_each(|(i, pixel)| {
-    // instead of doing this as float, do it as int and only
-    // afterwards scale down
-    //
     let zx = (i % args.width) as f64 / w;
-    let zx = zx * vp - vp / 2. + args.zpx;
-    //let zx = zx * aspect_ratio;
+    let zx = zx * vp_width - vp_width_half + args.zpx;
 
     let zy = (i / args.width) as f64 / h;
-    let zy = zy * vp - vp / 2. + args.zpy;
+    let zy = zy * vp_height - vp_height_half + args.zpy;
 
     let mut z = num_complex::Complex::new(zx, zy);
 
