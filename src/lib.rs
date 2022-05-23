@@ -46,10 +46,9 @@ pub fn julia_set(args: JuliaSetArgs) {
       j += 1;
     }
 
-    let nu =
-      ((z.norm_sqr().ln() / 2.) / 2.0_f64.ln()).ln() / 2.0_f64.ln();
+    let mu = z.norm().ln().ln() / 2.0_f64.ln();
 
-    let j = j as f64 + 1. - nu;
+    let j = j as f64 + 1. - mu;
 
     *pixel = args
       .color_map
