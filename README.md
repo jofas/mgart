@@ -26,6 +26,8 @@
 
 * [x] `julia set` optimize
 
+* [ ] 1d color map: sine
+
 * [ ] find cool points and colormaps where I can see the effect of
   the following visualization methods
 

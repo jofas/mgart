@@ -9,7 +9,7 @@ use std::sync::Arc;
 pub mod args;
 pub mod util;
 
-use args::JuliaSetArgs;
+use args::{ColorMap1dArgs, JuliaSetArgs};
 
 pub fn julia_set(args: JuliaSetArgs) {
   let num_pixel = args.width * args.height;
@@ -49,11 +49,15 @@ pub fn julia_set(args: JuliaSetArgs) {
       j += 1;
     }
 
-    let nu = ((z.norm_sqr().ln() / 2.) / 2.0_f64.ln()).ln() / 2.0_f64.ln();
+    let nu =
+      ((z.norm_sqr().ln() / 2.) / 2.0_f64.ln()).ln() / 2.0_f64.ln();
 
     let j = j as f64 + 1. - nu;
 
-    *pixel = args.color_map.value(j / args.iter as f64).as_vec();
+    *pixel = args
+      .color_map
+      .color(j / args.iter as f64, &args.color_method)
+      .as_vec();
 
     let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
@@ -76,5 +80,44 @@ pub fn julia_set(args: JuliaSetArgs) {
   )
   .unwrap();
 
-  println!("successfully written: {}", args.filename);
+  println!("\nsuccessfully written: {}", args.filename);
+}
+
+pub fn color_map_1d(args: ColorMap1dArgs) {
+  let num_pixel = args.width * args.height;
+
+  let mut buf = vec![[0_u8; 4]; num_pixel];
+
+  let pixel_created = Arc::new(AtomicUsize::new(0));
+
+  buf.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+    let x = i % args.width;
+
+    *pixel = args
+      .color_map
+      .color(x as f64 / args.width as f64, &args.color_method)
+      .as_vec();
+
+    let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
+
+    print!(
+      "{}/{} pixels created ({:.2}%)\r",
+      pc,
+      num_pixel,
+      (pc as f32 / num_pixel as f32) * 100.,
+    );
+  });
+
+  let buf: Vec<u8> = buf.into_iter().flatten().collect();
+
+  image::save_buffer(
+    &args.filename,
+    &buf,
+    args.width as u32,
+    args.height as u32,
+    image::ColorType::Rgba8,
+  )
+  .unwrap();
+
+  println!("\nsuccessfully written: {}", args.filename);
 }

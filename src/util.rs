@@ -2,10 +2,14 @@ use cgmath::Vector3;
 
 use num_complex::Complex;
 
+use clap::ArgEnum;
+
 use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
+use std::f64::consts::PI;
+use std::fmt;
 use std::str::FromStr;
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Debug)]
@@ -139,10 +143,43 @@ impl Into<Complex<f64>> for &ComplexNumber {
   }
 }
 
-#[derive(Serialize, Deserialize, DisplayAsJson)]
-pub struct ColorMap1D(Vec<RgbaColor>);
+/// How the [ColorMap1d] should be used.
+///
+/// Can be provided by the user as input and then passed to the
+/// [ColorMap1d::color] method of a [color map](ColorMap1d).
+///
+#[derive(
+  Serialize, Deserialize, ArgEnum, Clone, PartialEq, Debug,
+)]
+#[serde(rename_all = "lowercase")]
+pub enum ColorMethod {
+  #[clap(name = "linear")]
+  Linear,
+  #[clap(name = "sine")]
+  Sine,
+}
 
-impl ColorMap1D {
+impl FromStr for ColorMethod {
+  type Err = serde_json::Error;
+
+  fn from_str(s: &str) -> Result<Self, Self::Err> {
+    serde_json::from_str(&format!("\"{}\"", s))
+  }
+}
+
+impl fmt::Display for ColorMethod {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    match self {
+      Self::Linear => write!(f, "linear"),
+      Self::Sine => write!(f, "sine"),
+    }
+  }
+}
+
+#[derive(Serialize, Deserialize, DisplayAsJson)]
+pub struct ColorMap1d(Vec<RgbaColor>);
+
+impl ColorMap1d {
   pub fn new(colors: Vec<RgbaColor>) -> Self {
     let colors = if colors.len() >= 2 {
       colors
@@ -158,7 +195,7 @@ impl ColorMap1D {
     Self(colors)
   }
 
-  pub fn value(&self, x: f64) -> RgbaColor {
+  pub fn linear(&self, x: f64) -> RgbaColor {
     let x = 0.0_f32.max(0.99_f32.min(x as f32));
 
     let interval = x * (self.0.len() - 1) as f32;
@@ -180,12 +217,28 @@ impl ColorMap1D {
     )
   }
 
+  /// Computes the color at point `x` by passing `sin(x * PI)` into
+  /// [Self::linear].
+  ///
+  /// **Note:** assumes `x` to be in the interval `(0,1)`.
+  ///
+  pub fn sine(&self, x: f64) -> RgbaColor {
+    self.linear((x * PI).sin().abs())
+  }
+
+  pub fn color(&self, x: f64, method: &ColorMethod) -> RgbaColor {
+    match method {
+      ColorMethod::Linear => self.linear(x),
+      ColorMethod::Sine => self.sine(x),
+    }
+  }
+
   fn color_to_vec3(&self, c: &RgbaColor) -> Vector3<f32> {
     Vector3::new(c.r() as f32, c.g() as f32, c.b() as f32)
   }
 }
 
-impl FromStr for ColorMap1D {
+impl FromStr for ColorMap1d {
   type Err = serde_json::Error;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -195,7 +248,7 @@ impl FromStr for ColorMap1D {
 
 #[cfg(test)]
 mod tests {
-  use super::{ColorMap1D, RgbaColor};
+  use super::{ColorMap1d, ColorMethod, RgbaColor};
 
   #[test]
   fn deserialize_rgba_color() {
@@ -211,8 +264,30 @@ mod tests {
 
   #[test]
   fn display_color_map_1d() {
-    let cm = ColorMap1D::new(vec![]);
+    let cm = ColorMap1d::new(vec![]);
 
     assert_eq!(cm.to_string(), "[4294967295,255]");
+  }
+
+  #[test]
+  fn serialize_color_method() {
+    assert_eq!(
+      &serde_json::to_string(&ColorMethod::Linear).unwrap(),
+      r#""linear""#,
+    );
+    assert_eq!(
+      &serde_json::to_string(&ColorMethod::Sine).unwrap(),
+      r#""sine""#,
+    );
+  }
+
+  #[test]
+  fn deserialize_color_method() {
+    let cm = r#""linear""#;
+
+    assert_eq!(
+      serde_json::from_str::<ColorMethod>(cm).unwrap(),
+      ColorMethod::Linear,
+    );
   }
 }
