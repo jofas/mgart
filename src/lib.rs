@@ -1,8 +1,9 @@
 use image::{Rgba, RgbaImage};
 
+pub mod args;
 pub mod util;
 
-use util::{RgbaColor, ColorMap1D};
+use util::{ColorMap1D, RgbaColor};
 
 fn julia_set() {
   //let imgx = 7680;
