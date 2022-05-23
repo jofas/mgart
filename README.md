@@ -26,7 +26,9 @@
 
 * [x] `julia set` optimize
 
-* [ ] 1d color map: sine
+* [x] 1d color map: sine
+
+* [ ] `julia set`: LCH coloring
 
 * [ ] find cool points and colormaps where I can see the effect of
   the following visualization methods
@@ -38,8 +40,6 @@
 * [ ] `julia set`: exponentially mapped color space
 
 * [ ] `julia set`: escape angle coloring
-
-* [ ] `julia set`: LCH coloring
 
 * [ ] `julia set`: (interior/exterior) distance estimates
 
