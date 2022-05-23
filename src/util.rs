@@ -223,7 +223,7 @@ impl ColorMap1d {
   /// **Note:** assumes `x` to be in the interval `(0,1)`.
   ///
   pub fn sine(&self, x: f64) -> RgbaColor {
-    self.linear((x * PI).sin().abs())
+    self.linear((x * 2. * PI).sin().abs())
   }
 
   pub fn color(&self, x: f64, method: &ColorMethod) -> RgbaColor {
