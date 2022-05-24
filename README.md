@@ -67,3 +67,5 @@
 * [ ] buddhabrot
 
 * [ ] fractal flame
+
+* [ ] arbitrary precision types for higher zoom levels
