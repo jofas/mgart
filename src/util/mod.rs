@@ -1,5 +1,3 @@
-use num_complex::Complex;
-
 use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
@@ -26,21 +24,25 @@ pub enum ComplexNumber {
   Polar { r: f64, theta: f64 },
 }
 
-impl FromStr for ComplexNumber {
-  type Err = serde_json::Error;
-
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    serde_json::from_str(s)
-  }
-}
-
-impl Into<Complex<f64>> for &ComplexNumber {
-  fn into(self) -> Complex<f64> {
+impl ComplexNumber {
+  pub fn cartesian(&self) -> (f64, f64) {
     match self {
-      ComplexNumber::Cartesian { re, im } => Complex::new(*re, *im),
-      ComplexNumber::Polar { r, theta } => {
-        Complex::from_polar(*r, *theta)
-      }
+      Self::Cartesian { re, im } => (*re, *im),
+      Self::Polar { r, theta } => (r * theta.cos(), r * theta.sin()),
+    }
+  }
+
+  pub fn re(&self) -> f64 {
+    match self {
+      Self::Cartesian { re, .. } => *re,
+      Self::Polar { r, theta } => r * theta.cos(),
+    }
+  }
+
+  pub fn im(&self) -> f64 {
+    match self {
+      Self::Cartesian { im, .. } => *im,
+      Self::Polar { r, theta } => r * theta.sin(),
     }
   }
 }

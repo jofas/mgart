@@ -28,38 +28,55 @@ pub fn julia_set(args: JuliaSetArgs) {
   let vp_height_half = vp_height * 0.5;
   let vp_width_half = vp_width * 0.5;
 
+  let (cx, cy) = if let Some(c) = &args.c {
+    (Some(c.re()), Some(c.im()))
+  } else {
+    (None, None)
+  };
+
   buf.par_iter_mut().enumerate().for_each(|(i, pixel)| {
-    let zx = (i % args.width) as f64 / w;
-    let zx = zx * vp_width - vp_width_half + args.zpx;
+    let x = (i % args.width) as f64 / w;
+    let x = x * vp_width - vp_width_half + args.zpx;
 
-    let zy = (i / args.width) as f64 / h;
-    let zy = zy * vp_height - vp_height_half + args.zpy;
+    let y = (i / args.width) as f64 / h;
+    let y = y * vp_height - vp_height_half + args.zpy;
 
-    let mut z = num_complex::Complex::new(zx, zy);
+    let cx = cx.unwrap_or(x);
+    let cy = cy.unwrap_or(y);
 
-    // if no complex number is given, compute the mandelbrot set
-    let c = if let Some(c) = &args.c { c.into() } else { z };
+    let mut zx = x;
+    let mut zy = y;
+
+    let mut zx_sqr = zx.powi(2);
+    let mut zy_sqr = zy.powi(2);
 
     let mut j = 0;
-    while j < args.iter && z.norm_sqr() <= 4.0 {
-      z = z * z + c;
+    while j < args.iter && zx_sqr + zy_sqr <= 4.0 {
+      zy = (zx * zy) * 2.0 + cy;
+      zx = zx_sqr - zy_sqr + cx;
+
+      zx_sqr = zx.powi(2);
+      zy_sqr = zy.powi(2);
+
       j += 1;
     }
 
-    let mu = z.norm().ln().ln() / 2.0_f64.ln();
+    let mu = (zx_sqr + zy_sqr).sqrt().ln().ln() / 2.0_f64.ln();
 
-    let j = j as f64 + 1. - mu;
+    let j = (j + 1) as f64 - mu;
 
     *pixel = args.color_map.color(j / args.iter as f64).as_vec();
 
     let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
-    print!(
-      "{}/{} pixels created ({:.2}%)\r",
-      pc,
-      num_pixel,
-      (pc as f32 / num_pixel as f32) * 100.,
-    );
+    if pc % 2500 == 0 || pc == num_pixel {
+      print!(
+        "{}/{} pixels created ({:.2}%)\r",
+        pc,
+        num_pixel,
+        (pc as f32 / num_pixel as f32) * 100.,
+      );
+    }
   });
 
   let buf: Vec<u8> = buf.into_iter().flatten().collect();

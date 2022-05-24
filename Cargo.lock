@@ -21,7 +21,6 @@ dependencies = [
  "clap",
  "display_json",
  "image",
- "num-complex",
  "rayon",
  "serde",
  "serde_json",
@@ -435,15 +434,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a51313c5820b0b02bd422f4b44776fbf47961755c74ce64afc73bfad10226c3"
 dependencies = [
  "getrandom",
-]
-
-[[package]]
-name = "num-complex"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97fbc387afefefd5e9e39493299f3069e14a140dd34dc19b4c1c1a8fddb6a790"
-dependencies = [
- "num-traits",
 ]
 
 [[package]]
