@@ -2,15 +2,23 @@ use serde::{Deserialize, Serialize};
 
 use std::f64::consts::PI;
 
+mod serde_nan;
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct LCH {
+  #[serde(with = "serde_nan")]
   l: f64,
+  #[serde(with = "serde_nan")]
   c: f64,
+  #[serde(with = "serde_nan")]
   h: f64,
 }
 
-// TODO: hue as rad and deg (currently expected deg)
 impl LCH {
-  pub fn new(l: f64, c: f64, h: f64) -> Self {
+  pub const BLACK: LCH = Self::new(0., 0., f64::NAN);
+  pub const WHITE: LCH = Self::new(100., 0., f64::NAN);
+
+  pub const fn new(l: f64, c: f64, h: f64) -> Self {
     Self { l, c, h }
   }
 
@@ -61,6 +69,9 @@ impl LCH {
     let c0 = self.c();
     let c1 = other.c();
 
+    let l0 = self.l();
+    let l1 = other.l();
+
     let mut h = f64::NAN;
     let mut c = None;
 
@@ -91,7 +102,7 @@ impl LCH {
       None => c0 + f * (c1 - c0),
     };
 
-    let l = self.l() + f * (other.l() - self.l());
+    let l = l0 + f * (l1 - l0);
 
     LCH::new(l, c, h)
   }

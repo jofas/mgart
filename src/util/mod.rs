@@ -14,7 +14,7 @@ use std::str::FromStr;
 
 pub mod colors;
 
-use colors::RGBA;
+use colors::{LCH, RGBA};
 
 /// Representation of a complex number.
 ///
@@ -83,34 +83,37 @@ impl fmt::Display for ColorMethod {
 }
 
 #[derive(Serialize, Deserialize, DisplayAsJson)]
-pub struct ColorMap1d(Vec<RGBA>);
+pub struct ColorMap1d(Vec<LCH>);
 
 impl ColorMap1d {
-  pub fn new(colors: Vec<RGBA>) -> Self {
+  pub fn new(colors: Vec<LCH>) -> Self {
     let colors = if colors.len() >= 2 {
       colors
     } else if colors.len() == 1 {
-      vec![RGBA::new_hex(0xFFFFFFFF), colors[0]]
+      vec![LCH::WHITE, colors[0]]
     } else {
-      vec![RGBA::new_hex(0xFFFFFFFF), RGBA::new_hex(0x000000FF)]
+      vec![LCH::WHITE, LCH::BLACK]
     };
 
     Self(colors)
   }
 
-  pub fn linear(&self, x: f64) -> RGBA {
-    let x = 0.0_f64.max(1.0_f64.min(x));
+  pub fn linear(&self, f: f64) -> RGBA {
+    let f = f.clamp(0., 1.);
 
-    if 1.0 - x <= f64::EPSILON {
-      return self.0[self.0.len() - 1];
+    if 1.0 - f <= f64::EPSILON {
+      return self.0[self.0.len() - 1].rgba();
     }
 
-    let interval = x * (self.0.len() - 1) as f64;
+    let interval = f * (self.0.len() - 1) as f64;
     let pos = interval.fract() as f64;
 
     let c1 = &self.0[interval as usize];
     let c2 = &self.0[interval as usize + 1];
 
+    c1.interpolate(c2, pos).rgba()
+
+    /* TODO: into RGBA
     let v1 = self.color_to_vec3(&c1);
     let v2 = self.color_to_vec3(&c2);
 
@@ -122,6 +125,7 @@ impl ColorMap1d {
       res.z.abs() as u8,
       255,
     )
+    */
   }
 
   /// Computes the color at point `x` by passing `sin(x * PI)` into
