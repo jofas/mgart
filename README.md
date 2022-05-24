@@ -28,7 +28,11 @@
 
 * [x] 1d color map: sine
 
-* [ ] `julia set`: LCH coloring
+* [ ] `julia set`: LCH coloring: LCH to RGB (LCH -> LAB -> RGB)
+
+* [ ] `julia set`: LCH coloring: LCH interpolation
+
+* [ ] `julia set`: LCH coloring: RGB to LCH
 
 * [ ] find cool points and colormaps where I can see the effect of
   the following visualization methods
