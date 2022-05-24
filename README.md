@@ -45,6 +45,9 @@
 
 * [ ] statistical methods (mean, avg, etc.)
 
+* [ ] `julia set`: different coloring methods, other than 1d color map
+  (e.g. computed colors)
+
 * [ ] `julia set`: exponentially mapped color space
 
 * [ ] `julia set`: escape angle coloring
