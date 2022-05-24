@@ -4,19 +4,19 @@ use std::f64::consts::PI;
 
 mod serde_nan;
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum ColorSpace {
+  LCH,
+  RGBA,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type")]
 pub enum Color {
   LCH(LCH),
   RGBA(RGBA),
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ColorSpace {
-  LCH,
-  RGBA,
 }
 
 impl Color {
@@ -65,7 +65,7 @@ impl Color {
   }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct LCH {
   #[serde(with = "serde_nan")]
   l: f64,

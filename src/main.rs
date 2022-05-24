@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::Parser;
 
 use serde::Deserialize;
 
@@ -12,17 +12,14 @@ use algorithmic_art::{color_map_1d, julia_set};
 #[clap(author, version, about, long_about = None)]
 struct Cli {
   #[clap(long)]
-  config: Option<String>,
-  #[clap(subcommand)]
-  command: Option<Command>,
+  config: String,
 }
 
-#[derive(Subcommand, Deserialize)]
+#[derive(Deserialize)]
 #[serde(tag = "command")]
 #[serde(rename_all = "kebab-case")]
 enum Command {
   JuliaSet(JuliaSetArgs),
-  #[clap(name = "color-map-1d")]
   #[serde(rename = "color-map-1d")]
   ColorMap1d(ColorMap1dArgs),
 }
@@ -39,35 +36,25 @@ impl Config {
 fn main() {
   let cli = Cli::parse();
 
-  if let Some(config) = cli.config {
-    let config: Config = if config == "." {
-      serde_json::from_reader(stdin()).unwrap()
-    } else {
-      serde_json::from_reader(File::open(config).unwrap()).unwrap()
-    };
+  let config: Config = if cli.config == "." {
+    serde_json::from_reader(stdin()).unwrap()
+  } else {
+    serde_json::from_reader(File::open(cli.config).unwrap()).unwrap()
+  };
 
-    for cmd in config.into_inner() {
-      match cmd {
-        Command::JuliaSet(args) => {
-          println!("generating julia set with arguments:\n{}", args);
-          julia_set(args);
-        }
-        Command::ColorMap1d(args) => {
-          println!(
-            "generating 1d color map with arguments:\n{}",
-            args
-          );
-          color_map_1d(args);
-        }
+  for cmd in config.into_inner() {
+    match cmd {
+      Command::JuliaSet(args) => {
+        println!("generating julia set with arguments:\n{}", args);
+        julia_set(args);
+      }
+      Command::ColorMap1d(args) => {
+        println!(
+          "generating 1d color map with arguments:\n{}",
+          args
+        );
+        color_map_1d(args);
       }
     }
-
-    return;
-  }
-
-  match cli.command {
-    Some(Command::JuliaSet(args)) => julia_set(args),
-    Some(Command::ColorMap1d(args)) => color_map_1d(args),
-    _ => println!("Successfully did nothing"),
   }
 }

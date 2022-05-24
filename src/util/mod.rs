@@ -81,13 +81,15 @@ impl fmt::Display for ColorMethod {
 }
 
 #[derive(Serialize, Deserialize, DisplayAsJson)]
+#[serde(from = "ColorMap1dDeserializer")]
 pub struct ColorMap1d {
-  map: Vec<Color>,
+  pub map: Vec<Color>,
   method: ColorMethod,
-  color_space: ColorSpace,
+  pub color_space: ColorSpace,
 }
 
 impl ColorMap1d {
+  // not invoked during parsing lol
   pub fn new(
     map: Vec<Color>,
     method: ColorMethod,
@@ -154,6 +156,19 @@ impl FromStr for ColorMap1d {
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
     serde_json::from_str(s)
+  }
+}
+
+#[derive(Deserialize)]
+struct ColorMap1dDeserializer {
+  map: Vec<Color>,
+  method: ColorMethod,
+  color_space: ColorSpace,
+}
+
+impl From<ColorMap1dDeserializer> for ColorMap1d {
+  fn from(cm: ColorMap1dDeserializer) -> Self {
+    Self::new(cm.map, cm.method, cm.color_space)
   }
 }
 
