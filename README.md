@@ -30,7 +30,7 @@
 
 * [x] `julia set`: LCH coloring: LCH to RGB (LCH -> LAB -> RGB)
 
-* [ ] `julia set`: LCH coloring: LCH interpolation
+* [x] `julia set`: LCH coloring: LCH interpolation
 
 * [ ] `julia set`: LCH coloring: RGB to LCH
 

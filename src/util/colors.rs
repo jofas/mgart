@@ -38,7 +38,11 @@ impl LCH {
     let h = if self.h().is_nan() { 0_f64 } else { self.h() };
     let h = h * PI / 180.;
 
-    return LAB::new(self.l(), h.cos() * self.c(), h.sin() * self.c());
+    return LAB::new(
+      self.l(),
+      h.cos() * self.c(),
+      h.sin() * self.c(),
+    );
   }
 
   /// Returns the [RGBA] representation of the color defined by
@@ -46,6 +50,50 @@ impl LCH {
   ///
   pub fn rgba(&self) -> RGBA {
     self.lab().rgba()
+  }
+
+  pub fn interpolate(&self, other: &LCH, f: f64) -> LCH {
+    let f = f.clamp(0., 1.);
+
+    let h0 = self.h();
+    let h1 = other.h();
+
+    let c0 = self.c();
+    let c1 = other.c();
+
+    let mut h = f64::NAN;
+    let mut c = None;
+
+    if !h0.is_nan() && !h1.is_nan() {
+      let dh = if h1 > h0 && h1 - h0 > 180. {
+        h1 - h0 + 360.
+      } else if h1 < h0 && h0 - h1 > 180. {
+        h1 + 360. - h0
+      } else {
+        h1 - h0
+      };
+
+      h = h0 + f * dh;
+    } else if !h0.is_nan() {
+      h = h0;
+      if l1 == 1. || l1 == 0. {
+        c = Some(c0);
+      }
+    } else if !h1.is_nan() {
+      h = h1;
+      if l0 == 1. || l0 == 0. {
+        c = Some(c1);
+      }
+    }
+
+    let c = match c {
+      Some(c) => c,
+      None => c0 + f * (c1 - c0),
+    };
+
+    let l = self.l() + f * (other.l() - self.l());
+
+    LCH::new(l, c, h)
   }
 }
 
@@ -57,8 +105,6 @@ pub struct LAB {
 }
 
 impl LAB {
-  //const KN: f64 = 18.;
-
   const XN: f64 = 0.950470;
   const YN: f64 = 1.;
   const ZN: f64 = 1.088830;
@@ -66,7 +112,6 @@ impl LAB {
   const T0: f64 = 0.137931034;
   const T1: f64 = 0.206896552;
   const T2: f64 = 0.12841855;
-  //const T3: f64 = 0.008856452;
 
   pub fn new(l: f64, a: f64, b: f64) -> Self {
     Self { l, a, b }
@@ -118,11 +163,13 @@ impl LAB {
   ///
   pub fn rgba(&self) -> RGBA {
     let y = (self.l() + 16.) / 116.;
+
     let x = if self.a().is_nan() {
       y
     } else {
       y + self.a() / 500.
     };
+
     let z = if self.a().is_nan() {
       y
     } else {
