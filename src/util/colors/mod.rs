@@ -135,6 +135,42 @@ impl LCH {
   }
 }
 
+#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Debug)]
+pub struct RGB {
+  r: u8,
+  g: u8,
+  b: u8,
+}
+
+impl RGB {
+  /// Creates a new [RGB] color.
+  ///
+  pub fn new(r: u8, g: u8, b: u8) -> Self {
+    Self { r, g, b }
+  }
+
+  pub fn r(&self) -> u8 {
+    self.r
+  }
+
+  pub fn g(&self) -> u8 {
+    self.g
+  }
+
+  pub fn b(&self) -> u8 {
+    self.b
+  }
+
+  pub fn lch(&self) -> LCH {
+    // TODO
+    unimplemented!()
+  }
+
+  pub fn as_vec(&self) -> [u8; 3] {
+    [self.r, self.g, self.b]
+  }
+}
+
 #[derive(Debug, PartialEq)]
 struct LAB {
   l: f64,
@@ -234,42 +270,6 @@ impl LAB {
     } else {
       Self::T2 * (t - Self::T0)
     }
-  }
-}
-
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Debug)]
-pub struct RGB {
-  r: u8,
-  g: u8,
-  b: u8,
-}
-
-impl RGB {
-  /// Creates a new [RGB] color.
-  ///
-  pub fn new(r: u8, g: u8, b: u8) -> Self {
-    Self { r, g, b }
-  }
-
-  pub fn r(&self) -> u8 {
-    self.r
-  }
-
-  pub fn g(&self) -> u8 {
-    self.g
-  }
-
-  pub fn b(&self) -> u8 {
-    self.b
-  }
-
-  pub fn lch(&self) -> LCH {
-    // TODO
-    unimplemented!()
-  }
-
-  pub fn as_vec(&self) -> [u8; 3] {
-    [self.r, self.g, self.b]
   }
 }
 
