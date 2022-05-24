@@ -51,11 +51,14 @@ fn main() {
         Command::JuliaSet(args) => {
           println!("generating julia set with arguments:\n{}", args);
           julia_set(args);
-        },
+        }
         Command::ColorMap1d(args) => {
-          println!("generating 1d color map with arguments:\n{}", args);
+          println!(
+            "generating 1d color map with arguments:\n{}",
+            args
+          );
           color_map_1d(args);
-        },
+        }
       }
     }
 

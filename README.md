@@ -28,7 +28,7 @@
 
 * [x] 1d color map: sine
 
-* [ ] `julia set`: LCH coloring: LCH to RGB (LCH -> LAB -> RGB)
+* [x] `julia set`: LCH coloring: LCH to RGB (LCH -> LAB -> RGB)
 
 * [ ] `julia set`: LCH coloring: LCH interpolation
 

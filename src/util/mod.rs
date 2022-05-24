@@ -14,7 +14,7 @@ use std::str::FromStr;
 
 pub mod colors;
 
-use colors::Rgba;
+use colors::RGBA;
 
 /// Representation of a complex number.
 ///
@@ -83,25 +83,22 @@ impl fmt::Display for ColorMethod {
 }
 
 #[derive(Serialize, Deserialize, DisplayAsJson)]
-pub struct ColorMap1d(Vec<Rgba>);
+pub struct ColorMap1d(Vec<RGBA>);
 
 impl ColorMap1d {
-  pub fn new(colors: Vec<Rgba>) -> Self {
+  pub fn new(colors: Vec<RGBA>) -> Self {
     let colors = if colors.len() >= 2 {
       colors
     } else if colors.len() == 1 {
-      vec![Rgba::new_hex(0xFFFFFFFF), colors[0]]
+      vec![RGBA::new_hex(0xFFFFFFFF), colors[0]]
     } else {
-      vec![
-        Rgba::new_hex(0xFFFFFFFF),
-        Rgba::new_hex(0x000000FF),
-      ]
+      vec![RGBA::new_hex(0xFFFFFFFF), RGBA::new_hex(0x000000FF)]
     };
 
     Self(colors)
   }
 
-  pub fn linear(&self, x: f64) -> Rgba {
+  pub fn linear(&self, x: f64) -> RGBA {
     let x = 0.0_f64.max(1.0_f64.min(x));
 
     if 1.0 - x <= f64::EPSILON {
@@ -119,7 +116,7 @@ impl ColorMap1d {
 
     let res = (v2 - v1) * pos + v1;
 
-    Rgba::new_rgba(
+    RGBA::new_rgba(
       res.x.abs() as u8,
       res.y.abs() as u8,
       res.z.abs() as u8,
@@ -132,18 +129,18 @@ impl ColorMap1d {
   ///
   /// **Note:** assumes `x` to be in the interval `(0,1)`.
   ///
-  pub fn sine(&self, x: f64) -> Rgba {
+  pub fn sine(&self, x: f64) -> RGBA {
     self.linear((x * 2. * PI).sin().abs())
   }
 
-  pub fn color(&self, x: f64, method: &ColorMethod) -> Rgba {
+  pub fn color(&self, x: f64, method: &ColorMethod) -> RGBA {
     match method {
       ColorMethod::Linear => self.linear(x),
       ColorMethod::Sine => self.sine(x),
     }
   }
 
-  fn color_to_vec3(&self, c: &Rgba) -> Vector3<f64> {
+  fn color_to_vec3(&self, c: &RGBA) -> Vector3<f64> {
     Vector3::new(c.r() as f64, c.g() as f64, c.b() as f64)
   }
 }
@@ -158,19 +155,7 @@ impl FromStr for ColorMap1d {
 
 #[cfg(test)]
 mod tests {
-  use super::{ColorMap1d, ColorMethod, Rgba};
-
-  #[test]
-  fn deserialize_rgba_color() {
-    let c: u32 = 0xFFFD37FF;
-
-    let json = format!("{}", c);
-
-    assert_eq!(
-      serde_json::from_str::<Rgba>(&json).unwrap(),
-      Rgba::new_hex(0xFFFD37FF),
-    );
-  }
+  use super::{ColorMap1d, ColorMethod};
 
   #[test]
   fn display_color_map_1d() {
