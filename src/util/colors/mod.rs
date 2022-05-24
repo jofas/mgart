@@ -212,6 +212,7 @@ impl LAB {
   /// Rounds the [l](Self::l), [a](Self::a) and [b](Self::b) values
   /// to the nearest number with the provided precision.
   ///
+  #[allow(dead_code)]
   fn round(&self, digits: i32) -> Self {
     let pow = 10_f64.powi(digits);
 

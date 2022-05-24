@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJsonPretty;
 
-use crate::util::{ColorMap1d, ColorMethod, ComplexNumber};
+use crate::util::{ColorMap1d, ComplexNumber, Gradient};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSetArgs {
@@ -63,7 +63,7 @@ fn default_iter() -> u32 {
 }
 
 fn default_color_map() -> ColorMap1d {
-  ColorMap1d::new(vec![], ColorMethod::Linear)
+  ColorMap1d::new(vec![], Gradient::Linear)
 }
 
 fn default_julia_set_filename() -> String {

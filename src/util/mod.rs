@@ -1,7 +1,5 @@
 use num_complex::Complex;
 
-use clap::ArgEnum;
-
 use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
@@ -47,23 +45,14 @@ impl Into<Complex<f64>> for &ComplexNumber {
   }
 }
 
-/// How the [ColorMap1d] should be used.
-///
-/// Can be provided by the user as input and then passed to the
-/// [ColorMap1d::color] method of a [color map](ColorMap1d).
-///
-#[derive(
-  Serialize, Deserialize, ArgEnum, Clone, PartialEq, Debug,
-)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "lowercase")]
-pub enum ColorMethod {
-  #[clap(name = "linear")]
+pub enum Gradient {
   Linear,
-  #[clap(name = "sine")]
   Sine,
 }
 
-impl FromStr for ColorMethod {
+impl FromStr for Gradient {
   type Err = serde_json::Error;
 
   fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -71,7 +60,7 @@ impl FromStr for ColorMethod {
   }
 }
 
-impl fmt::Display for ColorMethod {
+impl fmt::Display for Gradient {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     match self {
       Self::Linear => write!(f, "linear"),
@@ -84,11 +73,11 @@ impl fmt::Display for ColorMethod {
 #[serde(from = "ColorMap1dDeserializer")]
 pub struct ColorMap1d {
   map: Vec<LCH>,
-  method: ColorMethod,
+  gradient: Gradient,
 }
 
 impl ColorMap1d {
-  pub fn new(map: Vec<Color>, method: ColorMethod) -> Self {
+  pub fn new(map: Vec<Color>, gradient: Gradient) -> Self {
     let map = if map.len() >= 2 {
       map
     } else if map.len() == 1 {
@@ -99,13 +88,14 @@ impl ColorMap1d {
 
     let map: Vec<LCH> = map.into_iter().map(|c| c.lch()).collect();
 
-    Self { map, method }
+    Self { map, gradient }
   }
 
-  pub fn color(&self, x: f64) -> RGB {
-    match self.method {
-      ColorMethod::Linear => self.linear(x),
-      ColorMethod::Sine => self.sine(x),
+  // TODO: into gradient
+  pub fn color(&self, f: f64) -> RGB {
+    match self.gradient {
+      Gradient::Linear => self.linear(f),
+      Gradient::Sine => self.sine(f),
     }
   }
 
@@ -145,11 +135,11 @@ impl FromStr for ColorMap1d {
 #[derive(Deserialize)]
 struct ColorMap1dDeserializer {
   map: Vec<Color>,
-  method: ColorMethod,
+  gradient: Gradient,
 }
 
 impl From<ColorMap1dDeserializer> for ColorMap1d {
   fn from(cm: ColorMap1dDeserializer) -> Self {
-    Self::new(cm.map, cm.method)
+    Self::new(cm.map, cm.gradient)
   }
 }
