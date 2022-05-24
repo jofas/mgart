@@ -36,6 +36,8 @@
 
 * [x] fix color user api
 
+* [ ] more gradients (and parameterized) besides linear and sine
+
 * [ ] `julia set`: LCH coloring: RGB to LCH
 
 * [ ] find cool points and colormaps where I can see the effect of
