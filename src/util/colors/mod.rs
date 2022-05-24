@@ -67,9 +67,16 @@ impl LCH {
     self.h
   }
 
+  /// Returns the [RGB] representation of the color defined by
+  /// `self`.
+  ///
+  pub fn rgb(&self) -> RGB {
+    self.lab().rgb()
+  }
+
   /// Returns the [LAB] representation of the color defined by `self`.
   ///
-  pub fn lab(&self) -> LAB {
+  fn lab(&self) -> LAB {
     let h = if self.h().is_nan() { 0_f64 } else { self.h() };
     let h = h * PI / 180.;
 
@@ -78,13 +85,6 @@ impl LCH {
       h.cos() * self.c(),
       h.sin() * self.c(),
     );
-  }
-
-  /// Returns the [RGB] representation of the color defined by
-  /// `self`.
-  ///
-  pub fn rgb(&self) -> RGB {
-    self.lab().rgb()
   }
 
   pub fn interpolate(&self, other: &LCH, f: f64) -> LCH {
@@ -136,7 +136,7 @@ impl LCH {
 }
 
 #[derive(Debug, PartialEq)]
-pub struct LAB {
+struct LAB {
   l: f64,
   a: f64,
   b: f64,
@@ -151,42 +151,32 @@ impl LAB {
   const T1: f64 = 0.206896552;
   const T2: f64 = 0.12841855;
 
-  pub fn new(l: f64, a: f64, b: f64) -> Self {
+  fn new(l: f64, a: f64, b: f64) -> Self {
     Self { l, a, b }
   }
 
   /// The lightness of the color.
   ///
-  pub fn l(&self) -> f64 {
+  fn l(&self) -> f64 {
     self.l
   }
 
   /// The value on the a-axis of the color.
   ///
-  pub fn a(&self) -> f64 {
+  fn a(&self) -> f64 {
     self.a
   }
 
   /// The value on the b-axis of the color.
   ///
-  pub fn b(&self) -> f64 {
+  fn b(&self) -> f64 {
     self.b
   }
 
   /// Rounds the [l](Self::l), [a](Self::a) and [b](Self::b) values
   /// to the nearest number with the provided precision.
   ///
-  /// **Example:**
-  ///
-  /// ```rust
-  /// use algorithmic_art::util::colors::LAB;
-  ///
-  /// let c = LAB::new(0.005, 0.0049, 1.2);
-  ///
-  /// assert_eq!(c.round(2), LAB::new(0.01, 0., 1.2));
-  /// ```
-  ///
-  pub fn round(&self, digits: i32) -> Self {
+  fn round(&self, digits: i32) -> Self {
     let pow = 10_f64.powi(digits);
 
     let l = (self.l() * pow).round() / pow;
@@ -199,7 +189,7 @@ impl LAB {
   /// Returns the [RGB] representation of the color defined by
   /// `self`.
   ///
-  pub fn rgb(&self) -> RGB {
+  fn rgb(&self) -> RGB {
     let y = (self.l() + 16.) / 116.;
 
     let x = if self.a().is_nan() {
