@@ -1,9 +1,12 @@
+use serde::de::{Deserializer, Error, Visitor};
 use serde::ser::Serializer;
-use serde::de::{Error, Deserializer, Visitor};
 
 use std::fmt;
 
-pub(super) fn serialize<S>(f: &f64, s: S) -> Result<S::Ok, S::Error> where S: Serializer {
+pub(super) fn serialize<S>(f: &f64, s: S) -> Result<S::Ok, S::Error>
+where
+  S: Serializer,
+{
   if f.is_nan() {
     S::serialize_str(s, "NaN")
   } else {
@@ -11,13 +14,19 @@ pub(super) fn serialize<S>(f: &f64, s: S) -> Result<S::Ok, S::Error> where S: Se
   }
 }
 
-pub(super) fn deserialize<'de, D>(d: D) -> Result<f64, D::Error> where D: Deserializer<'de> {
+pub(super) fn deserialize<'de, D>(d: D) -> Result<f64, D::Error>
+where
+  D: Deserializer<'de>,
+{
   struct StringOrNum;
 
-  impl <'de> Visitor<'de> for StringOrNum {
+  impl<'de> Visitor<'de> for StringOrNum {
     type Value = f64;
 
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+    fn expecting(
+      &self,
+      formatter: &mut fmt::Formatter,
+    ) -> fmt::Result {
       formatter.write_str("string or number")
     }
 

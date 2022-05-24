@@ -1,5 +1,3 @@
-use cgmath::Vector3;
-
 use num_complex::Complex;
 
 use clap::ArgEnum;
@@ -14,7 +12,7 @@ use std::str::FromStr;
 
 pub mod colors;
 
-use colors::{LCH, RGBA};
+use colors::{Color, ColorSpace, RGBA};
 
 /// Representation of a complex number.
 ///
@@ -83,69 +81,71 @@ impl fmt::Display for ColorMethod {
 }
 
 #[derive(Serialize, Deserialize, DisplayAsJson)]
-pub struct ColorMap1d(Vec<LCH>);
+pub struct ColorMap1d {
+  map: Vec<Color>,
+  method: ColorMethod,
+  color_space: ColorSpace,
+}
 
 impl ColorMap1d {
-  pub fn new(colors: Vec<LCH>) -> Self {
-    let colors = if colors.len() >= 2 {
-      colors
-    } else if colors.len() == 1 {
-      vec![LCH::WHITE, colors[0]]
+  pub fn new(
+    map: Vec<Color>,
+    method: ColorMethod,
+    color_space: ColorSpace,
+  ) -> Self {
+    let map = if map.len() >= 2 {
+      map
+    } else if map.len() == 1 {
+      vec![Color::WHITE, map[0]]
     } else {
-      vec![LCH::WHITE, LCH::BLACK]
+      vec![Color::WHITE, Color::BLACK]
     };
 
-    Self(colors)
-  }
+    let map = match color_space {
+      ColorSpace::LCH => {
+        map.into_iter().map(|c| c.as_lch()).collect()
+      }
+      ColorSpace::RGBA => {
+        map.into_iter().map(|c| c.as_rgba()).collect()
+      }
+    };
 
-  pub fn linear(&self, f: f64) -> RGBA {
-    let f = f.clamp(0., 1.);
-
-    if 1.0 - f <= f64::EPSILON {
-      return self.0[self.0.len() - 1].rgba();
+    Self {
+      map,
+      method,
+      color_space,
     }
-
-    let interval = f * (self.0.len() - 1) as f64;
-    let pos = interval.fract() as f64;
-
-    let c1 = &self.0[interval as usize];
-    let c2 = &self.0[interval as usize + 1];
-
-    c1.interpolate(c2, pos).rgba()
-
-    /* TODO: into RGBA
-    let v1 = self.color_to_vec3(&c1);
-    let v2 = self.color_to_vec3(&c2);
-
-    let res = (v2 - v1) * pos + v1;
-
-    RGBA::new_rgba(
-      res.x.abs() as u8,
-      res.y.abs() as u8,
-      res.z.abs() as u8,
-      255,
-    )
-    */
   }
 
-  /// Computes the color at point `x` by passing `sin(x * PI)` into
-  /// [Self::linear].
-  ///
-  /// **Note:** assumes `x` to be in the interval `(0,1)`.
-  ///
-  pub fn sine(&self, x: f64) -> RGBA {
-    self.linear((x * 2. * PI).sin().abs())
-  }
-
-  pub fn color(&self, x: f64, method: &ColorMethod) -> RGBA {
-    match method {
+  pub fn color(&self, x: f64) -> RGBA {
+    match self.method {
       ColorMethod::Linear => self.linear(x),
       ColorMethod::Sine => self.sine(x),
     }
   }
 
-  fn color_to_vec3(&self, c: &RGBA) -> Vector3<f64> {
-    Vector3::new(c.r() as f64, c.g() as f64, c.b() as f64)
+  fn linear(&self, f: f64) -> RGBA {
+    let f = f.clamp(0., 1.);
+
+    if 1.0 - f <= f64::EPSILON {
+      return self.map[self.map.len() - 1].rgba();
+    }
+
+    let interval = f * (self.map.len() - 1) as f64;
+    let pos = interval.fract() as f64;
+
+    let c1 = &self.map[interval as usize];
+    let c2 = &self.map[interval as usize + 1];
+
+    c1.interpolate(&c2, pos).rgba()
+  }
+
+  /// Computes the color at point `x` by passing `sin(x * PI)` into
+  /// [Self::linear].
+  ///
+  fn sine(&self, f: f64) -> RGBA {
+    let f = f.clamp(0., 1.);
+    self.linear((f * 2. * PI).sin().abs())
   }
 }
 

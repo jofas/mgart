@@ -32,9 +32,11 @@
 
 * [x] `julia set`: LCH coloring: LCH interpolation
 
-* [ ] `julia set`: LCH coloring: RGB to LCH
+* [x] `julia set`: option for color space (rgba or lch)
 
-* [ ] fix color user api
+* [x] fix color user api
+
+* [ ] `julia set`: LCH coloring: RGB to LCH
 
 * [ ] find cool points and colormaps where I can see the effect of
   the following visualization methods

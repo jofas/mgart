@@ -5,6 +5,67 @@ use std::f64::consts::PI;
 mod serde_nan;
 
 #[derive(Serialize, Deserialize, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+#[serde(tag = "type")]
+pub enum Color {
+  LCH(LCH),
+  RGBA(RGBA),
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ColorSpace {
+  LCH,
+  RGBA,
+}
+
+impl Color {
+  pub const BLACK: Self = Self::LCH(LCH::BLACK);
+  pub const WHITE: Self = Self::LCH(LCH::WHITE);
+
+  pub fn as_rgba(&self) -> Self {
+    match self {
+      Self::LCH(lch) => Self::RGBA(lch.rgba()),
+      Self::RGBA(_) => *self,
+    }
+  }
+
+  pub fn rgba(&self) -> RGBA {
+    match self {
+      Self::LCH(lch) => lch.rgba(),
+      Self::RGBA(rgba) => *rgba,
+    }
+  }
+
+  pub fn as_lch(&self) -> Self {
+    match self {
+      Self::LCH(_) => *self,
+      Self::RGBA(rgba) => Self::LCH(rgba.lch()),
+    }
+  }
+
+  pub fn lch(&self) -> LCH {
+    match self {
+      Self::LCH(lch) => *lch,
+      Self::RGBA(rgba) => rgba.lch(),
+    }
+  }
+
+  /// Interpolates `self` with `other`.
+  ///
+  /// The interpolation happens in the color space of `self`.
+  ///
+  pub fn interpolate(&self, other: &Self, f: f64) -> Color {
+    match self {
+      Self::LCH(lch) => Self::LCH(lch.interpolate(&other.lch(), f)),
+      Self::RGBA(rgba) => {
+        Self::RGBA(rgba.interpolate(&other.rgba(), f))
+      }
+    }
+  }
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy)]
 pub struct LCH {
   #[serde(with = "serde_nan")]
   l: f64,
@@ -221,8 +282,6 @@ impl LAB {
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Debug)]
-#[serde(from = "u32")]
-#[serde(into = "u32")]
 pub struct RGBA {
   r: u8,
   g: u8,
@@ -294,27 +353,41 @@ impl RGBA {
     self.a
   }
 
+  pub fn lch(&self) -> LCH {
+    // TODO
+    unimplemented!()
+  }
+
+  pub fn interpolate(&self, other: &Self, f: f64) -> RGBA {
+    let f = f.clamp(0., 1.);
+
+    let r0 = self.r() as f64;
+    let r1 = other.r() as f64;
+
+    let g0 = self.g() as f64;
+    let g1 = other.g() as f64;
+
+    let b0 = self.b() as f64;
+    let b1 = other.b() as f64;
+
+    let a0 = self.a() as f64;
+    let a1 = other.a() as f64;
+
+    let r = r0 + f * (r1 - r0);
+    let g = g0 + f * (g1 - g0);
+    let b = b0 + f * (b1 - b0);
+    let a = a0 + f * (a1 - a0);
+
+    Self::new_rgba(
+      r.abs() as u8,
+      g.abs() as u8,
+      b.abs() as u8,
+      a.abs() as u8,
+    )
+  }
+
   pub fn as_vec(&self) -> [u8; 4] {
     [self.r, self.g, self.b, self.a]
-  }
-
-  pub fn as_u32(&self) -> u32 {
-    ((self.r() as u32) << 24)
-      | ((self.g() as u32) << 16)
-      | ((self.b() as u32) << 8)
-      | (self.a() as u32)
-  }
-}
-
-impl From<u32> for RGBA {
-  fn from(x: u32) -> Self {
-    Self::new_hex(x)
-  }
-}
-
-impl Into<u32> for RGBA {
-  fn into(self) -> u32 {
-    self.as_u32()
   }
 }
 
@@ -394,17 +467,5 @@ mod test {
     assert_eq!(cyan.rgba(), RGBA::new_rgba(0, 255, 255, 255));
     assert_eq!(blue.rgba(), RGBA::new_rgba(0, 0, 255, 255));
     assert_eq!(magenta.rgba(), RGBA::new_rgba(255, 0, 255, 255));
-  }
-
-  #[test]
-  fn deserialize_rgba_color() {
-    let c: u32 = 0xFFFD37FF;
-
-    let json = format!("{}", c);
-
-    assert_eq!(
-      serde_json::from_str::<RGBA>(&json).unwrap(),
-      RGBA::new_hex(0xFFFD37FF),
-    );
   }
 }

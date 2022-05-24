@@ -50,10 +50,7 @@ pub fn julia_set(args: JuliaSetArgs) {
 
     let j = j as f64 + 1. - mu;
 
-    *pixel = args
-      .color_map
-      .color(j / args.iter as f64, &args.color_method)
-      .as_vec();
+    *pixel = args.color_map.color(j / args.iter as f64).as_vec();
 
     let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
@@ -89,10 +86,8 @@ pub fn color_map_1d(args: ColorMap1dArgs) {
   buf.par_iter_mut().enumerate().for_each(|(i, pixel)| {
     let x = i % args.width;
 
-    *pixel = args
-      .color_map
-      .color(x as f64 / args.width as f64, &args.color_method)
-      .as_vec();
+    *pixel =
+      args.color_map.color(x as f64 / args.width as f64).as_vec();
 
     let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
