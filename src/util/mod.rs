@@ -25,13 +25,6 @@ pub enum ComplexNumber {
 }
 
 impl ComplexNumber {
-  pub fn cartesian(&self) -> (f64, f64) {
-    match self {
-      Self::Cartesian { re, im } => (*re, *im),
-      Self::Polar { r, theta } => (r * theta.cos(), r * theta.sin()),
-    }
-  }
-
   pub fn re(&self) -> f64 {
     match self {
       Self::Cartesian { re, .. } => *re,
