@@ -36,9 +36,19 @@
 
 * [x] fix color user api
 
-* [ ] more gradients (and parameterized) besides linear and sine
+* [ ] `julia set`: RGB and RGBA
 
 * [ ] `julia set`: LCH coloring: RGB to LCH
+
+* [ ] `julia set`: optimize inner loop
+
+* [ ] `julia set`: exponentially mapped color space
+
+* [ ] `julia set`: cyclic iterations
+
+* [ ] wasm based editor
+
+* [ ] more gradients (and parameterized) besides linear and sine
 
 * [ ] find cool points and colormaps where I can see the effect of
   the following visualization methods
@@ -49,8 +59,6 @@
 
 * [ ] `julia set`: different coloring methods, other than 1d color map
   (e.g. computed colors)
-
-* [ ] `julia set`: exponentially mapped color space
 
 * [ ] `julia set`: escape angle coloring
 
