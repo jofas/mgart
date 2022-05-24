@@ -134,7 +134,7 @@ impl LAB {
     let z = Self::ZN * Self::lab_xyz(z);
 
     let r =
-      Self::xyz_rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z); // D65 -> sRGB
+      Self::xyz_rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z);
     let g =
       Self::xyz_rgb(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z);
     let b =
