@@ -14,7 +14,7 @@ use args::{ColorMap1dArgs, JuliaSetArgs};
 pub fn julia_set(args: JuliaSetArgs) {
   let num_pixel = args.width * args.height;
 
-  let mut buf = vec![[0_u8; 4]; num_pixel];
+  let mut buf = vec![[0_u8; 3]; num_pixel];
 
   let pixel_created = Arc::new(AtomicUsize::new(0));
 
@@ -69,7 +69,7 @@ pub fn julia_set(args: JuliaSetArgs) {
     &buf,
     args.width as u32,
     args.height as u32,
-    image::ColorType::Rgba8,
+    image::ColorType::Rgb8,
   )
   .unwrap();
 
@@ -79,7 +79,7 @@ pub fn julia_set(args: JuliaSetArgs) {
 pub fn color_map_1d(args: ColorMap1dArgs) {
   let num_pixel = args.width * args.height;
 
-  let mut buf = vec![[0_u8; 4]; num_pixel];
+  let mut buf = vec![[0_u8; 3]; num_pixel];
 
   let pixel_created = Arc::new(AtomicUsize::new(0));
 
@@ -106,7 +106,7 @@ pub fn color_map_1d(args: ColorMap1dArgs) {
     &buf,
     args.width as u32,
     args.height as u32,
-    image::ColorType::Rgba8,
+    image::ColorType::Rgb8,
   )
   .unwrap();
 

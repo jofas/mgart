@@ -1,4 +1,6 @@
 /target
 
+config.jsonnet
+
 *.png
 *.gif

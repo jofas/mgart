@@ -12,7 +12,7 @@ use std::str::FromStr;
 
 pub mod colors;
 
-use colors::{Color, ColorSpace, RGBA};
+use colors::{Color, LCH, RGB};
 
 /// Representation of a complex number.
 ///
@@ -83,18 +83,12 @@ impl fmt::Display for ColorMethod {
 #[derive(Serialize, Deserialize, DisplayAsJson)]
 #[serde(from = "ColorMap1dDeserializer")]
 pub struct ColorMap1d {
-  pub map: Vec<Color>,
+  map: Vec<LCH>,
   method: ColorMethod,
-  pub color_space: ColorSpace,
 }
 
 impl ColorMap1d {
-  // not invoked during parsing lol
-  pub fn new(
-    map: Vec<Color>,
-    method: ColorMethod,
-    color_space: ColorSpace,
-  ) -> Self {
+  pub fn new(map: Vec<Color>, method: ColorMethod) -> Self {
     let map = if map.len() >= 2 {
       map
     } else if map.len() == 1 {
@@ -103,34 +97,23 @@ impl ColorMap1d {
       vec![Color::WHITE, Color::BLACK]
     };
 
-    let map = match color_space {
-      ColorSpace::LCH => {
-        map.into_iter().map(|c| c.as_lch()).collect()
-      }
-      ColorSpace::RGBA => {
-        map.into_iter().map(|c| c.as_rgba()).collect()
-      }
-    };
+    let map: Vec<LCH> = map.into_iter().map(|c| c.lch()).collect();
 
-    Self {
-      map,
-      method,
-      color_space,
-    }
+    Self { map, method }
   }
 
-  pub fn color(&self, x: f64) -> RGBA {
+  pub fn color(&self, x: f64) -> RGB {
     match self.method {
       ColorMethod::Linear => self.linear(x),
       ColorMethod::Sine => self.sine(x),
     }
   }
 
-  fn linear(&self, f: f64) -> RGBA {
+  fn linear(&self, f: f64) -> RGB {
     let f = f.clamp(0., 1.);
 
     if 1.0 - f <= f64::EPSILON {
-      return self.map[self.map.len() - 1].rgba();
+      return self.map[self.map.len() - 1].rgb();
     }
 
     let interval = f * (self.map.len() - 1) as f64;
@@ -139,13 +122,13 @@ impl ColorMap1d {
     let c1 = &self.map[interval as usize];
     let c2 = &self.map[interval as usize + 1];
 
-    c1.interpolate(&c2, pos).rgba()
+    c1.interpolate(&c2, pos).rgb()
   }
 
   /// Computes the color at point `x` by passing `sin(x * PI)` into
   /// [Self::linear].
   ///
-  fn sine(&self, f: f64) -> RGBA {
+  fn sine(&self, f: f64) -> RGB {
     let f = f.clamp(0., 1.);
     self.linear((f * 2. * PI).sin().abs())
   }
@@ -163,45 +146,10 @@ impl FromStr for ColorMap1d {
 struct ColorMap1dDeserializer {
   map: Vec<Color>,
   method: ColorMethod,
-  color_space: ColorSpace,
 }
 
 impl From<ColorMap1dDeserializer> for ColorMap1d {
   fn from(cm: ColorMap1dDeserializer) -> Self {
-    Self::new(cm.map, cm.method, cm.color_space)
-  }
-}
-
-#[cfg(test)]
-mod tests {
-  use super::{ColorMap1d, ColorMethod};
-
-  #[test]
-  fn display_color_map_1d() {
-    let cm = ColorMap1d::new(vec![]);
-
-    assert_eq!(cm.to_string(), "[4294967295,255]");
-  }
-
-  #[test]
-  fn serialize_color_method() {
-    assert_eq!(
-      &serde_json::to_string(&ColorMethod::Linear).unwrap(),
-      r#""linear""#,
-    );
-    assert_eq!(
-      &serde_json::to_string(&ColorMethod::Sine).unwrap(),
-      r#""sine""#,
-    );
-  }
-
-  #[test]
-  fn deserialize_color_method() {
-    let cm = r#""linear""#;
-
-    assert_eq!(
-      serde_json::from_str::<ColorMethod>(cm).unwrap(),
-      ColorMethod::Linear,
-    );
+    Self::new(cm.map, cm.method)
   }
 }

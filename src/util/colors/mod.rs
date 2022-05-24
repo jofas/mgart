@@ -4,63 +4,29 @@ use std::f64::consts::PI;
 
 mod serde_nan;
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(rename_all = "lowercase")]
-pub enum ColorSpace {
-  LCH,
-  RGBA,
-}
-
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "lowercase")]
 #[serde(tag = "type")]
 pub enum Color {
   LCH(LCH),
-  RGBA(RGBA),
+  RGB(RGB),
 }
 
 impl Color {
   pub const BLACK: Self = Self::LCH(LCH::BLACK);
   pub const WHITE: Self = Self::LCH(LCH::WHITE);
 
-  pub fn as_rgba(&self) -> Self {
-    match self {
-      Self::LCH(lch) => Self::RGBA(lch.rgba()),
-      Self::RGBA(_) => *self,
-    }
-  }
-
-  pub fn rgba(&self) -> RGBA {
-    match self {
-      Self::LCH(lch) => lch.rgba(),
-      Self::RGBA(rgba) => *rgba,
-    }
-  }
-
-  pub fn as_lch(&self) -> Self {
-    match self {
-      Self::LCH(_) => *self,
-      Self::RGBA(rgba) => Self::LCH(rgba.lch()),
-    }
-  }
-
   pub fn lch(&self) -> LCH {
     match self {
       Self::LCH(lch) => *lch,
-      Self::RGBA(rgba) => rgba.lch(),
+      Self::RGB(rgb) => rgb.lch(),
     }
   }
 
-  /// Interpolates `self` with `other`.
-  ///
-  /// The interpolation happens in the color space of `self`.
-  ///
-  pub fn interpolate(&self, other: &Self, f: f64) -> Color {
+  pub fn rgb(&self) -> RGB {
     match self {
-      Self::LCH(lch) => Self::LCH(lch.interpolate(&other.lch(), f)),
-      Self::RGBA(rgba) => {
-        Self::RGBA(rgba.interpolate(&other.rgba(), f))
-      }
+      Self::LCH(lch) => lch.rgb(),
+      Self::RGB(rgb) => *rgb,
     }
   }
 }
@@ -114,11 +80,11 @@ impl LCH {
     );
   }
 
-  /// Returns the [RGBA] representation of the color defined by
+  /// Returns the [RGB] representation of the color defined by
   /// `self`.
   ///
-  pub fn rgba(&self) -> RGBA {
-    self.lab().rgba()
+  pub fn rgb(&self) -> RGB {
+    self.lab().rgb()
   }
 
   pub fn interpolate(&self, other: &LCH, f: f64) -> LCH {
@@ -230,10 +196,10 @@ impl LAB {
     Self::new(l, a, b)
   }
 
-  /// Returns the [RGBA] representation of the color defined by
+  /// Returns the [RGB] representation of the color defined by
   /// `self`.
   ///
-  pub fn rgba(&self) -> RGBA {
+  pub fn rgb(&self) -> RGB {
     let y = (self.l() + 16.) / 116.;
 
     let x = if self.a().is_nan() {
@@ -259,7 +225,7 @@ impl LAB {
     let b =
       Self::xyz_rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z);
 
-    RGBA::new_rgba(r, g, b, 255)
+    RGB::new(r, g, b)
   }
 
   fn xyz_rgb(r: f64) -> u8 {
@@ -282,59 +248,17 @@ impl LAB {
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Debug)]
-pub struct RGBA {
+pub struct RGB {
   r: u8,
   g: u8,
   b: u8,
-  a: u8,
 }
 
-impl RGBA {
-  /// Creates a new [RGBA] from hex.
+impl RGB {
+  /// Creates a new [RGB] color.
   ///
-  /// **Example:**
-  ///
-  /// ```rust
-  /// use algorithmic_art::util::colors::RGBA;
-  ///
-  /// // sunshine yellow
-  /// let c = RGBA::new_hex(0xFFFD37FF);
-  ///
-  /// assert_eq!(c.r(), 255);
-  /// assert_eq!(c.g(), 253);
-  /// assert_eq!(c.b(), 55);
-  /// assert_eq!(c.a(), 255);
-  /// ```
-  ///
-  pub fn new_hex(color: u32) -> Self {
-    Self {
-      r: ((color & 0xFF000000) >> 24) as u8,
-      g: ((color & 0xFF0000) >> 16) as u8,
-      b: ((color & 0xFF00) >> 8) as u8,
-      a: (color & 0xFF) as u8,
-    }
-  }
-
-  /// Creates a new [RGBA] from rgba.
-  ///
-  /// **Example:**
-  ///
-  /// ```rust
-  /// use algorithmic_art::util::colors::RGBA;
-  ///
-  /// // sunshine yellow
-  /// let c = RGBA::new_rgba(255, 253, 55, 255);
-  ///
-  /// assert_eq!(c.r(), 255);
-  /// assert_eq!(c.g(), 253);
-  /// assert_eq!(c.b(), 55);
-  /// assert_eq!(c.a(), 255);
-  ///
-  /// assert_eq!(c.as_u32(), 0xFFFD37FF);
-  /// ```
-  ///
-  pub fn new_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
-    Self { r, g, b, a }
+  pub fn new(r: u8, g: u8, b: u8) -> Self {
+    Self { r, g, b }
   }
 
   pub fn r(&self) -> u8 {
@@ -349,51 +273,19 @@ impl RGBA {
     self.b
   }
 
-  pub fn a(&self) -> u8 {
-    self.a
-  }
-
   pub fn lch(&self) -> LCH {
     // TODO
     unimplemented!()
   }
 
-  pub fn interpolate(&self, other: &Self, f: f64) -> RGBA {
-    let f = f.clamp(0., 1.);
-
-    let r0 = self.r() as f64;
-    let r1 = other.r() as f64;
-
-    let g0 = self.g() as f64;
-    let g1 = other.g() as f64;
-
-    let b0 = self.b() as f64;
-    let b1 = other.b() as f64;
-
-    let a0 = self.a() as f64;
-    let a1 = other.a() as f64;
-
-    let r = r0 + f * (r1 - r0);
-    let g = g0 + f * (g1 - g0);
-    let b = b0 + f * (b1 - b0);
-    let a = a0 + f * (a1 - a0);
-
-    Self::new_rgba(
-      r.abs() as u8,
-      g.abs() as u8,
-      b.abs() as u8,
-      a.abs() as u8,
-    )
-  }
-
-  pub fn as_vec(&self) -> [u8; 4] {
-    [self.r, self.g, self.b, self.a]
+  pub fn as_vec(&self) -> [u8; 3] {
+    [self.r, self.g, self.b]
   }
 }
 
 #[cfg(test)]
 mod test {
-  use super::{LAB, LCH, RGBA};
+  use super::{LAB, LCH, RGB};
 
   use std::f64;
 
@@ -424,7 +316,7 @@ mod test {
   }
 
   #[test]
-  fn lab2rgba() {
+  fn lab2rgb() {
     let black = LAB::new(0., 0., 0.);
     let white = LAB::new(100., 0., 0.);
     let grey = LAB::new(53.59, 0., 0.);
@@ -435,19 +327,19 @@ mod test {
     let blue = LAB::new(32.3, 79.18, -107.87);
     let magenta = LAB::new(60.32, 98.23, -60.83);
 
-    assert_eq!(black.rgba(), RGBA::new_rgba(0, 0, 0, 255));
-    assert_eq!(white.rgba(), RGBA::new_rgba(255, 255, 255, 255));
-    assert_eq!(grey.rgba(), RGBA::new_rgba(128, 128, 128, 255));
-    assert_eq!(red.rgba(), RGBA::new_rgba(255, 0, 0, 255));
-    assert_eq!(yellow.rgba(), RGBA::new_rgba(255, 255, 0, 255));
-    assert_eq!(green.rgba(), RGBA::new_rgba(0, 255, 0, 255));
-    assert_eq!(cyan.rgba(), RGBA::new_rgba(0, 255, 255, 255));
-    assert_eq!(blue.rgba(), RGBA::new_rgba(0, 0, 255, 255));
-    assert_eq!(magenta.rgba(), RGBA::new_rgba(255, 0, 255, 255));
+    assert_eq!(black.rgb(), RGB::new(0, 0, 0));
+    assert_eq!(white.rgb(), RGB::new(255, 255, 255));
+    assert_eq!(grey.rgb(), RGB::new(128, 128, 128));
+    assert_eq!(red.rgb(), RGB::new(255, 0, 0));
+    assert_eq!(yellow.rgb(), RGB::new(255, 255, 0));
+    assert_eq!(green.rgb(), RGB::new(0, 255, 0));
+    assert_eq!(cyan.rgb(), RGB::new(0, 255, 255));
+    assert_eq!(blue.rgb(), RGB::new(0, 0, 255));
+    assert_eq!(magenta.rgb(), RGB::new(255, 0, 255));
   }
 
   #[test]
-  fn lch2rgba() {
+  fn lch2rgb() {
     let black = LCH::new(0., 0., f64::NAN);
     let white = LCH::new(100., 0., f64::NAN);
     let grey = LCH::new(53.59, 0., f64::NAN);
@@ -458,14 +350,14 @@ mod test {
     let blue = LCH::new(32.3, 133.81, 306.28);
     let magenta = LCH::new(60.32, 115.54, 328.23);
 
-    assert_eq!(black.rgba(), RGBA::new_rgba(0, 0, 0, 255));
-    assert_eq!(white.rgba(), RGBA::new_rgba(255, 255, 255, 255));
-    assert_eq!(grey.rgba(), RGBA::new_rgba(128, 128, 128, 255));
-    assert_eq!(red.rgba(), RGBA::new_rgba(255, 0, 0, 255));
-    assert_eq!(yellow.rgba(), RGBA::new_rgba(255, 255, 0, 255));
-    assert_eq!(green.rgba(), RGBA::new_rgba(0, 255, 0, 255));
-    assert_eq!(cyan.rgba(), RGBA::new_rgba(0, 255, 255, 255));
-    assert_eq!(blue.rgba(), RGBA::new_rgba(0, 0, 255, 255));
-    assert_eq!(magenta.rgba(), RGBA::new_rgba(255, 0, 255, 255));
+    assert_eq!(black.rgb(), RGB::new(0, 0, 0));
+    assert_eq!(white.rgb(), RGB::new(255, 255, 255));
+    assert_eq!(grey.rgb(), RGB::new(128, 128, 128));
+    assert_eq!(red.rgb(), RGB::new(255, 0, 0));
+    assert_eq!(yellow.rgb(), RGB::new(255, 255, 0));
+    assert_eq!(green.rgb(), RGB::new(0, 255, 0));
+    assert_eq!(cyan.rgb(), RGB::new(0, 255, 255));
+    assert_eq!(blue.rgb(), RGB::new(0, 0, 255));
+    assert_eq!(magenta.rgb(), RGB::new(255, 0, 255));
   }
 }

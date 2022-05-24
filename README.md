@@ -36,9 +36,11 @@
 
 * [x] fix color user api
 
-* [ ] `julia set`: RGB and RGBA
+* [ ] all gradients computed in LCH space
 
-* [ ] `julia set`: LCH coloring: RGB to LCH
+* [ ] RGB and RGBA
+
+* [ ] LCH coloring: RGB to LCH
 
 * [ ] `julia set`: optimize inner loop
 

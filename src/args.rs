@@ -4,8 +4,6 @@ use display_json::DisplayAsJsonPretty;
 
 use crate::util::{ColorMap1d, ColorMethod, ComplexNumber};
 
-use crate::util::colors::ColorSpace;
-
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSetArgs {
   #[serde(default = "default_width")]
@@ -65,7 +63,7 @@ fn default_iter() -> u32 {
 }
 
 fn default_color_map() -> ColorMap1d {
-  ColorMap1d::new(vec![], ColorMethod::Linear, ColorSpace::LCH)
+  ColorMap1d::new(vec![], ColorMethod::Linear)
 }
 
 fn default_julia_set_filename() -> String {
