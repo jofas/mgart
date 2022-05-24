@@ -61,11 +61,14 @@ pub fn julia_set(args: JuliaSetArgs) {
       j += 1;
     }
 
-    let mu = (zx_sqr + zy_sqr).sqrt().ln().ln() / 2.0_f64.ln();
+    let color = if j == args.iter {
+      j as f64
+    } else {
+      let mu = (zx_sqr + zy_sqr).sqrt().ln().ln() / 2.0_f64.ln();
+      (j + 1) as f64 - mu
+    };
 
-    let j = (j + 1) as f64 - mu;
-
-    *pixel = args.color_map.color(j / args.iter as f64).as_vec();
+    *pixel = args.color_map.color(color / args.iter as f64).as_vec();
 
     let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
