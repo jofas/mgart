@@ -12,103 +12,9 @@ use std::f64::consts::PI;
 use std::fmt;
 use std::str::FromStr;
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Debug)]
-#[serde(from = "u32")]
-#[serde(into = "u32")]
-pub struct RgbaColor {
-  r: u8,
-  g: u8,
-  b: u8,
-  a: u8,
-}
+pub mod colors;
 
-impl RgbaColor {
-  /// Creates a new [RgbaColor] from hex.
-  ///
-  /// **Example:**
-  ///
-  /// ```rust
-  /// use algorithmic_art::util::RgbaColor;
-  ///
-  /// // sunshine yellow
-  /// let c = RgbaColor::new_hex(0xFFFD37FF);
-  ///
-  /// assert_eq!(c.r(), 255);
-  /// assert_eq!(c.g(), 253);
-  /// assert_eq!(c.b(), 55);
-  /// assert_eq!(c.a(), 255);
-  /// ```
-  ///
-  pub fn new_hex(color: u32) -> Self {
-    Self {
-      r: ((color & 0xFF000000) >> 24) as u8,
-      g: ((color & 0xFF0000) >> 16) as u8,
-      b: ((color & 0xFF00) >> 8) as u8,
-      a: (color & 0xFF) as u8,
-    }
-  }
-
-  /// Creates a new [RgbaColor] from rgba.
-  ///
-  /// **Example:**
-  ///
-  /// ```rust
-  /// use algorithmic_art::util::RgbaColor;
-  ///
-  /// // sunshine yellow
-  /// let c = RgbaColor::new_rgba(255, 253, 55, 255);
-  ///
-  /// assert_eq!(c.r(), 255);
-  /// assert_eq!(c.g(), 253);
-  /// assert_eq!(c.b(), 55);
-  /// assert_eq!(c.a(), 255);
-  ///
-  /// assert_eq!(c.as_u32(), 0xFFFD37FF);
-  /// ```
-  ///
-  pub fn new_rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
-    Self { r, g, b, a }
-  }
-
-  pub fn r(&self) -> u8 {
-    self.r
-  }
-
-  pub fn g(&self) -> u8 {
-    self.g
-  }
-
-  pub fn b(&self) -> u8 {
-    self.b
-  }
-
-  pub fn a(&self) -> u8 {
-    self.a
-  }
-
-  pub fn as_vec(&self) -> [u8; 4] {
-    [self.r, self.g, self.b, self.a]
-  }
-
-  pub fn as_u32(&self) -> u32 {
-    ((self.r() as u32) << 24)
-      | ((self.g() as u32) << 16)
-      | ((self.b() as u32) << 8)
-      | (self.a() as u32)
-  }
-}
-
-impl From<u32> for RgbaColor {
-  fn from(x: u32) -> Self {
-    Self::new_hex(x)
-  }
-}
-
-impl Into<u32> for RgbaColor {
-  fn into(self) -> u32 {
-    self.as_u32()
-  }
-}
+use colors::Rgba;
 
 /// Representation of a complex number.
 ///
@@ -177,25 +83,25 @@ impl fmt::Display for ColorMethod {
 }
 
 #[derive(Serialize, Deserialize, DisplayAsJson)]
-pub struct ColorMap1d(Vec<RgbaColor>);
+pub struct ColorMap1d(Vec<Rgba>);
 
 impl ColorMap1d {
-  pub fn new(colors: Vec<RgbaColor>) -> Self {
+  pub fn new(colors: Vec<Rgba>) -> Self {
     let colors = if colors.len() >= 2 {
       colors
     } else if colors.len() == 1 {
-      vec![RgbaColor::new_hex(0xFFFFFFFF), colors[0]]
+      vec![Rgba::new_hex(0xFFFFFFFF), colors[0]]
     } else {
       vec![
-        RgbaColor::new_hex(0xFFFFFFFF),
-        RgbaColor::new_hex(0x000000FF),
+        Rgba::new_hex(0xFFFFFFFF),
+        Rgba::new_hex(0x000000FF),
       ]
     };
 
     Self(colors)
   }
 
-  pub fn linear(&self, x: f64) -> RgbaColor {
+  pub fn linear(&self, x: f64) -> Rgba {
     let x = 0.0_f64.max(1.0_f64.min(x));
 
     if 1.0 - x <= f64::EPSILON {
@@ -213,7 +119,7 @@ impl ColorMap1d {
 
     let res = (v2 - v1) * pos + v1;
 
-    RgbaColor::new_rgba(
+    Rgba::new_rgba(
       res.x.abs() as u8,
       res.y.abs() as u8,
       res.z.abs() as u8,
@@ -226,18 +132,18 @@ impl ColorMap1d {
   ///
   /// **Note:** assumes `x` to be in the interval `(0,1)`.
   ///
-  pub fn sine(&self, x: f64) -> RgbaColor {
+  pub fn sine(&self, x: f64) -> Rgba {
     self.linear((x * 2. * PI).sin().abs())
   }
 
-  pub fn color(&self, x: f64, method: &ColorMethod) -> RgbaColor {
+  pub fn color(&self, x: f64, method: &ColorMethod) -> Rgba {
     match method {
       ColorMethod::Linear => self.linear(x),
       ColorMethod::Sine => self.sine(x),
     }
   }
 
-  fn color_to_vec3(&self, c: &RgbaColor) -> Vector3<f64> {
+  fn color_to_vec3(&self, c: &Rgba) -> Vector3<f64> {
     Vector3::new(c.r() as f64, c.g() as f64, c.b() as f64)
   }
 }
@@ -252,7 +158,7 @@ impl FromStr for ColorMap1d {
 
 #[cfg(test)]
 mod tests {
-  use super::{ColorMap1d, ColorMethod, RgbaColor};
+  use super::{ColorMap1d, ColorMethod, Rgba};
 
   #[test]
   fn deserialize_rgba_color() {
@@ -261,8 +167,8 @@ mod tests {
     let json = format!("{}", c);
 
     assert_eq!(
-      serde_json::from_str::<RgbaColor>(&json).unwrap(),
-      RgbaColor::new_hex(0xFFFD37FF),
+      serde_json::from_str::<Rgba>(&json).unwrap(),
+      Rgba::new_hex(0xFFFD37FF),
     );
   }
 

@@ -34,6 +34,8 @@
 
 * [ ] `julia set`: LCH coloring: RGB to LCH
 
+* [ ] fix color user api
+
 * [ ] find cool points and colormaps where I can see the effect of
   the following visualization methods
 
