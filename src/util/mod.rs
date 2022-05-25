@@ -48,7 +48,8 @@ pub enum Gradient {
   Wave { factor: f64 },
   Exponential { exponent: f64 },
   SinExp { factor: f64 },
-  // TODO: smoothstep with order, sine-ramp, b-spline
+  // TODO: smoothstep with order, sine-ramp, log, auto_log,
+  //       tanh, b-spline
 }
 
 impl Gradient {
