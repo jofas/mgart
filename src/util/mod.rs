@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 use display_json::DisplayAsJson;
 
 use std::f64::consts::PI;
-use std::fmt;
-use std::str::FromStr;
 
 pub mod colors;
 
@@ -41,25 +39,35 @@ impl ComplexNumber {
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
+#[serde(tag = "type")]
 pub enum Gradient {
-  Linear,
-  Sine,
+  Linear { factor: f64 },
+  Sine { factor: f64 },
+  Inverted { gradient: Box<Gradient> },
+  Wave { factor: f64 },
+  Exponential { exponent: f64 },
+  SinExp { factor: f64 },
+  // TODO: smoothstep with order, sine-ramp, b-spline
 }
 
-impl FromStr for Gradient {
-  type Err = serde_json::Error;
-
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    serde_json::from_str(&format!("\"{}\"", s))
-  }
-}
-
-impl fmt::Display for Gradient {
-  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl Gradient {
+  pub fn apply_to(&self, f: f64) -> f64 {
     match self {
-      Self::Linear => write!(f, "linear"),
-      Self::Sine => write!(f, "sine"),
+      Self::Linear { factor } => (f * factor).fract(),
+      Self::Sine { factor } => (f * factor * PI).sin() / 2. + 0.5,
+      Self::Inverted { gradient } => 1. - gradient.apply_to(f),
+      Self::Wave { factor } => {
+        let f = (f * factor).fract();
+
+        if f <= 0.5 {
+          f
+        } else {
+          1. - f
+        }
+      }
+      Self::Exponential { exponent } => f.powf(*exponent),
+      Self::SinExp { factor } => (f * factor * PI).exp().sin().abs(),
     }
   }
 }
@@ -86,16 +94,8 @@ impl ColorMap1d {
     Self { map, gradient }
   }
 
-  // TODO: into gradient
   pub fn color(&self, f: f64) -> RGB {
-    match self.gradient {
-      Gradient::Linear => self.linear(f),
-      Gradient::Sine => self.sine(f),
-    }
-  }
-
-  fn linear(&self, f: f64) -> RGB {
-    let f = f.clamp(0., 1.);
+    let f = self.gradient.apply_to(f);
 
     if 1.0 - f <= f64::EPSILON {
       return self.map[self.map.len() - 1].rgb();
@@ -109,21 +109,11 @@ impl ColorMap1d {
 
     c1.interpolate(&c2, pos).rgb()
   }
-
-  /// Computes the color at point `x` by passing `sin(x * PI)` into
-  /// [Self::linear].
-  ///
-  fn sine(&self, f: f64) -> RGB {
-    let f = f.clamp(0., 1.);
-    self.linear((f * 2. * PI).sin().abs())
-  }
 }
 
-impl FromStr for ColorMap1d {
-  type Err = serde_json::Error;
-
-  fn from_str(s: &str) -> Result<Self, Self::Err> {
-    serde_json::from_str(s)
+impl Default for ColorMap1d {
+  fn default() -> Self {
+    Self::new(vec![], Gradient::Linear { factor: 1. })
   }
 }
 

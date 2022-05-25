@@ -46,9 +46,13 @@
 
 * [x] LCH coloring: RGB to LCH (RGB -> LAB -> LCH)
 
-* [ ] `julia set`: exponentially mapped color space (gradient)
-
 * [ ] more gradients (and parameterized) besides linear and sine
+
+* [ ] instead of color map with gradient, compute color directly (LCH)
+
+* [ ] `julia set`: (interior/exterior) distance estimates
+
+* [ ] `julia set`: escape angle coloring
 
 * [ ] wasm based editor
 
@@ -59,18 +63,9 @@
 
 * [ ] statistical methods (mean, avg, etc.)
 
-* [ ] `julia set`: different coloring methods, other than 1d color map
-  (e.g. computed colors)
-
-* [ ] `julia set`: escape angle coloring
-
-* [ ] `julia set`: (interior/exterior) distance estimates
-
-* [ ] `julia set`: border tracing
-
 * [ ] `julia set`: field lines
 
-* [ ] progressive iteration visualization
+* [ ] progressive iteration visualization as GIF
 
 * [ ] multibrot
 

@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJsonPretty;
 
-use crate::util::{ColorMap1d, ComplexNumber, Gradient};
+use crate::util::{ColorMap1d, ComplexNumber};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSetArgs {
@@ -20,7 +20,7 @@ pub struct JuliaSetArgs {
   pub iter: u32,
   #[serde(default = "default_julia_set_filename")]
   pub filename: String,
-  #[serde(default = "default_color_map")]
+  #[serde(default)]
   pub color_map: ColorMap1d,
   #[serde(default)]
   pub c: Option<ComplexNumber>,
@@ -34,7 +34,7 @@ pub struct ColorMap1dArgs {
   pub height: usize,
   #[serde(default = "default_color_map_filename")]
   pub filename: String,
-  #[serde(default = "default_color_map")]
+  #[serde(default)]
   pub color_map: ColorMap1d,
 }
 
@@ -60,10 +60,6 @@ fn default_zpy() -> f64 {
 
 fn default_iter() -> u32 {
   100
-}
-
-fn default_color_map() -> ColorMap1d {
-  ColorMap1d::new(vec![], Gradient::Linear)
 }
 
 fn default_julia_set_filename() -> String {
