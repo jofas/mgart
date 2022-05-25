@@ -65,7 +65,7 @@ pub fn julia_set(args: JuliaSetArgs) {
       let color = if j == args.iter {
         j as f64
       } else {
-        let mu = (zx_sqr + zy_sqr).sqrt().ln().ln() / 2.0_f64.ln();
+        let mu = (zx_sqr + zy_sqr).sqrt().log2().log2();
         (j + 1) as f64 - mu
       };
 
