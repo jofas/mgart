@@ -36,6 +36,8 @@
 
 * [x] fix color user api
 
+* [x] no flatten buffer but a pixel is `chunks_mut(3)`
+
 * [ ] all gradients computed in LCH space
 
 * [ ] RGB and RGBA

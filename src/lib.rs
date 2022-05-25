@@ -1,7 +1,5 @@
-use rayon::iter::{
-  IndexedParallelIterator, IntoParallelRefMutIterator,
-  ParallelIterator,
-};
+use rayon::iter::{IndexedParallelIterator, ParallelIterator};
+use rayon::slice::ParallelSliceMut;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -14,7 +12,7 @@ use args::{ColorMap1dArgs, JuliaSetArgs};
 pub fn julia_set(args: JuliaSetArgs) {
   let num_pixel = args.width * args.height;
 
-  let mut buf = vec![[0_u8; 3]; num_pixel];
+  let mut buf = vec![0_u8; num_pixel * 3];
 
   let pixel_created = Arc::new(AtomicUsize::new(0));
 
@@ -34,55 +32,61 @@ pub fn julia_set(args: JuliaSetArgs) {
     (None, None)
   };
 
-  buf.par_iter_mut().enumerate().for_each(|(i, pixel)| {
-    let x = (i % args.width) as f64 / w;
-    let x = x * vp_width - vp_width_half + args.zpx;
+  buf
+    .par_chunks_exact_mut(3)
+    .enumerate()
+    .for_each(|(i, pixel)| {
+      let x = (i % args.width) as f64 / w;
+      let x = x * vp_width - vp_width_half + args.zpx;
 
-    let y = (i / args.width) as f64 / h;
-    let y = y * vp_height - vp_height_half + args.zpy;
+      let y = (i / args.width) as f64 / h;
+      let y = y * vp_height - vp_height_half + args.zpy;
 
-    let cx = cx.unwrap_or(x);
-    let cy = cy.unwrap_or(y);
+      let cx = cx.unwrap_or(x);
+      let cy = cy.unwrap_or(y);
 
-    let mut zx = x;
-    let mut zy = y;
+      let mut zx = x;
+      let mut zy = y;
 
-    let mut zx_sqr = zx.powi(2);
-    let mut zy_sqr = zy.powi(2);
+      let mut zx_sqr = zx.powi(2);
+      let mut zy_sqr = zy.powi(2);
 
-    let mut j = 0;
-    while j < args.iter && zx_sqr + zy_sqr <= 4.0 {
-      zy = (zx * zy) * 2.0 + cy;
-      zx = zx_sqr - zy_sqr + cx;
+      let mut j = 0;
+      while j < args.iter && zx_sqr + zy_sqr <= 4.0 {
+        zy = (zx * zy) * 2.0 + cy;
+        zx = zx_sqr - zy_sqr + cx;
 
-      zx_sqr = zx.powi(2);
-      zy_sqr = zy.powi(2);
+        zx_sqr = zx.powi(2);
+        zy_sqr = zy.powi(2);
 
-      j += 1;
-    }
+        j += 1;
+      }
 
-    let color = if j == args.iter {
-      j as f64
-    } else {
-      let mu = (zx_sqr + zy_sqr).sqrt().ln().ln() / 2.0_f64.ln();
-      (j + 1) as f64 - mu
-    };
+      let color = if j == args.iter {
+        j as f64
+      } else {
+        let mu = (zx_sqr + zy_sqr).sqrt().ln().ln() / 2.0_f64.ln();
+        (j + 1) as f64 - mu
+      };
 
-    *pixel = args.color_map.color(color / args.iter as f64).as_vec();
+      let rgb =
+        args.color_map.color(color / args.iter as f64).as_vec();
 
-    let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
+      pixel[0] = rgb[0];
+      pixel[1] = rgb[1];
+      pixel[2] = rgb[2];
 
-    if pc % 2500 == 0 || pc == num_pixel {
-      print!(
-        "{}/{} pixels created ({:.2}%)\r",
-        pc,
-        num_pixel,
-        (pc as f32 / num_pixel as f32) * 100.,
-      );
-    }
-  });
+      let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
-  let buf: Vec<u8> = buf.into_iter().flatten().collect();
+      if pc % 2500 == 0 || pc == num_pixel {
+        print!(
+          "{}/{} pixels created ({:.2}%)\r",
+          pc,
+          num_pixel,
+          (pc as f32 / num_pixel as f32) * 100.,
+        );
+      }
+    });
 
   image::save_buffer(
     &args.filename,
@@ -99,27 +103,31 @@ pub fn julia_set(args: JuliaSetArgs) {
 pub fn color_map_1d(args: ColorMap1dArgs) {
   let num_pixel = args.width * args.height;
 
-  let mut buf = vec![[0_u8; 3]; num_pixel];
+  let mut buf = vec![0_u8; num_pixel * 3];
 
   let pixel_created = Arc::new(AtomicUsize::new(0));
 
-  buf.par_iter_mut().enumerate().for_each(|(i, pixel)| {
-    let x = i % args.width;
+  buf
+    .par_chunks_exact_mut(3)
+    .enumerate()
+    .for_each(|(i, pixel)| {
+      let x = (i % args.width) as f64;
 
-    *pixel =
-      args.color_map.color(x as f64 / args.width as f64).as_vec();
+      let rgb = args.color_map.color(x / args.width as f64).as_vec();
 
-    let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
+      pixel[0] = rgb[0];
+      pixel[1] = rgb[1];
+      pixel[2] = rgb[2];
 
-    print!(
-      "{}/{} pixels created ({:.2}%)\r",
-      pc,
-      num_pixel,
-      (pc as f32 / num_pixel as f32) * 100.,
-    );
-  });
+      let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
-  let buf: Vec<u8> = buf.into_iter().flatten().collect();
+      print!(
+        "{}/{} pixels created ({:.2}%)\r",
+        pc,
+        num_pixel,
+        (pc as f32 / num_pixel as f32) * 100.,
+      );
+    });
 
   image::save_buffer(
     &args.filename,
