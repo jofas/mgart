@@ -46,10 +46,11 @@ pub enum Gradient {
   Sine { factor: f64 },
   Inverted { gradient: Box<Gradient> },
   Wave { factor: f64 },
-  Exponential { exponent: f64 },
+  Exp { exponent: f64 },
   SinExp { factor: f64 },
-  // TODO: smoothstep with order, sine-ramp, log, auto_log,
-  //       tanh, b-spline
+  Log { factor: f64 },
+  Tanh { factor: f64 },
+  // TODO: smoothstep with order, sine-ramp, b-spline
 }
 
 impl Gradient {
@@ -67,8 +68,10 @@ impl Gradient {
           1. - f
         }
       }
-      Self::Exponential { exponent } => f.powf(*exponent),
+      Self::Exp { exponent } => f.powf(*exponent),
       Self::SinExp { factor } => (f * factor * PI).exp().sin().abs(),
+      Self::Log { factor } => (f * factor + 1.).ln() / (factor + 1.).ln(),
+      Self::Tanh { factor } => (f * factor).tanh() / factor.tanh(),
     }
   }
 }
