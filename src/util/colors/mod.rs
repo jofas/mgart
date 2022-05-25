@@ -133,6 +133,32 @@ impl LCH {
 
     LCH::new(l, c, h)
   }
+
+  /// Rounds the [l](Self::l), [c](Self::c) and [h](Self::h) values
+  /// to the nearest number with the provided precision.
+  ///
+  #[allow(dead_code)]
+  fn round(&self, digits: i32) -> Self {
+    let pow = 10_f64.powi(digits);
+
+    let l = (self.l() * pow).round() / pow;
+    let c = (self.c() * pow).round() / pow;
+    let h = (self.h() * pow).round() / pow;
+
+    Self::new(l, c, h)
+  }
+}
+
+impl PartialEq for LCH {
+  fn eq(&self, other: &Self) -> bool {
+    let lc_eq = self.l() == other.l() && self.c() == other.c();
+
+    if self.h() != other.h() {
+      self.h().is_nan() && other.h().is_nan() && lc_eq
+    } else {
+      lc_eq
+    }
+  }
 }
 
 #[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Debug)]
@@ -145,7 +171,7 @@ pub struct RGB {
 impl RGB {
   /// Creates a new [RGB] color.
   ///
-  pub fn new(r: u8, g: u8, b: u8) -> Self {
+  pub const fn new(r: u8, g: u8, b: u8) -> Self {
     Self { r, g, b }
   }
 
@@ -162,12 +188,49 @@ impl RGB {
   }
 
   pub fn lch(&self) -> LCH {
-    // TODO
-    unimplemented!()
+    self.lab().lch()
   }
 
   pub fn as_vec(&self) -> [u8; 3] {
     [self.r, self.g, self.b]
+  }
+
+  fn lab(&self) -> LAB {
+    let r = Self::rgb_xyz(self.r());
+    let g = Self::rgb_xyz(self.g());
+    let b = Self::rgb_xyz(self.b());
+
+    let x = Self::xyz_lab(
+      (0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / LAB::XN,
+    );
+    let y = Self::xyz_lab(
+      (0.2126729 * r + 0.7151522 * g + 0.0721750 * b) / LAB::YN,
+    );
+    let z = Self::xyz_lab(
+      (0.0193339 * r + 0.1191920 * g + 0.9503041 * b) / LAB::ZN,
+    );
+
+    let l = (116. * y - 16.).max(0.);
+
+    LAB::new(l, 500. * (x - y), 200. * (y - z))
+  }
+
+  fn rgb_xyz(r: u8) -> f64 {
+    let r = r as f64 / 255.;
+
+    if r <= 0.04045 {
+      r / 12.92
+    } else {
+      ((r + 0.055) / 1.055).powf(2.4)
+    }
+  }
+
+  fn xyz_lab(t: f64) -> f64 {
+    if t > LAB::T3 {
+      t.powf(1. / 3.)
+    } else {
+      t / LAB::T2 + LAB::T0
+    }
   }
 }
 
@@ -186,8 +249,9 @@ impl LAB {
   const T0: f64 = 0.137931034;
   const T1: f64 = 0.206896552;
   const T2: f64 = 0.12841855;
+  const T3: f64 = 0.008856452;
 
-  fn new(l: f64, a: f64, b: f64) -> Self {
+  const fn new(l: f64, a: f64, b: f64) -> Self {
     Self { l, a, b }
   }
 
@@ -221,6 +285,21 @@ impl LAB {
     let b = (self.b() * pow).round() / pow;
 
     Self::new(l, a, b)
+  }
+
+  /// Returns the [LCH] representation of the color defined by
+  /// `self`.
+  ///
+  fn lch(&self) -> LCH {
+    let c = (self.a().powi(2) + self.b().powi(2)).sqrt();
+
+    let h = if 0. + (c * 1.0e4).round() <= f64::EPSILON {
+      f64::NAN
+    } else {
+      (self.b().atan2(self.a()) * 180. / PI + 360.) % 360.
+    };
+
+    LCH::new(self.l(), c, h)
   }
 
   /// Returns the [RGB] representation of the color defined by
@@ -280,75 +359,123 @@ mod test {
 
   use std::f64;
 
+  const BLACK_RGB: RGB = RGB::new(0, 0, 0);
+  const WHITE_RGB: RGB = RGB::new(255, 255, 255);
+  const GREY_RGB: RGB = RGB::new(128, 128, 128);
+  const RED_RGB: RGB = RGB::new(255, 0, 0);
+  const YELLOW_RGB: RGB = RGB::new(255, 255, 0);
+  const GREEN_RGB: RGB = RGB::new(0, 255, 0);
+  const CYAN_RGB: RGB = RGB::new(0, 255, 255);
+  const BLUE_RGB: RGB = RGB::new(0, 0, 255);
+  const MAGENTA_RGB: RGB = RGB::new(255, 0, 255);
+
+  const BLACK_LCH: LCH = LCH::new(0., 0., f64::NAN);
+  const WHITE_LCH: LCH = LCH::new(100., 0., f64::NAN);
+  const GREY_LCH: LCH = LCH::new(53.59, 0., f64::NAN);
+  const RED_LCH: LCH = LCH::new(53.24, 104.55, 40.);
+  const YELLOW_LCH: LCH = LCH::new(97.14, 96.91, 102.85);
+  const GREEN_LCH: LCH = LCH::new(87.73, 119.78, 136.02);
+  const CYAN_LCH: LCH = LCH::new(91.11, 50.12, 196.37);
+  const BLUE_LCH: LCH = LCH::new(32.3, 133.81, 306.28);
+  const MAGENTA_LCH: LCH = LCH::new(60.32, 115.54, 328.23);
+
+  const BLACK_LAB: LAB = LAB::new(0., 0., 0.);
+  const WHITE_LAB: LAB = LAB::new(100., 0., 0.);
+  const GREY_LAB: LAB = LAB::new(53.59, 0., 0.);
+  const RED_LAB: LAB = LAB::new(53.24, 80.09, 67.2);
+  const YELLOW_LAB: LAB = LAB::new(97.14, -21.55, 94.48);
+  const GREEN_LAB: LAB = LAB::new(87.73, -86.19, 83.18);
+  const CYAN_LAB: LAB = LAB::new(91.11, -48.09, -14.13);
+  const BLUE_LAB: LAB = LAB::new(32.3, 79.18, -107.87);
+  const MAGENTA_LAB: LAB = LAB::new(60.32, 98.23, -60.83);
+
   #[test]
   fn lch2lab() {
-    let black = LCH::new(0., 0., f64::NAN);
-    let white = LCH::new(100., 0., f64::NAN);
-    let grey = LCH::new(53.59, 0., f64::NAN);
-    let red = LCH::new(53.24, 104.55, 40.);
-    let yellow = LCH::new(97.14, 96.91, 102.85);
-    let green = LCH::new(87.73, 119.78, 136.02);
-    let cyan = LCH::new(91.11, 50.12, 196.38);
-    let blue = LCH::new(32.3, 133.81, 306.28);
-    let magenta = LCH::new(60.32, 115.54, 328.23);
+    assert_eq!(BLACK_LCH.lab().round(2), BLACK_LAB);
+    assert_eq!(WHITE_LCH.lab().round(2), WHITE_LAB);
+    assert_eq!(GREY_LCH.lab().round(2), GREY_LAB);
+    assert_eq!(RED_LCH.lab().round(2), RED_LAB);
+    assert_eq!(YELLOW_LCH.lab().round(2), YELLOW_LAB);
+    assert_eq!(GREEN_LCH.lab().round(2), GREEN_LAB);
+    assert_eq!(CYAN_LCH.lab().round(2), CYAN_LAB);
+    assert_eq!(BLUE_LCH.lab().round(2), BLUE_LAB);
+    assert_eq!(MAGENTA_LCH.lab().round(2), MAGENTA_LAB);
+  }
 
-    assert_eq!(black.lab().round(2), LAB::new(0., 0., 0.));
-    assert_eq!(white.lab().round(2), LAB::new(100., 0., 0.));
-    assert_eq!(grey.lab().round(2), LAB::new(53.59, 0., 0.));
-    assert_eq!(red.lab().round(2), LAB::new(53.24, 80.09, 67.2));
-    assert_eq!(yellow.lab().round(2), LAB::new(97.14, -21.55, 94.48));
-    assert_eq!(green.lab().round(2), LAB::new(87.73, -86.19, 83.18));
-    assert_eq!(cyan.lab().round(2), LAB::new(91.11, -48.09, -14.13));
-    assert_eq!(blue.lab().round(2), LAB::new(32.3, 79.18, -107.87));
-    assert_eq!(
-      magenta.lab().round(2),
-      LAB::new(60.32, 98.23, -60.83)
-    );
+  #[test]
+  fn lab2lch() {
+    assert_eq!(BLACK_LAB.lch().round(2), BLACK_LCH);
+    assert_eq!(WHITE_LAB.lch().round(2), WHITE_LCH);
+    assert_eq!(GREY_LAB.lch().round(2), GREY_LCH);
+    assert_eq!(RED_LAB.lch().round(2), RED_LCH);
+    assert_eq!(YELLOW_LAB.lch().round(2), YELLOW_LCH);
+    assert_eq!(GREEN_LAB.lch().round(2), GREEN_LCH);
+    assert_eq!(CYAN_LAB.lch().round(2), CYAN_LCH);
+    assert_eq!(BLUE_LAB.lch().round(2), BLUE_LCH);
+    assert_eq!(MAGENTA_LAB.lch().round(2), MAGENTA_LCH);
   }
 
   #[test]
   fn lab2rgb() {
-    let black = LAB::new(0., 0., 0.);
-    let white = LAB::new(100., 0., 0.);
-    let grey = LAB::new(53.59, 0., 0.);
-    let red = LAB::new(53.24, 80.09, 67.2);
-    let yellow = LAB::new(97.14, -21.55, 94.48);
-    let green = LAB::new(87.73, -86.19, 83.18);
-    let cyan = LAB::new(91.11, -48.09, -14.13);
-    let blue = LAB::new(32.3, 79.18, -107.87);
-    let magenta = LAB::new(60.32, 98.23, -60.83);
-
-    assert_eq!(black.rgb(), RGB::new(0, 0, 0));
-    assert_eq!(white.rgb(), RGB::new(255, 255, 255));
-    assert_eq!(grey.rgb(), RGB::new(128, 128, 128));
-    assert_eq!(red.rgb(), RGB::new(255, 0, 0));
-    assert_eq!(yellow.rgb(), RGB::new(255, 255, 0));
-    assert_eq!(green.rgb(), RGB::new(0, 255, 0));
-    assert_eq!(cyan.rgb(), RGB::new(0, 255, 255));
-    assert_eq!(blue.rgb(), RGB::new(0, 0, 255));
-    assert_eq!(magenta.rgb(), RGB::new(255, 0, 255));
+    assert_eq!(BLACK_LAB.rgb(), BLACK_RGB);
+    assert_eq!(WHITE_LAB.rgb(), WHITE_RGB);
+    assert_eq!(GREY_LAB.rgb(), GREY_RGB);
+    assert_eq!(RED_LAB.rgb(), RED_RGB);
+    assert_eq!(YELLOW_LAB.rgb(), YELLOW_RGB);
+    assert_eq!(GREEN_LAB.rgb(), GREEN_RGB);
+    assert_eq!(CYAN_LAB.rgb(), CYAN_RGB);
+    assert_eq!(BLUE_LAB.rgb(), BLUE_RGB);
+    assert_eq!(MAGENTA_LAB.rgb(), MAGENTA_RGB);
   }
 
   #[test]
   fn lch2rgb() {
-    let black = LCH::new(0., 0., f64::NAN);
-    let white = LCH::new(100., 0., f64::NAN);
-    let grey = LCH::new(53.59, 0., f64::NAN);
-    let red = LCH::new(53.24, 104.55, 40.);
-    let yellow = LCH::new(97.14, 96.91, 102.85);
-    let green = LCH::new(87.73, 119.78, 136.02);
-    let cyan = LCH::new(91.11, 50.12, 196.38);
-    let blue = LCH::new(32.3, 133.81, 306.28);
-    let magenta = LCH::new(60.32, 115.54, 328.23);
+    assert_eq!(BLACK_LCH.rgb(), BLACK_RGB);
+    assert_eq!(WHITE_LCH.rgb(), WHITE_RGB);
+    assert_eq!(GREY_LCH.rgb(), GREY_RGB);
+    assert_eq!(RED_LCH.rgb(), RED_RGB);
+    assert_eq!(YELLOW_LCH.rgb(), YELLOW_RGB);
+    assert_eq!(GREEN_LCH.rgb(), GREEN_RGB);
+    assert_eq!(CYAN_LCH.rgb(), CYAN_RGB);
+    assert_eq!(BLUE_LCH.rgb(), BLUE_RGB);
+    assert_eq!(MAGENTA_LCH.rgb(), MAGENTA_RGB);
+  }
 
-    assert_eq!(black.rgb(), RGB::new(0, 0, 0));
-    assert_eq!(white.rgb(), RGB::new(255, 255, 255));
-    assert_eq!(grey.rgb(), RGB::new(128, 128, 128));
-    assert_eq!(red.rgb(), RGB::new(255, 0, 0));
-    assert_eq!(yellow.rgb(), RGB::new(255, 255, 0));
-    assert_eq!(green.rgb(), RGB::new(0, 255, 0));
-    assert_eq!(cyan.rgb(), RGB::new(0, 255, 255));
-    assert_eq!(blue.rgb(), RGB::new(0, 0, 255));
-    assert_eq!(magenta.rgb(), RGB::new(255, 0, 255));
+  #[test]
+  fn rgb2lab() {
+    assert_eq!(BLACK_RGB.lab().round(2), BLACK_LAB);
+    assert_eq!(WHITE_RGB.lab().round(2), WHITE_LAB);
+    assert_eq!(GREY_RGB.lab().round(2), GREY_LAB);
+    assert_eq!(RED_RGB.lab().round(2), RED_LAB);
+    assert_eq!(YELLOW_RGB.lab().round(2), YELLOW_LAB);
+    assert_eq!(
+      GREEN_RGB.lab().round(2),
+      LAB::new(87.73, -86.18, 83.18)
+    );
+    assert_eq!(CYAN_RGB.lab().round(2), CYAN_LAB);
+    assert_eq!(
+      BLUE_RGB.lab().round(2),
+      LAB::new(32.3, 79.19, -107.86)
+    );
+    assert_eq!(
+      MAGENTA_RGB.lab().round(2),
+      LAB::new(60.32, 98.23, -60.82)
+    );
+  }
+
+  #[test]
+  fn rgb2lch() {
+    assert_eq!(BLACK_RGB.lch().round(2), BLACK_LCH);
+    assert_eq!(WHITE_RGB.lch().round(2), WHITE_LCH);
+    assert_eq!(GREY_RGB.lch().round(2), GREY_LCH);
+    assert_eq!(RED_RGB.lch().round(2), RED_LCH);
+    assert_eq!(YELLOW_RGB.lch().round(2), YELLOW_LCH);
+    assert_eq!(GREEN_RGB.lch().round(2), GREEN_LCH);
+    assert_eq!(
+      CYAN_RGB.lch().round(2),
+      LCH::new(91.11, 50.12, 196.38)
+    );
+    assert_eq!(BLUE_RGB.lch().round(2), BLUE_LCH);
+    assert_eq!(MAGENTA_RGB.lch().round(2), MAGENTA_LCH);
   }
 }

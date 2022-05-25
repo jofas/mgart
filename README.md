@@ -38,21 +38,19 @@
 
 * [x] no flatten buffer but a pixel is `chunks_mut(3)`
 
-* [ ] all gradients computed in LCH space
+* [x] all gradients computed in LCH space
 
-* [ ] RGB and RGBA
+* [x] RGBA -> RGB
 
-* [ ] LCH coloring: RGB to LCH
+* [x] `julia set`: optimize inner loop
 
-* [ ] `julia set`: optimize inner loop
+* [x] LCH coloring: RGB to LCH (RGB -> LAB -> LCH)
 
-* [ ] `julia set`: exponentially mapped color space
-
-* [ ] `julia set`: cyclic iterations
-
-* [ ] wasm based editor
+* [ ] `julia set`: exponentially mapped color space (gradient)
 
 * [ ] more gradients (and parameterized) besides linear and sine
+
+* [ ] wasm based editor
 
 * [ ] find cool points and colormaps where I can see the effect of
   the following visualization methods
