@@ -48,7 +48,7 @@ pub enum Gradient {
   Log { factor: f64 },
   Tanh { factor: f64 },
   SinRamp { factor: f64, amplitude: f64 },
-  Discrete { gradient: Box<Gradient> },
+  Discrete { gradient: Box<Gradient> }, // TODO: number of discrete elements
   Smoothstep { order: i32 },
   // TODO: b-spline
 }

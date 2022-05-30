@@ -50,17 +50,15 @@
 
 * [x] instead of color map with gradient, compute color directly (LCH)
 
+* [ ] `julia set`: (interior/exterior) distance estimates
+
+* [ ] `julia set`: escape angle coloring
+
 * [ ] compute color: LCH: parameterize and expose via api
 
 * [ ] compute color: RGB: parameterize and expose via api
 
-* [ ] `julia set`: (interior/exterior) distance estimates
-
-* [ ] more gradients
-
 * [ ] gradients for distance instead of [0, 1]
-
-* [ ] `julia set`: escape angle coloring
 
 * [ ] wasm based editor
 
@@ -80,5 +78,7 @@
 * [ ] buddhabrot
 
 * [ ] fractal flame
+
+* [ ] more gradients
 
 * [ ] arbitrary precision types for higher zoom levels
