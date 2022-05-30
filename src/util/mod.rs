@@ -48,7 +48,7 @@ pub enum Gradient {
   Log { factor: f64 },
   Tanh { factor: f64 },
   SinRamp { factor: f64, amplitude: f64 },
-  Discrete { gradient: Box<Gradient> }, // TODO: number of discrete elements
+  Discrete { gradient: Box<Gradient>, n: u32 },
   Smoothstep { order: i32 },
   // TODO: b-spline
 }
@@ -77,7 +77,18 @@ impl Gradient {
       Self::SinRamp { factor, amplitude } => {
         (f + amplitude * (f * factor * PI)).clamp(0., 1.)
       }
-      Self::Discrete { gradient } => gradient.apply_to(f).round(),
+      Self::Discrete { gradient, n } => {
+        let n = *n as f64;
+        let f = gradient.apply_to(f).clamp(0., 1.);
+
+        let f = (f * n).floor() / n;
+
+        if (1. - f).abs() <= f64::EPSILON {
+          f - 1. / n
+        } else {
+          f
+        }
+      }
       Self::Smoothstep { order } => {
         let f = f.clamp(0., 1.);
         (0..=*order).into_iter().fold(0., |acc, n| {
@@ -120,7 +131,7 @@ impl ColorMap1d {
   pub fn color(&self, f: f64) -> RGB {
     let f = self.gradient.apply_to(f);
 
-    if 1.0 - f <= f64::EPSILON {
+    if (1.0 - f).abs() <= f64::EPSILON {
       return self.map[self.map.len() - 1].rgb();
     }
 
