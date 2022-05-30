@@ -56,7 +56,19 @@ pub enum Gradient {
 impl Gradient {
   pub fn apply_to(&self, f: f64) -> f64 {
     match self {
-      Self::Linear { factor } => (f * factor).fract(),
+      Self::Linear { factor } => {
+        let f = f.clamp(0., 1.);
+
+        let res = (f * factor).fract();
+
+        if f <= f64::EPSILON {
+          0.
+        } else if res <= f64::EPSILON {
+          1.
+        } else {
+          (f * factor).fract()
+        }
+      }
       Self::Sin { factor } => (f * factor * PI).sin() / 2. + 0.5,
       Self::Inverted { gradient } => 1. - gradient.apply_to(f),
       Self::Wave { factor } => {
@@ -81,12 +93,23 @@ impl Gradient {
         let n = *n as f64;
         let f = gradient.apply_to(f).clamp(0., 1.);
 
-        let f = (f * n).floor() / n;
+        let res = (f * n).floor() / (n - 1.);
 
+        // TODO: that's not it, rather than [0, 0.5] for n = 2
+        //       I want
+        //       [0: [0,0.5[, 1: [0.5, 1]] for n = 2
+        //       [0: [0,0.33[, 0.5: [0.33, 0.66[, 1: [0.66, 1]] for n = 3
+        //       [0: [0,0.25[, 0.33: [0.25, 0.5[, 0.66: [0.5, 0.75[, 1: [0.75,1]] for n = 4
+        //
+        // TODO: unit test
+
+        println!("res: {}", res);
+        println!("f: {}", f);
         if (1. - f).abs() <= f64::EPSILON {
-          f - 1. / n
+          println!("res: {}", res);
+          res - 1. / (n - 1.).max(1.)
         } else {
-          f
+          res
         }
       }
       Self::Smoothstep { order } => {
@@ -160,5 +183,41 @@ struct ColorMap1dDeserializer {
 impl From<ColorMap1dDeserializer> for ColorMap1d {
   fn from(cm: ColorMap1dDeserializer) -> Self {
     Self::new(cm.map, cm.gradient)
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::Gradient;
+
+  #[test]
+  fn linear_gradient() {
+    let g = Gradient::Linear { factor: 1. };
+
+    assert_eq!(g.apply_to(0.), 0.);
+    assert_eq!(g.apply_to(0.5), 0.5);
+    assert_eq!(g.apply_to(1.), 1.);
+
+    let g = Gradient::Linear { factor: 2. };
+
+    assert_eq!(g.apply_to(0.), 0.);
+    assert_eq!(g.apply_to(0.25), 0.5);
+    assert_eq!(g.apply_to(0.5), 1.);
+    assert_eq!(g.apply_to(0.75), 0.5);
+    assert_eq!(g.apply_to(1.), 1.);
+  }
+
+  #[test]
+  fn discrete_gradient() {
+    let g = Gradient::Discrete {
+      n: 2,
+      gradient: Box::new(Gradient::Linear { factor: 1. }),
+    };
+
+    assert_eq!(g.apply_to(0.), 0.);
+    assert_eq!(g.apply_to(0.25), 0.);
+    assert_eq!(g.apply_to(0.5), 1.);
+    assert_eq!(g.apply_to(0.75), 1.);
+    assert_eq!(g.apply_to(1.), 1.);
   }
 }
