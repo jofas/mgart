@@ -50,15 +50,12 @@
 
 * [x] instead of color map with gradient, compute color directly (LCH)
 
-* [ ] `julia set`: api for drawing algorithms (for outer and inner)
+* [ ] drawing algorithms: EscapeTime, InnerDistance, OuterDistance,
+      EscapeAngle, CurvatureEstimation, FiniteAttractors
 
-* [ ] `julia set`: (interior/exterior) distance estimates
+* [ ] color algorithms: ColorMap1D, LCH, RGB
 
-* [ ] `julia set`: escape angle coloring
-
-* [ ] compute color: LCH: parameterize and expose via api
-
-* [ ] compute color: RGB: parameterize and expose via api
+* [ ] color smoothing optional
 
 * [ ] gradients for distance instead of [0, 1]
 
