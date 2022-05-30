@@ -28,7 +28,9 @@ impl Into<Complex64> for &ComplexNumber {
   fn into(self) -> Complex64 {
     match self {
       ComplexNumber::Cartesian { re, im } => Complex64::new(*re, *im),
-      ComplexNumber::Polar { r, theta } => Complex64::from_polar(*r, *theta),
+      ComplexNumber::Polar { r, theta } => {
+        Complex64::from_polar(*r, *theta)
+      }
     }
   }
 }
@@ -45,7 +47,9 @@ pub enum Gradient {
   SinExp { factor: f64 },
   Log { factor: f64 },
   Tanh { factor: f64 },
-  // TODO: smoothstep with order, sine-ramp, discrete, b-spline
+  SinRamp { factor: f64, amplitude: f64 },
+  Discrete { gradient: Box<Gradient> },
+  // TODO: smoothstep with order, b-spline
 }
 
 impl Gradient {
@@ -65,8 +69,14 @@ impl Gradient {
       }
       Self::Exp { exponent } => f.powf(*exponent),
       Self::SinExp { factor } => (f * factor * PI).exp().sin().abs(),
-      Self::Log { factor } => (f * factor + 1.).ln() / (factor + 1.).ln(),
+      Self::Log { factor } => {
+        (f * factor + 1.).ln() / (factor + 1.).ln()
+      }
       Self::Tanh { factor } => (f * factor).tanh() / factor.tanh(),
+      Self::SinRamp { factor, amplitude } => {
+        (f + amplitude * (f * factor * PI)).clamp(0., 1.)
+      }
+      Self::Discrete { gradient } => gradient.apply_to(f).round(),
     }
   }
 }

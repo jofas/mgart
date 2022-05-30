@@ -10,9 +10,15 @@ pub mod args;
 pub mod util;
 
 use args::{ColorMap1dArgs, JuliaSetArgs};
-use util::colors::LCH;
+use util::colors::{LCH, RGB};
 
-fn attractor(zx: f64, zy: f64, cx: f64, cy: f64, p: usize) -> Option<(f64, f64, f64, f64)> {
+fn attractor(
+  zx: f64,
+  zy: f64,
+  cx: f64,
+  cy: f64,
+  p: usize,
+) -> Option<(f64, f64, f64, f64)> {
   unimplemented!()
 }
 
@@ -85,12 +91,24 @@ pub fn julia_set(args: JuliaSetArgs) {
 
       let rgb = args.color_map.color(color).as_vec();
 
+      /*
       let rgb = LCH::new(
+        //((color * 100. * std::f64::consts::PI).sin() / 2. + 0.5) * 100.,
+        color.powf(3.5).fract() * 100.,
+        0.,
+        0.,
         //65.,
-        100. - (100. * color),
-        28. + 100. - (100. * color),
-        (360. * color).powf(1.5) % 360.,
+        //100. - (100. * color),
+        //132.,//32. + 100. - (100. * color),
+        //(360. * color).powi(2),
       ).rgb();
+      */
+
+      let rgb = RGB::new(
+        (color * 255.) as u8,
+        (color * 255.) as u8,
+        (color * 255.) as u8,
+      );
 
       pixel[0] = rgb.r();
       pixel[1] = rgb.g();

@@ -50,9 +50,15 @@
 
 * [x] instead of color map with gradient, compute color directly (LCH)
 
+* [ ] compute color: LCH: parameterize and expose via api
+
+* [ ] compute color: RGB: parameterize and expose via api
+
 * [ ] `julia set`: (interior/exterior) distance estimates
 
-* [ ] more gradients (and parameterized) besides linear and sine
+* [ ] more gradients
+
+* [ ] gradients for distance instead of [0, 1]
 
 * [ ] `julia set`: escape angle coloring
 
