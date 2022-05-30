@@ -49,7 +49,8 @@ pub enum Gradient {
   Tanh { factor: f64 },
   SinRamp { factor: f64, amplitude: f64 },
   Discrete { gradient: Box<Gradient> },
-  // TODO: smoothstep with order, b-spline
+  Smoothstep { order: i32 },
+  // TODO: b-spline
 }
 
 impl Gradient {
@@ -77,7 +78,20 @@ impl Gradient {
         (f + amplitude * (f * factor * PI)).clamp(0., 1.)
       }
       Self::Discrete { gradient } => gradient.apply_to(f).round(),
+      Self::Smoothstep { order } => {
+        let f = f.clamp(0., 1.);
+        (0..=*order).into_iter().fold(0., |acc, n| {
+          acc
+            + Self::pascal_triangle(-order - 1, n) as f64
+              * Self::pascal_triangle(2 * order + 1, order - n) as f64
+              * f.powi(order + n + 1)
+        })
+      }
     }
+  }
+
+  fn pascal_triangle(a: i32, b: i32) -> i32 {
+    (0..b).into_iter().fold(1, |acc, i| acc * (a - i) / (i + 1))
   }
 }
 
