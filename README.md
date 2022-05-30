@@ -48,7 +48,7 @@
 
 * [x] reimplement with `num_complex`
 
-* [ ] instead of color map with gradient, compute color directly (LCH)
+* [x] instead of color map with gradient, compute color directly (LCH)
 
 * [ ] `julia set`: (interior/exterior) distance estimates
 
