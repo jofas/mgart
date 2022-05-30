@@ -72,6 +72,8 @@
 
 * [ ] progressive iteration visualization as GIF
 
+* [ ] newton fractals
+
 * [ ] multibrot
 
 * [ ] buddhabrot
