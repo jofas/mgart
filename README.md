@@ -46,11 +46,13 @@
 
 * [x] LCH coloring: RGB to LCH (RGB -> LAB -> LCH)
 
-* [ ] more gradients (and parameterized) besides linear and sine
+* [x] reimplement with `num_complex`
 
 * [ ] instead of color map with gradient, compute color directly (LCH)
 
 * [ ] `julia set`: (interior/exterior) distance estimates
+
+* [ ] more gradients (and parameterized) besides linear and sine
 
 * [ ] `julia set`: escape angle coloring
 

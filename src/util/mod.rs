@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
+use num_complex::Complex64;
+
 use std::f64::consts::PI;
 
 pub mod colors;
@@ -13,7 +15,7 @@ use colors::{Color, LCH, RGB};
 /// This is intended to be used as means for parsing user input,
 /// not for doing calculations.
 /// So [ComplexNumber] does not implement any math operations,
-/// but supports the conversion to [Complex].
+/// but supports the conversion to [Complex64].
 ///
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
@@ -22,18 +24,11 @@ pub enum ComplexNumber {
   Polar { r: f64, theta: f64 },
 }
 
-impl ComplexNumber {
-  pub fn re(&self) -> f64 {
+impl Into<Complex64> for &ComplexNumber {
+  fn into(self) -> Complex64 {
     match self {
-      Self::Cartesian { re, .. } => *re,
-      Self::Polar { r, theta } => r * theta.cos(),
-    }
-  }
-
-  pub fn im(&self) -> f64 {
-    match self {
-      Self::Cartesian { im, .. } => *im,
-      Self::Polar { r, theta } => r * theta.sin(),
+      ComplexNumber::Cartesian { re, im } => Complex64::new(*re, *im),
+      ComplexNumber::Polar { r, theta } => Complex64::from_polar(*r, *theta),
     }
   }
 }
@@ -42,22 +37,22 @@ impl ComplexNumber {
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "type")]
 pub enum Gradient {
-  Linear { factor: f64 },
-  Sine { factor: f64 },
+  Linear { factor: f64 }, // TODO: option to disable repeat
+  Sin { factor: f64 },
   Inverted { gradient: Box<Gradient> },
   Wave { factor: f64 },
   Exp { exponent: f64 },
   SinExp { factor: f64 },
   Log { factor: f64 },
   Tanh { factor: f64 },
-  // TODO: smoothstep with order, sine-ramp, b-spline
+  // TODO: smoothstep with order, sine-ramp, discrete, b-spline
 }
 
 impl Gradient {
   pub fn apply_to(&self, f: f64) -> f64 {
     match self {
       Self::Linear { factor } => (f * factor).fract(),
-      Self::Sine { factor } => (f * factor * PI).sin() / 2. + 0.5,
+      Self::Sin { factor } => (f * factor * PI).sin() / 2. + 0.5,
       Self::Inverted { gradient } => 1. - gradient.apply_to(f),
       Self::Wave { factor } => {
         let f = (f * factor).fract();

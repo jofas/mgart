@@ -1,6 +1,8 @@
 use rayon::iter::{IndexedParallelIterator, ParallelIterator};
 use rayon::slice::ParallelSliceMut;
 
+use num_complex::Complex64;
+
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -8,6 +10,10 @@ pub mod args;
 pub mod util;
 
 use args::{ColorMap1dArgs, JuliaSetArgs};
+
+fn attractor(zx: f64, zy: f64, cx: f64, cy: f64, p: usize) -> Option<(f64, f64, f64, f64)> {
+  unimplemented!()
+}
 
 pub fn julia_set(args: JuliaSetArgs) {
   let num_pixel = args.width * args.height;
@@ -26,12 +32,6 @@ pub fn julia_set(args: JuliaSetArgs) {
   let vp_height_half = vp_height * 0.5;
   let vp_width_half = vp_width * 0.5;
 
-  let (cx, cy) = if let Some(c) = &args.c {
-    (Some(c.re()), Some(c.im()))
-  } else {
-    (None, None)
-  };
-
   buf
     .par_chunks_exact_mut(3)
     .enumerate()
@@ -42,35 +42,47 @@ pub fn julia_set(args: JuliaSetArgs) {
       let y = (i / args.width) as f64 / h;
       let y = y * vp_height - vp_height_half + args.zpy;
 
-      let cx = cx.unwrap_or(x);
-      let cy = cy.unwrap_or(y);
+      let mut z = Complex64::new(x, y);
 
-      let mut zx = x;
-      let mut zy = y;
+      let c = if let Some(c) = &args.c { c.into() } else { z };
 
-      let mut zx_sqr = zx.powi(2);
-      let mut zy_sqr = zy.powi(2);
+      let mut z_sqr = z.norm_sqr();
+
+      // outer distance
+      //let mut dzx = 0.;
+      //let mut dzy = 0.;
 
       let mut j = 0;
-      while j < args.iter && zx_sqr + zy_sqr <= 4.0 {
-        zy = (zx * zy) * 2.0 + cy;
-        zx = zx_sqr - zy_sqr + cx;
+      while j < args.iter && z_sqr <= 4.0 {
+        //dzx = 2. * zx * dzx + 1.;
+        //dzy = 2. * zy * dzy + 1.;
 
-        zx_sqr = zx.powi(2);
-        zy_sqr = zy.powi(2);
-
+        z = z.powi(2) + c;
+        z_sqr = z.norm_sqr();
         j += 1;
       }
 
       let color = if j == args.iter {
-        j as f64
+        1.
+        //j as f64 / args.iter as f64
       } else {
-        let mu = (zx_sqr + zy_sqr).sqrt().log2().log2();
-        (j + 1) as f64 - mu
+        let mu = z_sqr.sqrt().log2().log2();
+        ((j + 1) as f64 - mu) / args.iter as f64
+
+        /*
+        let z_mag = (zx_sqr + zy_sqr).sqrt();
+        let dz_mag = (dzx.powi(2) + dzy.powi(2)).sqrt();
+        //let distance = z_mag.powi(2).ln() * z_mag / dz_mag;
+        //let distance = 0. - 5. * distance.ln() / args.zoom.ln();
+
+        let distance = 2. * z_mag * z_mag.ln() / dz_mag;
+
+        //println!("distance: {}", distance);
+        distance
+        */
       };
 
-      let rgb =
-        args.color_map.color(color / args.iter as f64).as_vec();
+      let rgb = args.color_map.color(color).as_vec();
 
       pixel[0] = rgb[0];
       pixel[1] = rgb[1];
