@@ -39,7 +39,7 @@ impl Into<Complex64> for &ComplexNumber {
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "type")]
 pub enum Gradient {
-  Linear { factor: f64 }, // TODO: option to disable repeat
+  Linear { factor: f64 },
   Sin { factor: f64 },
   Inverted { gradient: Box<Gradient> },
   Wave { factor: f64 },

@@ -50,6 +50,8 @@
 
 * [x] instead of color map with gradient, compute color directly (LCH)
 
+* [ ] `julia set`: api for drawing algorithms (for outer and inner)
+
 * [ ] `julia set`: (interior/exterior) distance estimates
 
 * [ ] `julia set`: escape angle coloring
