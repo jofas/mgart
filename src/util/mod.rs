@@ -95,18 +95,7 @@ impl Gradient {
 
         let res = (f * n).floor() / (n - 1.);
 
-        // TODO: that's not it, rather than [0, 0.5] for n = 2
-        //       I want
-        //       [0: [0,0.5[, 1: [0.5, 1]] for n = 2
-        //       [0: [0,0.33[, 0.5: [0.33, 0.66[, 1: [0.66, 1]] for n = 3
-        //       [0: [0,0.25[, 0.33: [0.25, 0.5[, 0.66: [0.5, 0.75[, 1: [0.75,1]] for n = 4
-        //
-        // TODO: unit test
-
-        println!("res: {}", res);
-        println!("f: {}", f);
         if (1. - f).abs() <= f64::EPSILON {
-          println!("res: {}", res);
           res - 1. / (n - 1.).max(1.)
         } else {
           res
@@ -217,6 +206,32 @@ mod tests {
     assert_eq!(g.apply_to(0.), 0.);
     assert_eq!(g.apply_to(0.25), 0.);
     assert_eq!(g.apply_to(0.5), 1.);
+    assert_eq!(g.apply_to(0.75), 1.);
+    assert_eq!(g.apply_to(1.), 1.);
+
+    let g = Gradient::Discrete {
+      n: 3,
+      gradient: Box::new(Gradient::Linear { factor: 1. }),
+    };
+
+    assert_eq!(g.apply_to(0.), 0.);
+    assert_eq!(g.apply_to(0.33), 0.);
+    assert_eq!(g.apply_to(0.34), 0.5);
+    assert_eq!(g.apply_to(0.66), 0.5);
+    assert_eq!(g.apply_to(0.67), 1.);
+    assert_eq!(g.apply_to(1.), 1.);
+
+    let g = Gradient::Discrete {
+      n: 4,
+      gradient: Box::new(Gradient::Linear { factor: 1. }),
+    };
+
+    assert_eq!(g.apply_to(0.), 0.);
+    assert_eq!(g.apply_to(0.24), 0.);
+    assert_eq!((g.apply_to(0.25) * 100.).floor(), 33.);
+    assert_eq!((g.apply_to(0.49) * 100.).floor(), 33.);
+    assert_eq!((g.apply_to(0.5) * 100.).floor(), 66.);
+    assert_eq!((g.apply_to(0.74) * 100.).floor(), 66.);
     assert_eq!(g.apply_to(0.75), 1.);
     assert_eq!(g.apply_to(1.), 1.);
   }
