@@ -50,8 +50,20 @@
 
 * [x] instead of color map with gradient, compute color directly (LCH)
 
-* [ ] drawing algorithms: EscapeTime, InnerDistance, OuterDistance,
-      EscapeAngle, CurvatureEstimation, FiniteAttractors
+* [ ] drawing algorithms: 
+  
+      outer: 
+      - EscapeTime
+      - OuterDistance
+    
+      inner:
+      - FiniteAttractors 
+      - InnerDistance
+
+      both:
+      - Constant
+      - EscapeAngle
+      - CurvatureEstimation
 
 * [ ] color algorithms: ColorMap1D, LCH, RGB
 
