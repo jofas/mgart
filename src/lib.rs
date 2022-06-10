@@ -103,7 +103,11 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
 
           if let Some((z0, dz0)) = attractor(z, c, p) {
             if dz0.norm_sqr() <= 1. {
-              id = Some(interior_distance(z0, c, p));
+              id = Some(dz0.norm_sqr());
+              // dz0 = inner coordinate
+              // z0 = finite attractor
+              //id = Some(interior_distance(z0, c, p));
+              //id = Some(p as f64);
               break;
             }
           }

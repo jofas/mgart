@@ -59,7 +59,7 @@
       - [ ] OuterDistance
     
       inner:
-      - [ ] FiniteAttractors 
+      - [ ] FiniteAttractors (magnitude `dz0`)
       - [x] InnerDistance
 
       both:
