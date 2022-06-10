@@ -58,12 +58,13 @@
     
       inner:
       - [ ] FiniteAttractors 
-      - [ ] InnerDistance
+      - [x] InnerDistance
 
       both:
       - [ ] Constant
       - [ ] EscapeAngle
       - [ ] CurvatureEstimation
+      - [ ] Atoms
 
 * [ ] color algorithms: ColorMap1D, LCH, RGB
 

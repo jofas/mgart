@@ -16,11 +16,11 @@ use args::{ColorMap1dArgs, JuliaSetArgs};
 use util::colors::{LCH, RGB};
 
 fn attractor(
-  z: Complex64,
+  z0: Complex64,
   c: Complex64,
   p: usize,
 ) -> Option<(Complex64, Complex64)> {
-  let mut zz = z;
+  let mut zz = z0;
 
   for _ in 0..64 {
     let mut z = zz;
@@ -33,7 +33,7 @@ fn attractor(
 
     let zz_new = zz - (z - zz) / (dz - 1.);
 
-    if (zz_new - zz).norm() <= f64::EPSILON {
+    if (zz_new - zz).norm_sqr() <= 1e-20 {
       return Some((z, dz));
     }
 
@@ -95,16 +95,14 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
       let mut id = None;
       let mut m = f64::MAX;
 
-      for p in 0..args.iter as usize {
-        z = z.powi(2) + c;
-
+      for p in 1..=args.iter as usize {
         let z_sqr = z.norm_sqr();
 
-        if z.norm() < m {
-          m = z.norm();
+        if z_sqr < m {
+          m = z_sqr;
 
           if let Some((z0, dz0)) = attractor(z, c, p) {
-            if dz0.norm() <= 1.0 {
+            if dz0.norm_sqr() <= 1. {
               id = Some(interior_distance(z0, c, p));
               break;
             }
@@ -114,6 +112,8 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
         if z_sqr >= 4.0 {
           break;
         }
+
+        z = z.powi(2) + c;
       }
 
       if let Some(id) = id {
@@ -126,8 +126,6 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
         if id > *d_max {
           *d_max = id;
         }
-
-        println!("id: {}, d_max: {}", id, d_max);
       } else {
         *pixel = 0.;
       }
@@ -144,26 +142,7 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
       let d = distance_buf[i];
       let d_norm = (d_max - d) / d_max;
 
-      /*
-      let rgb = RGB::new(
-        (d_norm * 255.) as u8,
-        (d_norm * 255.) as u8,
-        (d_norm * 255.) as u8,
-      );
-      */
-
-      let rgb = LCH::new(
-        //((color * 100. * std::f64::consts::PI).sin() / 2. + 0.5) * 100.,
-        //color.powf(3.5).fract() * 100.,
-        //0.,
-        //0.,
-        65.,
-        //100. - (100. * d_norm),
-        132.,
-        //32. + 100. - (100. * d_norm),
-        (360. * d_norm).powi(2),
-      )
-      .rgb();
+      let rgb = args.color_map.color(d_norm);
 
       pixel[0] = rgb.r();
       pixel[1] = rgb.g();
@@ -312,11 +291,11 @@ pub fn color_map_1d(args: ColorMap1dArgs) {
     .for_each(|(i, pixel)| {
       let x = (i % args.width) as f64;
 
-      let rgb = args.color_map.color(x / args.width as f64).as_vec();
+      let rgb = args.color_map.color(x / args.width as f64);
 
-      pixel[0] = rgb[0];
-      pixel[1] = rgb[1];
-      pixel[2] = rgb[2];
+      pixel[0] = rgb.r();
+      pixel[1] = rgb.g();
+      pixel[2] = rgb.b();
 
       let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
