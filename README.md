@@ -50,6 +50,8 @@
 
 * [x] instead of color map with gradient, compute color directly (LCH)
 
+* [ ] API for describing drawing algorithms
+
 * [ ] drawing algorithms: 
   
       outer: 
