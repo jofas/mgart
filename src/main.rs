@@ -6,7 +6,9 @@ use std::fs::File;
 use std::io::stdin;
 
 use algorithmic_art::args::{ColorMap1dArgs, JuliaSetArgs};
-use algorithmic_art::{color_map_1d, julia_set};
+use algorithmic_art::{
+  color_map_1d, julia_set, julia_set_interior_distance,
+};
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -46,7 +48,7 @@ fn main() {
     match cmd {
       Command::JuliaSet(args) => {
         println!("generating julia set with arguments:\n{}", args);
-        julia_set(args);
+        julia_set_interior_distance(args);
       }
       Command::ColorMap1d(args) => {
         println!("generating 1d color map with arguments:\n{}", args);

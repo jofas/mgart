@@ -53,17 +53,17 @@
 * [ ] drawing algorithms: 
   
       outer: 
-      - EscapeTime
-      - OuterDistance
+      - [x] EscapeTime
+      - [ ] OuterDistance
     
       inner:
-      - FiniteAttractors 
-      - InnerDistance
+      - [ ] FiniteAttractors 
+      - [ ] InnerDistance
 
       both:
-      - Constant
-      - EscapeAngle
-      - CurvatureEstimation
+      - [ ] Constant
+      - [ ] EscapeAngle
+      - [ ] CurvatureEstimation
 
 * [ ] color algorithms: ColorMap1D, LCH, RGB
 
