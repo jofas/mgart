@@ -7,7 +7,7 @@ use std::io::stdin;
 
 use algorithmic_art::args::{ColorMap1dArgs, JuliaSetArgs};
 use algorithmic_art::{
-  color_map_1d, julia_set, julia_set_interior_distance,
+  buddhabrot, color_map_1d, julia_set, julia_set_interior_distance,
 };
 
 #[derive(Parser)]
@@ -22,6 +22,7 @@ struct Cli {
 #[serde(rename_all = "kebab-case")]
 enum Command {
   JuliaSet(JuliaSetArgs),
+  Buddhabrot,
   #[serde(rename = "color-map-1d")]
   ColorMap1d(ColorMap1dArgs),
 }
@@ -49,6 +50,10 @@ fn main() {
       Command::JuliaSet(args) => {
         println!("generating julia set with arguments:\n{}", args);
         julia_set_interior_distance(args);
+      }
+      Command::Buddhabrot => {
+        println!("generating buddhabrot");
+        buddhabrot();
       }
       Command::ColorMap1d(args) => {
         println!("generating 1d color map with arguments:\n{}", args);

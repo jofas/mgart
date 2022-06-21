@@ -175,9 +175,29 @@ impl From<ColorMap1dDeserializer> for ColorMap1d {
   }
 }
 
+pub fn grid_pos(
+  x: f64,
+  y: f64,
+  x_min: f64,
+  x_max: f64,
+  y_min: f64,
+  y_max: f64,
+  delta_x: f64,
+  delta_y: f64,
+) -> Option<(usize, usize)> {
+  if x_min <= x && x < x_max && y_min <= y && y < y_max {
+    let x = ((x - x_min) / delta_x) as usize;
+    let y = ((y - y_min) / delta_y) as usize;
+
+    Some((x, y))
+  } else {
+    None
+  }
+}
+
 #[cfg(test)]
 mod tests {
-  use super::Gradient;
+  use super::{grid_pos, Gradient};
 
   #[test]
   fn linear_gradient() {
@@ -234,5 +254,51 @@ mod tests {
     assert_eq!((g.apply_to(0.74) * 100.).floor(), 66.);
     assert_eq!(g.apply_to(0.75), 1.);
     assert_eq!(g.apply_to(1.), 1.);
+  }
+
+  #[test]
+  fn grid_pos1() {
+    let (x, y) = grid_pos(1.5, 0.5, 0., 2., 0., 2., 1., 1.).unwrap();
+    assert_eq!(x, 1);
+    assert_eq!(y, 0);
+  }
+
+  #[test]
+  fn grid_pos2() {
+    let p = grid_pos(1.5, -0.5, 0., 2., 0., 2., 1., 1.);
+    assert_eq!(p, None);
+  }
+
+  #[test]
+  fn grid_pos3() {
+    let p = grid_pos(1.5, 2.5, 0., 2., 0., 2., 1., 1.);
+    assert_eq!(p, None);
+  }
+
+  #[test]
+  fn grid_pos4() {
+    let (x, y) =
+      grid_pos(0., 0., -50., 50., -50., 50., 1., 1.).unwrap();
+
+    assert_eq!(x, 50);
+    assert_eq!(y, 50);
+  }
+
+  #[test]
+  fn grid_pos5() {
+    let (x, y) =
+      grid_pos(0., 0., -1., 1., -1., 1., 0.01, 0.005).unwrap();
+
+    assert_eq!(x, 100);
+    assert_eq!(y, 200);
+  }
+
+  #[test]
+  fn grid_pos6() {
+    let (x, y) =
+      grid_pos(0.999, 0.999, -1., 1., -1., 1., 0.01, 0.005).unwrap();
+
+    assert_eq!(x, 199);
+    assert_eq!(y, 399);
   }
 }

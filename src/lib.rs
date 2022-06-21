@@ -1,13 +1,17 @@
 use rayon::iter::{
-  IndexedParallelIterator, IntoParallelRefMutIterator,
-  ParallelIterator,
+  IndexedParallelIterator, IntoParallelIterator,
+  IntoParallelRefMutIterator, ParallelIterator,
 };
 use rayon::slice::ParallelSliceMut;
 
+use rand::random;
+
 use num_complex::Complex64;
 
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
+
+use std::f64::consts::PI;
 
 pub mod args;
 pub mod util;
@@ -59,6 +63,140 @@ fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
   }
 
   (1. - dz.norm_sqr()) / (dcdz + dzdz * dc / (1. - dz)).norm()
+}
+
+pub fn buddhabrot() {
+  let width = 1000;
+  let height = 1000;
+
+  let zpx = -0.5;
+  let zpy = 0.0;
+
+  let zoom = 0.45;
+
+  let iter = 20_000;
+
+  let (w, h) = (width as f64, height as f64);
+
+  let aspect_ratio = w / h;
+
+  let vp_height = 1. / zoom;
+  let vp_width = vp_height * aspect_ratio;
+
+  // center viewport around (zpx, zpy)
+  let vp_height_half = vp_height * 0.5;
+  let vp_width_half = vp_width * 0.5;
+
+  let x_min = zpx - vp_width_half;
+  let x_max = vp_width - vp_width_half + zpx;
+
+  let y_min = zpy - vp_height_half;
+  let y_max = vp_height - vp_height_half + zpy;
+
+  let delta_x = vp_width / w;
+  let delta_y = vp_height / h;
+
+  let num_pixel = width * height;
+
+  // TODO: smooth color
+  // TODO: parameterize
+
+  let counter_buf: Vec<AtomicI64> =
+    (0..num_pixel).map(|_| AtomicI64::new(0)).collect();
+
+  let processed_samples = AtomicI64::new(0);
+
+  let max_count = AtomicI64::new(0);
+
+  let sample_count: i64 = 1_000_000_000;
+
+  (0..sample_count).into_par_iter().for_each(|_| {
+    let c = Complex64::from_polar(
+      2. * random::<f64>(),
+      2. * PI * random::<f64>(),
+    );
+
+    let mut z = c;
+    let mut z_sqr = z.norm_sqr();
+
+    let mut j = 0;
+    while j < iter && z_sqr <= 4.0 {
+      z = z.powi(2) + c;
+      z_sqr = z.norm_sqr();
+
+      j = j + 1;
+    }
+
+    if j != iter {
+      let mut z = c;
+      let mut z_sqr = z.norm_sqr();
+
+      let mut j = 0;
+      while j < iter && z_sqr <= 4.0 {
+        let idx = util::grid_pos(
+          z.re, z.im, x_min, x_max, y_min, y_max, delta_x, delta_y,
+        );
+
+        if let Some((x, y)) = idx {
+          let count =
+            counter_buf[y * width + x].fetch_add(1, Ordering::SeqCst);
+          max_count.fetch_max(count + 1, Ordering::SeqCst);
+        }
+
+        z = z.powi(2) + c;
+        z_sqr = z.norm_sqr();
+
+        j = j + 1;
+      }
+    }
+
+    let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
+
+    if ps % 2500 == 0 || ps == sample_count - 1 {
+      print!(
+        "{}/{} samples iterated ({:.2}%)\r",
+        ps,
+        sample_count,
+        (ps as f64 / sample_count as f64) * 100.,
+      );
+    }
+  });
+
+  let mut buf = vec![0_u8; num_pixel * 3];
+
+  let color_map = util::ColorMap1d::new(
+    vec![
+      util::colors::Color::RGB(RGB::new(0, 0, 0)),
+      util::colors::Color::RGB(RGB::new(255, 255, 255)),
+    ],
+    util::Gradient::Linear { factor: 1. },
+  );
+
+  let max_count = max_count.into_inner();
+
+  buf.chunks_exact_mut(3).enumerate().for_each(|(i, pixel)| {
+    let count = counter_buf[i].load(Ordering::SeqCst) as f64;
+    let count_norm = (max_count as f64 - count) / max_count as f64;
+
+    let rgb = color_map.color(count_norm);
+
+    pixel[0] = rgb.r();
+    pixel[1] = rgb.g();
+    pixel[2] = rgb.b();
+  });
+
+  let filename = "1.png";
+
+  image::save_buffer(
+    filename,
+    &buf,
+    width as u32,
+    height as u32,
+    image::ColorType::Rgb8,
+  )
+  .unwrap();
+
+  println!("\nsuccessfully written: {}", filename);
 }
 
 pub fn julia_set_interior_distance(args: JuliaSetArgs) {

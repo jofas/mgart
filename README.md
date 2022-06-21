@@ -68,6 +68,9 @@
       - [ ] CurvatureEstimation
       - [ ] Atoms
 
+      else:
+      - [ ] PickoverStalks
+
 * [ ] color algorithms: ColorMap1D, LCH, RGB
 
 * [ ] color smoothing optional
