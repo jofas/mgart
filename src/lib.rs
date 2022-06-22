@@ -92,7 +92,15 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
 
   let processed_samples = AtomicU64::new(0);
 
+  // here global rwlocked reference to current sample
+  //
+  // the higher the probability, the smaller the chance of randomly
+  // resampling from whole c (1 - p) and the smaller the stdev for
+  // gaussian during resampling (zoom + parameterized?)
+
   (0..args.sample_count).into_par_iter().for_each(|_| {
+    // TODO: better sampling
+    //
     let c = Complex64::from_polar(
       2. * random::<f64>(),
       2. * PI * random::<f64>(),
@@ -109,7 +117,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
       j = j + 1;
     }
 
-    if j != args.iter {
+    if j != args.iter && j as f64 / args.iter as f64 > 0.8 {
       let mut z = c;
       let mut z_sqr = z.norm_sqr();
 

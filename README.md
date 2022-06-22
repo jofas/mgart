@@ -50,6 +50,10 @@
 
 * [x] instead of color map with gradient, compute color directly (LCH)
 
+* [x] buddhabrot
+
+* [ ] buddhabrot: better sampling (Metropolis-Hastings)
+
 * [ ] API for describing drawing algorithms
 
 * [ ] drawing algorithms: 
@@ -95,8 +99,6 @@
 * [ ] newton fractals
 
 * [ ] multibrot
-
-* [ ] buddhabrot
 
 * [ ] fractal flame
 
