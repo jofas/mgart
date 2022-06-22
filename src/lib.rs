@@ -72,7 +72,7 @@ pub fn buddhabrot() {
   let zpx = -0.5;
   let zpy = 0.0;
 
-  let zoom = 0.45;
+  let zoom = 0.5;
 
   let iter = 20_000;
 
@@ -106,8 +106,6 @@ pub fn buddhabrot() {
 
   let processed_samples = AtomicI64::new(0);
 
-  let max_count = AtomicI64::new(0);
-
   let sample_count: i64 = 1_000_000_000;
 
   (0..sample_count).into_par_iter().for_each(|_| {
@@ -138,9 +136,7 @@ pub fn buddhabrot() {
         );
 
         if let Some((x, y)) = idx {
-          let count =
-            counter_buf[y * width + x].fetch_add(1, Ordering::SeqCst);
-          max_count.fetch_max(count + 1, Ordering::SeqCst);
+          counter_buf[y * width + x].fetch_add(1, Ordering::SeqCst);
         }
 
         z = z.powi(2) + c;
@@ -162,21 +158,35 @@ pub fn buddhabrot() {
     }
   });
 
+  let counter_buf: Vec<i64> = counter_buf.into_iter().map(|i| i.into_inner()).collect();
+
+  let mut max = 0;
+  let mut min = i64::MAX;
+
+  for counter in &counter_buf {
+    let counter = *counter;
+
+    if counter < min {
+      min = counter;
+    }
+
+    if counter > max {
+      max = counter;
+    }
+  }
+
+  println!("max: {}, min: {}", max, min);
+
+  let max = max as f64;
+  let min = min as f64;
+
   let mut buf = vec![0_u8; num_pixel * 3];
 
-  let color_map = util::ColorMap1d::new(
-    vec![
-      util::colors::Color::RGB(RGB::new(0, 0, 0)),
-      util::colors::Color::RGB(RGB::new(255, 255, 255)),
-    ],
-    util::Gradient::Linear { factor: 1. },
-  );
-
-  let max_count = max_count.into_inner();
+  let color_map = util::ColorMap1d::default();
 
   buf.chunks_exact_mut(3).enumerate().for_each(|(i, pixel)| {
-    let count = counter_buf[i].load(Ordering::SeqCst) as f64;
-    let count_norm = (max_count as f64 - count) / max_count as f64;
+    let count = counter_buf[i] as f64;
+    let count_norm = (max - count) / (max - min);
 
     let rgb = color_map.color(count_norm);
 
