@@ -5,7 +5,9 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::stdin;
 
-use algorithmic_art::args::{ColorMap1dArgs, JuliaSetArgs};
+use algorithmic_art::args::{
+  BuddhabrotArgs, ColorMap1dArgs, JuliaSetArgs,
+};
 use algorithmic_art::{
   buddhabrot, color_map_1d, julia_set, julia_set_interior_distance,
 };
@@ -22,7 +24,7 @@ struct Cli {
 #[serde(rename_all = "kebab-case")]
 enum Command {
   JuliaSet(JuliaSetArgs),
-  Buddhabrot,
+  Buddhabrot(BuddhabrotArgs),
   #[serde(rename = "color-map-1d")]
   ColorMap1d(ColorMap1dArgs),
 }
@@ -51,9 +53,9 @@ fn main() {
         println!("generating julia set with arguments:\n{}", args);
         julia_set_interior_distance(args);
       }
-      Command::Buddhabrot => {
-        println!("generating buddhabrot");
-        buddhabrot();
+      Command::Buddhabrot(args) => {
+        println!("generating buddhabrot with arguments: \n{}", args);
+        buddhabrot(args);
       }
       Command::ColorMap1d(args) => {
         println!("generating 1d color map with arguments:\n{}", args);

@@ -8,7 +8,7 @@ use rand::random;
 
 use num_complex::Complex64;
 
-use std::sync::atomic::{AtomicI64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use std::f64::consts::PI;
@@ -16,7 +16,7 @@ use std::f64::consts::PI;
 pub mod args;
 pub mod util;
 
-use args::{ColorMap1dArgs, JuliaSetArgs};
+use args::{BuddhabrotArgs, ColorMap1dArgs, JuliaSetArgs};
 use util::colors::{LCH, RGB};
 
 fn attractor(
@@ -65,50 +65,34 @@ fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
   (1. - dz.norm_sqr()) / (dcdz + dzdz * dc / (1. - dz)).norm()
 }
 
-pub fn buddhabrot() {
-  let width = 1000;
-  let height = 1000;
+pub fn buddhabrot(args: BuddhabrotArgs) {
+  let num_pixel = args.width * args.height;
 
-  let zpx = -0.5;
-  let zpy = 0.0;
+  let counter_buf: Vec<AtomicU64> =
+    (0..num_pixel).map(|_| AtomicU64::new(0)).collect();
 
-  let zoom = 0.5;
-
-  let iter = 20_000;
-
-  let (w, h) = (width as f64, height as f64);
+  let (w, h) = (args.width as f64, args.height as f64);
 
   let aspect_ratio = w / h;
 
-  let vp_height = 1. / zoom;
+  let vp_height = 1. / args.zoom;
   let vp_width = vp_height * aspect_ratio;
 
-  // center viewport around (zpx, zpy)
   let vp_height_half = vp_height * 0.5;
   let vp_width_half = vp_width * 0.5;
 
-  let x_min = zpx - vp_width_half;
-  let x_max = vp_width - vp_width_half + zpx;
+  let x_min = args.zpx - vp_width_half;
+  let x_max = vp_width - vp_width_half + args.zpx;
 
-  let y_min = zpy - vp_height_half;
-  let y_max = vp_height - vp_height_half + zpy;
+  let y_min = args.zpy - vp_height_half;
+  let y_max = vp_height - vp_height_half + args.zpy;
 
   let delta_x = vp_width / w;
   let delta_y = vp_height / h;
 
-  let num_pixel = width * height;
+  let processed_samples = AtomicU64::new(0);
 
-  // TODO: smooth color
-  // TODO: parameterize
-
-  let counter_buf: Vec<AtomicI64> =
-    (0..num_pixel).map(|_| AtomicI64::new(0)).collect();
-
-  let processed_samples = AtomicI64::new(0);
-
-  let sample_count: i64 = 1_000_000_000;
-
-  (0..sample_count).into_par_iter().for_each(|_| {
+  (0..args.sample_count).into_par_iter().for_each(|_| {
     let c = Complex64::from_polar(
       2. * random::<f64>(),
       2. * PI * random::<f64>(),
@@ -118,25 +102,26 @@ pub fn buddhabrot() {
     let mut z_sqr = z.norm_sqr();
 
     let mut j = 0;
-    while j < iter && z_sqr <= 4.0 {
+    while j < args.iter && z_sqr <= 4.0 {
       z = z.powi(2) + c;
       z_sqr = z.norm_sqr();
 
       j = j + 1;
     }
 
-    if j != iter {
+    if j != args.iter {
       let mut z = c;
       let mut z_sqr = z.norm_sqr();
 
       let mut j = 0;
-      while j < iter && z_sqr <= 4.0 {
+      while j < args.iter && z_sqr <= 4.0 {
         let idx = util::grid_pos(
           z.re, z.im, x_min, x_max, y_min, y_max, delta_x, delta_y,
         );
 
         if let Some((x, y)) = idx {
-          counter_buf[y * width + x].fetch_add(1, Ordering::SeqCst);
+          counter_buf[y * args.width + x]
+            .fetch_add(1, Ordering::SeqCst);
         }
 
         z = z.powi(2) + c;
@@ -148,20 +133,21 @@ pub fn buddhabrot() {
 
     let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
 
-    if ps % 2500 == 0 || ps == sample_count - 1 {
+    if ps % 2500 == 0 || ps == args.sample_count - 1 {
       print!(
         "{}/{} samples iterated ({:.2}%)\r",
-        ps,
-        sample_count,
-        (ps as f64 / sample_count as f64) * 100.,
+        ps + 1,
+        args.sample_count,
+        (ps as f64 / args.sample_count as f64) * 100.,
       );
     }
   });
 
-  let counter_buf: Vec<i64> = counter_buf.into_iter().map(|i| i.into_inner()).collect();
+  let counter_buf: Vec<u64> =
+    counter_buf.into_iter().map(|i| i.into_inner()).collect();
 
   let mut max = 0;
-  let mut min = i64::MAX;
+  let mut min = u64::MAX;
 
   for counter in &counter_buf {
     let counter = *counter;
@@ -175,38 +161,32 @@ pub fn buddhabrot() {
     }
   }
 
-  println!("max: {}, min: {}", max, min);
-
   let max = max as f64;
   let min = min as f64;
 
   let mut buf = vec![0_u8; num_pixel * 3];
 
-  let color_map = util::ColorMap1d::default();
-
   buf.chunks_exact_mut(3).enumerate().for_each(|(i, pixel)| {
     let count = counter_buf[i] as f64;
-    let count_norm = (max - count) / (max - min);
+    let count_norm = (count - min) / (max - min);
 
-    let rgb = color_map.color(count_norm);
+    let rgb = args.color_map.color(count_norm);
 
     pixel[0] = rgb.r();
     pixel[1] = rgb.g();
     pixel[2] = rgb.b();
   });
 
-  let filename = "1.png";
-
   image::save_buffer(
-    filename,
+    &args.filename,
     &buf,
-    width as u32,
-    height as u32,
+    args.width as u32,
+    args.height as u32,
     image::ColorType::Rgb8,
   )
   .unwrap();
 
-  println!("\nsuccessfully written: {}", filename);
+  println!("\nsuccessfully written: {}", args.filename);
 }
 
 pub fn julia_set_interior_distance(args: JuliaSetArgs) {

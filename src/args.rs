@@ -5,6 +5,28 @@ use display_json::DisplayAsJsonPretty;
 use crate::util::{ColorMap1d, ComplexNumber};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
+pub struct BuddhabrotArgs {
+  #[serde(default = "default_width")]
+  pub width: usize,
+  #[serde(default = "default_height")]
+  pub height: usize,
+  #[serde(default = "default_zoom")]
+  pub zoom: f64,
+  #[serde(default = "default_zpx")]
+  pub zpx: f64,
+  #[serde(default = "default_zpy")]
+  pub zpy: f64,
+  #[serde(default = "default_iter")]
+  pub iter: u32,
+  #[serde(default = "default_buddhabrot_filename")]
+  pub filename: String,
+  #[serde(default)]
+  pub color_map: ColorMap1d,
+  #[serde(default = "default_sample_count")]
+  pub sample_count: u64,
+}
+
+#[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSetArgs {
   #[serde(default = "default_width")]
   pub width: usize,
@@ -60,6 +82,14 @@ fn default_zpy() -> f64 {
 
 fn default_iter() -> u32 {
   100
+}
+
+fn default_sample_count() -> u64 {
+  100_000_000
+}
+
+fn default_buddhabrot_filename() -> String {
+  "buddhabrot.png".to_owned()
 }
 
 fn default_julia_set_filename() -> String {

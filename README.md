@@ -71,7 +71,9 @@
       else:
       - [ ] PickoverStalks
 
-* [ ] color algorithms: ColorMap1D, LCH, RGB
+* [ ] rotation parameter
+
+* [ ] color algorithms: ColorMap1D, LCH, RGB, Nebula
 
 * [ ] color smoothing optional
 
