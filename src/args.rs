@@ -24,6 +24,10 @@ pub struct BuddhabrotArgs {
   pub color_map: ColorMap1d,
   #[serde(default = "default_sample_count")]
   pub sample_count: u64,
+  #[serde(default = "default_deviation_factor")]
+  pub deviation_factor: f64,
+  #[serde(default = "default_transition_threshold")]
+  pub transition_threshold: f64,
 }
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
@@ -86,6 +90,14 @@ fn default_iter() -> u32 {
 
 fn default_sample_count() -> u64 {
   100_000_000
+}
+
+fn default_deviation_factor() -> f64 {
+  0.1
+}
+
+fn default_transition_threshold() -> f64 {
+  0.1
 }
 
 fn default_buddhabrot_filename() -> String {

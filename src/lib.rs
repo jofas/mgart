@@ -5,13 +5,14 @@ use rayon::iter::{
 use rayon::slice::ParallelSliceMut;
 
 use rand::random;
+use rand_distr::{Distribution, Normal};
 
 use num_complex::Complex64;
 
+use std::cell::RefCell;
+use std::f64::consts::PI;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-
-use std::f64::consts::PI;
 
 pub mod args;
 pub mod util;
@@ -65,6 +66,22 @@ fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
   (1. - dz.norm_sqr()) / (dcdz + dzdz * dc / (1. - dz)).norm()
 }
 
+fn sample(c: &Complex64, p: f64, f: f64) -> Complex64 {
+  if random::<f64>() > p {
+    return Complex64::from_polar(
+      2. * random::<f64>(),
+      2. * PI * random::<f64>(),
+    );
+  }
+
+  let n = Normal::new(0., (1. - p) * f).unwrap();
+
+  Complex64::new(
+    c.re + n.sample(&mut rand::thread_rng()),
+    c.im + n.sample(&mut rand::thread_rng()),
+  )
+}
+
 pub fn buddhabrot(args: BuddhabrotArgs) {
   let num_pixel = args.width * args.height;
 
@@ -72,6 +89,8 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     (0..num_pixel).map(|_| AtomicU64::new(0)).collect();
 
   let (w, h) = (args.width as f64, args.height as f64);
+
+  let factor = 0.15;
 
   let aspect_ratio = w / h;
 
@@ -92,19 +111,16 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
 
   let processed_samples = AtomicU64::new(0);
 
-  // here global rwlocked reference to current sample
-  //
-  // the higher the probability, the smaller the chance of randomly
-  // resampling from whole c (1 - p) and the smaller the stdev for
-  // gaussian during resampling (zoom + parameterized?)
+  thread_local!(
+    static C: RefCell<Complex64> =
+      RefCell::new(Complex64::from_polar(
+        2. * random::<f64>(),
+        2. * PI * random::<f64>(),
+      ));
+  );
 
   (0..args.sample_count).into_par_iter().for_each(|_| {
-    // TODO: better sampling
-    //
-    let c = Complex64::from_polar(
-      2. * random::<f64>(),
-      2. * PI * random::<f64>(),
-    );
+    let c = C.with(|c| *c.borrow());
 
     let mut z = c;
     let mut z_sqr = z.norm_sqr();
@@ -117,7 +133,13 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
       j = j + 1;
     }
 
-    if j != args.iter && j as f64 / args.iter as f64 > 0.8 {
+    let p = if j != args.iter {
+      j as f64 / args.iter as f64
+    } else {
+      0.
+    };
+
+    if p > args.transition_threshold {
       let mut z = c;
       let mut z_sqr = z.norm_sqr();
 
@@ -138,6 +160,11 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
         j = j + 1;
       }
     }
+
+    C.with(|c| {
+      let mut c = c.borrow_mut();
+      *c = sample(&c, p, args.deviation_factor);
+    });
 
     let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
 
