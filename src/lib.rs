@@ -9,6 +9,8 @@ use rand_distr::{Distribution, Normal};
 
 use num_complex::Complex64;
 
+use map_macro::vec_no_clone;
+
 use std::cell::RefCell;
 use std::f64::consts::PI;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
@@ -86,7 +88,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   let num_pixel = args.width * args.height;
 
   let counter_buf: Vec<AtomicU64> =
-    (0..num_pixel).map(|_| AtomicU64::new(0)).collect();
+    vec_no_clone![AtomicU64::new(0); num_pixel];
 
   let (w, h) = (args.width as f64, args.height as f64);
 

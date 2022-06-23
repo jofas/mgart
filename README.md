@@ -52,7 +52,9 @@
 
 * [x] buddhabrot
 
-* [ ] buddhabrot: better sampling (Metropolis-Hastings)
+* [ ] buddhabrot: better sampling
+
+* [ ] time estimates
 
 * [ ] API for describing drawing algorithms
 
