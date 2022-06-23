@@ -92,8 +92,6 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
 
   let (w, h) = (args.width as f64, args.height as f64);
 
-  let factor = 0.15;
-
   let aspect_ratio = w / h;
 
   let vp_height = 1. / args.zoom;
