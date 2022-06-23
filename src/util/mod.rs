@@ -4,6 +4,11 @@ use display_json::DisplayAsJson;
 
 use num_complex::Complex64;
 
+use map_macro::vec_no_clone;
+
+use rand::random;
+use rand_distr::{Distribution, Normal};
+
 use std::f64::consts::PI;
 
 pub mod colors;
@@ -175,6 +180,64 @@ impl From<ColorMap1dDeserializer> for ColorMap1d {
   }
 }
 
+pub struct GaussianKDE {
+  len: usize,
+  elems: Vec<Complex64>,
+  probabilities: Vec<f64>,
+  distribution: Normal<f64>,
+}
+
+impl GaussianKDE {
+  pub fn new(len: usize, h: f64) -> Self {
+    Self {
+      len,
+      elems: vec_no_clone![random_complex(); len],
+      probabilities: vec![0.; len],
+      distribution: Normal::new(0., h).unwrap(),
+    }
+  }
+
+  pub fn sample(&self) -> Complex64 {
+    let idx = (random::<f64>() * self.elems.len() as f64) as usize;
+
+    let re = self.distribution.sample(&mut rand::thread_rng());
+    let im = self.distribution.sample(&mut rand::thread_rng());
+
+    Complex64::new(self.elems[idx].re + re, self.elems[idx].im + im)
+  }
+
+  pub fn update(&mut self, c: Complex64, p: f64) {
+    // TODO: don't allow similar points
+    //
+    // ... how?
+    //
+    // get nn, if better than nn, replace, else, keep nn
+    //
+
+    let idx = (random::<f64>() * self.len as f64) as usize;
+
+    if self.probabilities[idx] < p {
+      self.elems[idx] = c;
+      self.probabilities[idx] = p;
+    }
+  }
+
+  pub fn average_probability(&self) -> f64 {
+    self.probabilities.iter().sum::<f64>() / self.len as f64
+  }
+}
+
+pub fn in_viewport(
+  x: f64,
+  y: f64,
+  x_min: f64,
+  x_max: f64,
+  y_min: f64,
+  y_max: f64,
+) -> bool {
+  x_min <= x && x < x_max && y_min <= y && y < y_max
+}
+
 pub fn grid_pos(
   x: f64,
   y: f64,
@@ -185,7 +248,7 @@ pub fn grid_pos(
   delta_x: f64,
   delta_y: f64,
 ) -> Option<(usize, usize)> {
-  if x_min <= x && x < x_max && y_min <= y && y < y_max {
+  if in_viewport(x, y, x_min, x_max, y_min, y_max) {
     let x = ((x - x_min) / delta_x) as usize;
     let y = ((y - y_min) / delta_y) as usize;
 
@@ -193,6 +256,13 @@ pub fn grid_pos(
   } else {
     None
   }
+}
+
+pub fn random_complex() -> Complex64 {
+  Complex64::from_polar(
+    2. * random::<f64>(),
+    2. * PI * random::<f64>(),
+  )
 }
 
 #[cfg(test)]

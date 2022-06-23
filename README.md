@@ -52,6 +52,8 @@
 
 * [x] buddhabrot
 
+* [ ] sampling visualization
+
 * [ ] buddhabrot: better sampling
 
 * [ ] time estimates

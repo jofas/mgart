@@ -3,18 +3,18 @@ use rayon::iter::{
   IntoParallelRefMutIterator, ParallelIterator,
 };
 use rayon::slice::ParallelSliceMut;
-
-use rand::random;
-use rand_distr::{Distribution, Normal};
+use rayon::{current_num_threads, current_thread_index};
 
 use num_complex::Complex64;
+
+use rand::random;
 
 use map_macro::vec_no_clone;
 
 use std::cell::RefCell;
 use std::f64::consts::PI;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 
 pub mod args;
 pub mod util;
@@ -68,27 +68,13 @@ fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
   (1. - dz.norm_sqr()) / (dcdz + dzdz * dc / (1. - dz)).norm()
 }
 
-fn sample(c: &Complex64, p: f64, f: f64) -> Complex64 {
-  if random::<f64>() > p {
-    return Complex64::from_polar(
-      2. * random::<f64>(),
-      2. * PI * random::<f64>(),
-    );
-  }
-
-  let n = Normal::new(0., (1. - p) * f).unwrap();
-
-  Complex64::new(
-    c.re + n.sample(&mut rand::thread_rng()),
-    c.im + n.sample(&mut rand::thread_rng()),
-  )
-}
-
 pub fn buddhabrot(args: BuddhabrotArgs) {
   let num_pixel = args.width * args.height;
 
-  let counter_buf: Vec<AtomicU64> =
-    vec_no_clone![AtomicU64::new(0); num_pixel];
+  let buffers = vec_no_clone![
+    Arc::new(Mutex::new(vec![0; num_pixel]));
+    current_num_threads() * 2
+  ];
 
   let (w, h) = (args.width as f64, args.height as f64);
 
@@ -109,37 +95,52 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   let delta_x = vp_width / w;
   let delta_y = vp_height / h;
 
-  let processed_samples = AtomicU64::new(0);
+  let sampler = RwLock::new(util::GaussianKDE::new(1_000_000, 0.75));
 
-  thread_local!(
-    static C: RefCell<Complex64> =
-      RefCell::new(Complex64::from_polar(
-        2. * random::<f64>(),
-        2. * PI * random::<f64>(),
-      ));
-  );
+  // TODO: write trajectory unto multiple buffers and average them
+
+  // TODO: save the x best samples in a Gaussian KDE
+  //
+  // TODO: uniformly randomly sample from KDE
+  //
+  // TODO: "verify" that this works by getting an average
+
+  let processed_samples = AtomicU64::new(0);
+  let iter_count = AtomicU64::new(0);
+  let hits_count = AtomicU64::new(0);
 
   (0..args.sample_count).into_par_iter().for_each(|_| {
-    let c = C.with(|c| *c.borrow());
+    //let c = sampler.read().unwrap().sample();
+    let c = util::random_complex();
 
     let mut z = c;
     let mut z_sqr = z.norm_sqr();
 
     let mut j = 0;
+    let mut passed_viewport = false;
     while j < args.iter && z_sqr <= 4.0 {
       z = z.powi(2) + c;
       z_sqr = z.norm_sqr();
 
+      if util::in_viewport(z.re, z.im, x_min, x_max, y_min, y_max) {
+        passed_viewport = true;
+      }
+
       j = j + 1;
     }
 
-    let p = if j != args.iter {
+    let p = if j != args.iter && passed_viewport {
+      iter_count.fetch_add(j as u64, Ordering::SeqCst);
+      hits_count.fetch_add(1, Ordering::SeqCst);
+
       j as f64 / args.iter as f64
     } else {
       0.
     };
 
-    if p > args.transition_threshold {
+    if p > 0. {
+      //sampler.write().unwrap().update(c, p);
+
       let mut z = c;
       let mut z_sqr = z.norm_sqr();
 
@@ -150,8 +151,12 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
         );
 
         if let Some((x, y)) = idx {
-          counter_buf[y * args.width + x]
-            .fetch_add(1, Ordering::SeqCst);
+          let mut b = current_thread_index().unwrap() * 2;
+          if random::<f32>() >= 0.5 {
+            b += 1;
+          }
+
+          buffers[b].lock().unwrap()[y * args.width + x] += 1;
         }
 
         z = z.powi(2) + c;
@@ -160,11 +165,6 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
         j = j + 1;
       }
     }
-
-    C.with(|c| {
-      let mut c = c.borrow_mut();
-      *c = sample(&c, p, args.deviation_factor);
-    });
 
     let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
 
@@ -178,11 +178,36 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     }
   });
 
-  let counter_buf: Vec<u64> =
-    counter_buf.into_iter().map(|i| i.into_inner()).collect();
+  let avg_iter = iter_count.into_inner() / args.iter as u64;
+  let avg_iter = avg_iter as f64 / args.sample_count as f64;
 
-  let mut max = 0;
-  let mut min = u64::MAX;
+  let avg_hits =
+    hits_count.into_inner() as f64 / args.sample_count as f64;
+
+  println!("\naverage hits: {}", avg_hits);
+  println!("average iterations: {}", avg_iter);
+  println!(
+    "averager probability: {}",
+    sampler.into_inner().unwrap().average_probability()
+  );
+
+  let mut counter_buf: Vec<f64> =
+    buffers.iter().fold(vec![0.; num_pixel], |acc, b| {
+      acc
+        .into_iter()
+        .zip(b.lock().unwrap().iter())
+        .map(|(a, b)| a + *b as f64)
+        .collect()
+    });
+
+  for p in &mut counter_buf {
+    *p /= buffers.len() as f64;
+  }
+
+  // TODO: smooth values
+
+  let mut max = 0.;
+  let mut min = f64::MAX;
 
   for counter in &counter_buf {
     let counter = *counter;
@@ -195,9 +220,6 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
       max = counter;
     }
   }
-
-  let max = max as f64;
-  let min = min as f64;
 
   let mut buf = vec![0_u8; num_pixel * 3];
 
