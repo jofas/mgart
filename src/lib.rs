@@ -71,9 +71,11 @@ fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
 pub fn buddhabrot(args: BuddhabrotArgs) {
   let num_pixel = args.width * args.height;
 
+  let num_buffers = 8;
+
   let buffers = vec_no_clone![
-    Arc::new(Mutex::new(vec![0; num_pixel]));
-    current_num_threads() * 2
+    Arc::new(Mutex::new(vec![0.; num_pixel]));
+    current_num_threads() * num_buffers
   ];
 
   let (w, h) = (args.width as f64, args.height as f64);
@@ -95,23 +97,15 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   let delta_x = vp_width / w;
   let delta_y = vp_height / h;
 
-  let sampler = RwLock::new(util::GaussianKDE::new(1_000_000, 0.75));
-
-  // TODO: write trajectory unto multiple buffers and average them
-
-  // TODO: save the x best samples in a Gaussian KDE
-  //
-  // TODO: uniformly randomly sample from KDE
-  //
-  // TODO: "verify" that this works by getting an average
+  let sampler = RwLock::new(util::GaussianKDE::new(3_000_000, 0.1));
 
   let processed_samples = AtomicU64::new(0);
   let iter_count = AtomicU64::new(0);
   let hits_count = AtomicU64::new(0);
 
   (0..args.sample_count).into_par_iter().for_each(|_| {
-    //let c = sampler.read().unwrap().sample();
-    let c = util::random_complex();
+    let (c, sample_id) = sampler.read().unwrap().sample();
+    //let c = util::random_complex();
 
     let mut z = c;
     let mut z_sqr = z.norm_sqr();
@@ -138,31 +132,25 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
       0.
     };
 
+    sampler.write().unwrap().update(c, p, sample_id);
+
     if p > 0. {
-      //sampler.write().unwrap().update(c, p);
-
       let mut z = c;
-      let mut z_sqr = z.norm_sqr();
 
-      let mut j = 0;
-      while j < args.iter && z_sqr <= 4.0 {
+      for i in 0..=j {
         let idx = util::grid_pos(
           z.re, z.im, x_min, x_max, y_min, y_max, delta_x, delta_y,
         );
 
         if let Some((x, y)) = idx {
-          let mut b = current_thread_index().unwrap() * 2;
-          if random::<f32>() >= 0.5 {
-            b += 1;
-          }
+          let b = current_thread_index().unwrap() * num_buffers;
+          let b = b + (random::<f64>() * num_buffers as f64) as usize;
 
-          buffers[b].lock().unwrap()[y * args.width + x] += 1;
+          buffers[b].lock().unwrap()[y * args.width + x] += 1.;
+            //p - i as f64 / args.iter as f64;
         }
 
         z = z.powi(2) + c;
-        z_sqr = z.norm_sqr();
-
-        j = j + 1;
       }
     }
 
@@ -187,24 +175,122 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   println!("\naverage hits: {}", avg_hits);
   println!("average iterations: {}", avg_iter);
   println!(
-    "averager probability: {}",
+    "average probability: {}",
     sampler.into_inner().unwrap().average_probability()
   );
 
-  let mut counter_buf: Vec<f64> =
-    buffers.iter().fold(vec![0.; num_pixel], |acc, b| {
-      acc
-        .into_iter()
-        .zip(b.lock().unwrap().iter())
-        .map(|(a, b)| a + *b as f64)
-        .collect()
-    });
+  let buffers: Vec<Vec<f64>> = buffers
+    .into_iter()
+    .map(|b| Arc::try_unwrap(b).unwrap().into_inner().unwrap())
+    .collect();
 
-  for p in &mut counter_buf {
-    *p /= buffers.len() as f64;
+  let n = buffers.len() as f64;
+
+  let mut avg: Vec<f64> = vec![0.; num_pixel];
+  let mut variance: Vec<f64> = vec![0.; num_pixel];
+
+  for i in 0..num_pixel {
+    let mut sum = 0.;
+    let mut squared_sum = 0.;
+
+    for b in &buffers {
+      sum += b[i];
+      squared_sum += b[i].powi(2);
+    }
+
+    avg[i] = sum / n;
+    variance[i] = squared_sum / n - (sum / n).powi(2);
   }
 
-  // TODO: smooth values
+  let mut smoothed: Vec<f64> = vec![0.; num_pixel];
+
+  let mut sat: Vec<f64> = vec![avg[0]; num_pixel];
+
+  for i in 1..num_pixel {
+    let x = i % args.width;
+    let y = i / args.width;
+
+    // the value to the left
+    sat[i] += sat[i - 1];
+
+    // the value above
+    if y > 0 {
+      sat[i] += sat[(y - 1) * args.width + x];
+    }
+  }
+
+  println!("starting smoothing process");
+
+  /*
+  let n = 11;
+  let window_size = 51;
+
+  let processed_pixels = AtomicUsize::new(0);
+
+  smoothed.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+    let mut s = 0.;
+    let mut cp = 0.;
+
+    let x = i % args.width;
+    let y = i / args.width;
+
+    let (wx0, wy0, wx1, wy1) = util::discrete_bounded_square(
+      x,
+      y,
+      window_size,
+      args.width - 1,
+      args.height - 1,
+    );
+
+    let (x0, y0, x1, y1) = util::discrete_bounded_square(
+      x,
+      y,
+      n,
+      args.width - 1,
+      args.height - 1,
+    );
+
+    let bp = sat[y1 * args.width + x1] + sat[y0 * args.width + x0]
+      - sat[y1 * args.width + x0] - sat[y0 * args.width + x1];
+    let bp = bp / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
+
+    for x in wx0..=wx1 {
+      for y in wy0..=wy1 {
+        let (x0, y0, x1, y1) = util::discrete_bounded_square(
+          x,
+          y,
+          n,
+          args.width - 1,
+          args.height - 1,
+        );
+
+        let bq = sat[y1 * args.width + x1] + sat[y0 * args.width + x0]
+          - sat[y1 * args.width + x0] - sat[y0 * args.width + x1];
+        let bq = bq / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
+
+        let fpq = (-((bq - bp).powi(2) / variance[i])).exp();
+
+        s += avg[i] * fpq;
+        cp += fpq;
+      }
+    }
+
+    *pixel = s / cp;
+
+    let pc = processed_pixels.fetch_add(1, Ordering::SeqCst);
+
+    if pc % 10 == 0 || pc == num_pixel - 1 {
+      print!(
+        "{}/{} pixels smoothed ({:.2}%)\r",
+        pc + 1,
+        num_pixel,
+        (pc as f64 / num_pixel as f64) * 100.,
+      );
+    }
+  });
+  */
+
+  let counter_buf = avg; //smoothed;
 
   let mut max = 0.;
   let mut min = f64::MAX;

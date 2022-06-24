@@ -197,34 +197,56 @@ impl GaussianKDE {
     }
   }
 
-  pub fn sample(&self) -> Complex64 {
+  pub fn sample(&self) -> (Complex64, usize) {
     let idx = (random::<f64>() * self.elems.len() as f64) as usize;
 
     let re = self.distribution.sample(&mut rand::thread_rng());
     let im = self.distribution.sample(&mut rand::thread_rng());
 
-    Complex64::new(self.elems[idx].re + re, self.elems[idx].im + im)
+    (
+      Complex64::new(
+        self.elems[idx].re + re,
+        self.elems[idx].im + im,
+      ),
+      idx,
+    )
   }
 
-  pub fn update(&mut self, c: Complex64, p: f64) {
-    // TODO: don't allow similar points
-    //
-    // ... how?
-    //
-    // get nn, if better than nn, replace, else, keep nn
-    //
-
-    let idx = (random::<f64>() * self.len as f64) as usize;
-
-    if self.probabilities[idx] < p {
-      self.elems[idx] = c;
-      self.probabilities[idx] = p;
+  pub fn update(
+    &mut self,
+    c: Complex64,
+    p: f64,
+    sampled_from: usize,
+  ) {
+    if self.probabilities[sampled_from] <= p {
+      self.elems[sampled_from] = c;
+      self.probabilities[sampled_from] = p;
     }
   }
 
   pub fn average_probability(&self) -> f64 {
     self.probabilities.iter().sum::<f64>() / self.len as f64
   }
+}
+
+pub fn discrete_bounded_square(
+  x: usize,
+  y: usize,
+  n: usize,
+  ubx: usize,
+  uby: usize,
+) -> (usize, usize, usize, usize) {
+  let nh = n / 2;
+
+  let xupper = (x + nh).min(ubx);
+  let yupper = (y + nh).min(uby);
+
+  let (x, y) = if n % 2 == 0 { (x + 1, y + 1) } else { (x, y) };
+
+  let xlower = if nh > x + 1 { 0 } else { x + 1 - nh };
+  let ylower = if nh > y + 1 { 0 } else { y + 1 - nh };
+
+  (xlower, ylower, xupper, yupper)
 }
 
 pub fn in_viewport(
