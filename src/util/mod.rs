@@ -180,52 +180,35 @@ impl From<ColorMap1dDeserializer> for ColorMap1d {
   }
 }
 
-pub struct GaussianKDE {
-  len: usize,
-  elems: Vec<Complex64>,
+pub struct KDE<T, K> {
+  elems: Vec<T>,
   probabilities: Vec<f64>,
-  distribution: Normal<f64>,
+  kernel: K,
 }
 
-impl GaussianKDE {
-  pub fn new(len: usize, h: f64) -> Self {
+impl<T, K: Fn(&T) -> T> KDE<T, K> {
+  pub fn new(samples: Vec<(T, f64)>, kernel: K) -> Self {
+    let (elems, probabilities) = samples.into_iter().unzip();
+
     Self {
-      len,
-      elems: vec_no_clone![random_complex(); len],
-      probabilities: vec![0.; len],
-      distribution: Normal::new(0., h).unwrap(),
+      elems: elems,
+      probabilities: probabilities,
+      kernel,
     }
   }
 
-  pub fn sample(&self) -> (Complex64, usize) {
-    let idx = (random::<f64>() * self.elems.len() as f64) as usize;
+  pub fn sample(&self) -> T {
+    loop {
+      let idx = (random::<f64>() * self.elems.len() as f64) as usize;
 
-    let re = self.distribution.sample(&mut rand::thread_rng());
-    let im = self.distribution.sample(&mut rand::thread_rng());
-
-    (
-      Complex64::new(
-        self.elems[idx].re + re,
-        self.elems[idx].im + im,
-      ),
-      idx,
-    )
-  }
-
-  pub fn update(
-    &mut self,
-    c: Complex64,
-    p: f64,
-    sampled_from: usize,
-  ) {
-    if self.probabilities[sampled_from] <= p {
-      self.elems[sampled_from] = c;
-      self.probabilities[sampled_from] = p;
+      if random::<f64>() <= self.probabilities[idx] {
+        return (self.kernel)(&self.elems[idx]);
+      }
     }
   }
 
   pub fn average_probability(&self) -> f64 {
-    self.probabilities.iter().sum::<f64>() / self.len as f64
+    self.probabilities.iter().sum::<f64>() / self.elems.len() as f64
   }
 }
 

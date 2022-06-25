@@ -97,15 +97,65 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   let delta_x = vp_width / w;
   let delta_y = vp_height / h;
 
-  let sampler = RwLock::new(util::GaussianKDE::new(3_000_000, 0.1));
+  let samples = (0..250_000_000)
+    .into_par_iter()
+    .fold(
+      || Vec::new(),
+      |mut acc, i| {
+        let c = util::random_complex();
+
+        let mut z = c;
+        let mut z_sqr = z.norm_sqr();
+
+        let mut j = 0;
+        let mut passed_viewport = false;
+        while j < args.iter && z_sqr <= 4.0 {
+          z = z.powi(2) + c;
+          z_sqr = z.norm_sqr();
+
+          if util::in_viewport(z.re, z.im, x_min, x_max, y_min, y_max)
+          {
+            passed_viewport = true;
+          }
+
+          j = j + 1;
+        }
+
+        if j != args.iter && passed_viewport {
+          let p = j as f64 / args.iter as f64;
+
+          if p > 0.9 {
+            acc.push((c, p));
+          }
+        }
+
+        acc
+      },
+    )
+    .reduce(
+      || Vec::new(),
+      |mut acc, mut v| {
+        acc.append(&mut v);
+        acc
+      },
+    );
+
+  let h = 0.01;
+  let uniform_kde = |c: &Complex64| {
+    let re = (random::<f64>() - 0.5) * h;
+    let im = (random::<f64>() - 0.5) * h;
+
+    Complex64::new(c.re + re, c.im + im)
+  };
+
+  let sampler = util::KDE::new(samples, uniform_kde);
 
   let processed_samples = AtomicU64::new(0);
   let iter_count = AtomicU64::new(0);
   let hits_count = AtomicU64::new(0);
 
   (0..args.sample_count).into_par_iter().for_each(|_| {
-    let (c, sample_id) = sampler.read().unwrap().sample();
-    //let c = util::random_complex();
+    let c = sampler.sample();
 
     let mut z = c;
     let mut z_sqr = z.norm_sqr();
@@ -132,8 +182,6 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
       0.
     };
 
-    sampler.write().unwrap().update(c, p, sample_id);
-
     if p > 0. {
       let mut z = c;
 
@@ -147,7 +195,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
           let b = b + (random::<f64>() * num_buffers as f64) as usize;
 
           buffers[b].lock().unwrap()[y * args.width + x] += 1.;
-            //p - i as f64 / args.iter as f64;
+          //p - i as f64 / args.iter as f64;
         }
 
         z = z.powi(2) + c;
@@ -174,10 +222,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
 
   println!("\naverage hits: {}", avg_hits);
   println!("average iterations: {}", avg_iter);
-  println!(
-    "average probability: {}",
-    sampler.into_inner().unwrap().average_probability()
-  );
+  println!("average probability: {}", sampler.average_probability());
 
   let buffers: Vec<Vec<f64>> = buffers
     .into_iter()
@@ -289,6 +334,19 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     }
   });
   */
+
+  let mut sorted_pixels = avg.clone();
+  sorted_pixels.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+
+  let upper_boundry =
+    sorted_pixels[(num_pixel as f64 * 0.995) as usize];
+
+  let lower_boundry = sorted_pixels[(num_pixel as f64 * 0.) as usize];
+
+  let avg: Vec<f64> = avg
+    .into_iter()
+    .map(|p| p.clamp(lower_boundry, upper_boundry))
+    .collect();
 
   let counter_buf = avg; //smoothed;
 
