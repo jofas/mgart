@@ -9,6 +9,8 @@ use map_macro::vec_no_clone;
 use rand::random;
 use rand_distr::{Distribution, Normal};
 
+use num::traits::NumAssign;
+
 use std::f64::consts::PI;
 
 pub mod colors;
@@ -270,9 +272,65 @@ pub fn random_complex() -> Complex64 {
   )
 }
 
+pub fn min_max(v: &[f64]) -> (f64, f64) {
+  let mut max = &0.;
+  let mut min = &f64::MAX;
+
+  for x in v {
+    if x < min {
+      min = x;
+    }
+
+    if x > max {
+      max = x;
+    }
+  }
+
+  (*min, *max)
+}
+
+pub fn summed_area_table(grid: &[f64], width: usize) -> Vec<f64> {
+  let mut sat = grid.to_vec();
+
+  for i in 1..sat.len() {
+    let x = i % width;
+    let y = i / width;
+
+    if x > 0 {
+      sat[i] += sat[i - 1];
+    }
+
+    if y > 0 {
+      sat[i] += sat[(y - 1) * width + x];
+    }
+
+    if x > 0 && y > 0 {
+      sat[i] -= sat[(y - 1) * width + x - 1];
+    }
+  }
+
+  sat
+}
+
 #[cfg(test)]
 mod tests {
-  use super::{grid_pos, Gradient};
+  use super::{grid_pos, summed_area_table, Gradient};
+
+  #[test]
+  fn sat() {
+    let image = [1.; 16];
+    let width = 4;
+
+    let sat = summed_area_table(&image, width);
+
+    assert_eq!(
+      sat,
+      vec![
+        1., 2., 3., 4., 2., 4., 6., 8., 3., 6., 9., 12., 4., 8., 12.,
+        16.,
+      ],
+    );
+  }
 
   #[test]
   fn linear_gradient() {

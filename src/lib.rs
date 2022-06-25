@@ -71,7 +71,7 @@ fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
 pub fn buddhabrot(args: BuddhabrotArgs) {
   let num_pixel = args.width * args.height;
 
-  let num_buffers = 8;
+  let num_buffers = 2;
 
   let buffers = vec_no_clone![
     Arc::new(Mutex::new(vec![0.; num_pixel]));
@@ -124,7 +124,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
         if j != args.iter && passed_viewport {
           let p = j as f64 / args.iter as f64;
 
-          if p > 0.9 {
+          if p >= 0.2 {
             acc.push((c, p));
           }
         }
@@ -140,7 +140,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
       },
     );
 
-  let h = 0.01;
+  let h = 0.025;
   let uniform_kde = |c: &Complex64| {
     let re = (random::<f64>() - 0.5) * h;
     let im = (random::<f64>() - 0.5) * h;
@@ -229,6 +229,19 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     .map(|b| Arc::try_unwrap(b).unwrap().into_inner().unwrap())
     .collect();
 
+  let (mut min, mut max) = (f64::MAX, 0.);
+
+  for b in &buffers {
+    let (bmin, bmax) = util::min_max(&buffers[0]);
+
+    if bmin < min {
+      min = bmin;
+    }
+    if bmax > max {
+      max = bmax;
+    }
+  }
+
   let n = buffers.len() as f64;
 
   let mut avg: Vec<f64> = vec![0.; num_pixel];
@@ -239,43 +252,44 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     let mut squared_sum = 0.;
 
     for b in &buffers {
-      sum += b[i];
-      squared_sum += b[i].powi(2);
+      let norm = (b[i] - min) / (max - min);
+
+      sum += norm;
+      squared_sum += norm.powi(2);
     }
 
     avg[i] = sum / n;
-    variance[i] = squared_sum / n - (sum / n).powi(2);
+    variance[i] = (squared_sum / n - (sum / n).powi(2)).max(1e-4);
   }
 
-  let mut smoothed: Vec<f64> = vec![0.; num_pixel];
+  let mut sorted_pixels = avg.clone();
+  sorted_pixels.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
-  let mut sat: Vec<f64> = vec![avg[0]; num_pixel];
+  let upper_boundry =
+    sorted_pixels[(num_pixel as f64 * 0.9999) as usize - 1];
 
-  for i in 1..num_pixel {
-    let x = i % args.width;
-    let y = i / args.width;
+  let lower_boundry = sorted_pixels[(num_pixel as f64 * 0.) as usize];
 
-    // the value to the left
-    sat[i] += sat[i - 1];
-
-    // the value above
-    if y > 0 {
-      sat[i] += sat[(y - 1) * args.width + x];
-    }
-  }
+  let avg: Vec<f64> = avg
+    .into_iter()
+    .map(|p| p.clamp(lower_boundry, upper_boundry))
+    .collect();
 
   println!("starting smoothing process");
 
+  // TODO: parameterize
+
   /*
-  let n = 11;
-  let window_size = 51;
+  let n = 31;
+  let window_size = 101;
+
+  let sat = util::summed_area_table(&avg, args.width);
+
+  let mut smoothed: Vec<f64> = vec![0.; num_pixel];
 
   let processed_pixels = AtomicUsize::new(0);
 
   smoothed.par_iter_mut().enumerate().for_each(|(i, pixel)| {
-    let mut s = 0.;
-    let mut cp = 0.;
-
     let x = i % args.width;
     let y = i / args.width;
 
@@ -295,9 +309,22 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
       args.height - 1,
     );
 
-    let bp = sat[y1 * args.width + x1] + sat[y0 * args.width + x0]
-      - sat[y1 * args.width + x0] - sat[y0 * args.width + x1];
+    let c00 = sat[y0 * args.width + x0];
+    let c01 = sat[y0 * args.width + x1];
+    let c10 = sat[y1 * args.width + x0];
+    let c11 = sat[y1 * args.width + x1];
+
+    let bp = c00 + c11 - c01 - c10;
+
+    if bp.is_nan() {
+      dbg!(x, y, x0, y0, x1, y1, c00, c01, c10, c11);
+      panic!("bp is nan");
+    }
+
     let bp = bp / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
+
+    let mut s = 0.;
+    let mut cp = 0.;
 
     for x in wx0..=wx1 {
       for y in wy0..=wy1 {
@@ -309,8 +336,10 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
           args.height - 1,
         );
 
-        let bq = sat[y1 * args.width + x1] + sat[y0 * args.width + x0]
-          - sat[y1 * args.width + x0] - sat[y0 * args.width + x1];
+        let bq = sat[y1 * args.width + x1]
+          + sat[y0 * args.width + x0]
+          - sat[y1 * args.width + x0]
+          - sat[y0 * args.width + x1];
         let bq = bq / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
 
         let fpq = (-((bq - bp).powi(2) / variance[i])).exp();
@@ -335,35 +364,9 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   });
   */
 
-  let mut sorted_pixels = avg.clone();
-  sorted_pixels.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
-
-  let upper_boundry =
-    sorted_pixels[(num_pixel as f64 * 0.995) as usize];
-
-  let lower_boundry = sorted_pixels[(num_pixel as f64 * 0.) as usize];
-
-  let avg: Vec<f64> = avg
-    .into_iter()
-    .map(|p| p.clamp(lower_boundry, upper_boundry))
-    .collect();
-
   let counter_buf = avg; //smoothed;
 
-  let mut max = 0.;
-  let mut min = f64::MAX;
-
-  for counter in &counter_buf {
-    let counter = *counter;
-
-    if counter < min {
-      min = counter;
-    }
-
-    if counter > max {
-      max = counter;
-    }
-  }
+  let (min, max) = util::min_max(&counter_buf);
 
   let mut buf = vec![0_u8; num_pixel * 3];
 
