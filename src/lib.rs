@@ -164,6 +164,8 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   let delta_x = vp_width / w;
   let delta_y = vp_height / h;
 
+  println!("initializing sampler");
+
   let samples = samples(
     args.sampler.population,
     args.sampler.p_min,
@@ -179,6 +181,10 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   };
 
   let sampler = util::KDE::new(samples, uniform_kde);
+
+  println!("\ninitializing sampler done");
+
+  println!("starting buddhabrot generation");
 
   let processed_samples = AtomicU32::new(0);
   (0..args.sample_count).into_par_iter().for_each(|_| {
@@ -213,7 +219,9 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     util::print_progress(ps, args.sample_count, 2500);
   });
 
-  println!("\nstarting post processing");
+  println!("\nbuddhabrot generation finished");
+
+  println!("starting post processing");
 
   let buffers: Vec<Vec<f64>> = buffers
     .into_iter()
@@ -272,7 +280,12 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
 
   let buffer = if let Some(smoothing) = args.smoothing {
     println!("starting smoothing process");
-    smoothing.smooth(&avg, &variance, args.width, args.height)
+
+    let res = smoothing.smooth(&avg, &variance, args.width, args.height);
+
+    println!("\nsmoothing process done");
+
+    res
   } else {
     avg
   };
