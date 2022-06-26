@@ -1,3 +1,9 @@
+use rayon::iter::{
+  IndexedParallelIterator, IntoParallelIterator,
+  IntoParallelRefMutIterator, ParallelIterator,
+};
+use rayon::slice::ParallelSliceMut;
+
 use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
@@ -9,9 +15,8 @@ use map_macro::vec_no_clone;
 use rand::random;
 use rand_distr::{Distribution, Normal};
 
-use num::traits::NumAssign;
-
 use std::f64::consts::PI;
+use std::sync::atomic::{AtomicU32, Ordering};
 
 pub mod colors;
 
@@ -182,6 +187,111 @@ impl From<ColorMap1dDeserializer> for ColorMap1d {
   }
 }
 
+#[derive(Serialize, Deserialize, DisplayAsJson)]
+#[serde(rename_all = "snake_case")]
+#[serde(tag = "type")]
+pub enum Smoothing {
+  NonLocalMeans { n: usize, window_size: usize },
+}
+
+impl Smoothing {
+  pub fn smooth(
+    &self,
+    buffer: &[f64],
+    variance: &[f64],
+    width: usize,
+    height: usize,
+  ) -> Vec<f64> {
+    match self {
+      Self::NonLocalMeans { n, window_size } => {
+        let num_pixel = buffer.len();
+
+        let sat = summed_area_table(&buffer, width);
+
+        let mut smoothed: Vec<f64> = vec![0.; num_pixel];
+
+        let processed_pixels = AtomicU32::new(0);
+
+        smoothed.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+          let x = i % width;
+          let y = i / width;
+
+          let (wx0, wy0, wx1, wy1) = discrete_bounded_square(
+            x,
+            y,
+            *window_size,
+            width - 1,
+            height - 1,
+          );
+
+          let (x0, y0, x1, y1) =
+            discrete_bounded_square(x, y, *n, width - 1, height - 1);
+
+          let c00 = sat[y0 * width + x0];
+          let c01 = sat[y0 * width + x1];
+          let c10 = sat[y1 * width + x0];
+          let c11 = sat[y1 * width + x1];
+
+          let bp = c00 + c11 - c01 - c10;
+
+          if bp.is_nan() {
+            dbg!(x, y, x0, y0, x1, y1, c00, c01, c10, c11);
+            panic!("bp is nan");
+          }
+
+          let bp = bp / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
+
+          let mut s = 0.;
+          let mut cp = 0.;
+
+          for x in wx0..=wx1 {
+            for y in wy0..=wy1 {
+              let (x0, y0, x1, y1) = discrete_bounded_square(
+                x,
+                y,
+                *n,
+                width - 1,
+                height - 1,
+              );
+
+              let bq = sat[y1 * width + x1] + sat[y0 * width + x0]
+                - sat[y1 * width + x0]
+                - sat[y0 * width + x1];
+              let bq =
+                bq / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
+
+              let fpq = (-((bq - bp).powi(2) / variance[i])).exp();
+
+              s += buffer[i] * fpq;
+              cp += fpq;
+            }
+          }
+
+          *pixel = s / cp;
+
+          let pc = processed_pixels.fetch_add(1, Ordering::SeqCst);
+          print_progress(pc, num_pixel as u32, 100);
+        });
+
+        smoothed
+      }
+    }
+  }
+}
+
+#[derive(Serialize, Deserialize, DisplayAsJson)]
+pub struct BoundedInterval {
+  #[serde(default)]
+  pub min: f64,
+  pub max: f64,
+}
+
+pub trait Sampling {
+  type Output;
+
+  fn sample(&self) -> Self::Output;
+}
+
 pub struct KDE<T, K> {
   elems: Vec<T>,
   probabilities: Vec<f64>,
@@ -199,7 +309,15 @@ impl<T, K: Fn(&T) -> T> KDE<T, K> {
     }
   }
 
-  pub fn sample(&self) -> T {
+  pub fn average_probability(&self) -> f64 {
+    self.probabilities.iter().sum::<f64>() / self.elems.len() as f64
+  }
+}
+
+impl<T, K: Fn(&T) -> T> Sampling for KDE<T, K> {
+  type Output = T;
+
+  fn sample(&self) -> Self::Output {
     loop {
       let idx = (random::<f64>() * self.elems.len() as f64) as usize;
 
@@ -208,9 +326,47 @@ impl<T, K: Fn(&T) -> T> KDE<T, K> {
       }
     }
   }
+}
 
-  pub fn average_probability(&self) -> f64 {
-    self.probabilities.iter().sum::<f64>() / self.elems.len() as f64
+pub struct Viewport {
+  pub x_min: f64,
+  pub y_min: f64,
+  pub x_max: f64,
+  pub y_max: f64,
+}
+
+impl Viewport {
+  pub fn new(x_min: f64, y_min: f64, x_max: f64, y_max: f64) -> Self {
+    Self {
+      x_min,
+      y_min,
+      x_max,
+      y_max,
+    }
+  }
+
+  pub fn contains_point(&self, x: f64, y: f64) -> bool {
+    self.x_min <= x
+      && x < self.x_max
+      && self.y_min <= y
+      && y < self.y_max
+  }
+}
+
+pub fn grid_pos(
+  x: f64,
+  y: f64,
+  delta_x: f64,
+  delta_y: f64,
+  viewport: &Viewport,
+) -> Option<(usize, usize)> {
+  if viewport.contains_point(x, y) {
+    let x = ((x - viewport.x_min) / delta_x) as usize;
+    let y = ((y - viewport.y_min) / delta_y) as usize;
+
+    Some((x, y))
+  } else {
+    None
   }
 }
 
@@ -232,37 +388,6 @@ pub fn discrete_bounded_square(
   let ylower = if nh > y + 1 { 0 } else { y + 1 - nh };
 
   (xlower, ylower, xupper, yupper)
-}
-
-pub fn in_viewport(
-  x: f64,
-  y: f64,
-  x_min: f64,
-  x_max: f64,
-  y_min: f64,
-  y_max: f64,
-) -> bool {
-  x_min <= x && x < x_max && y_min <= y && y < y_max
-}
-
-pub fn grid_pos(
-  x: f64,
-  y: f64,
-  x_min: f64,
-  x_max: f64,
-  y_min: f64,
-  y_max: f64,
-  delta_x: f64,
-  delta_y: f64,
-) -> Option<(usize, usize)> {
-  if in_viewport(x, y, x_min, x_max, y_min, y_max) {
-    let x = ((x - x_min) / delta_x) as usize;
-    let y = ((y - y_min) / delta_y) as usize;
-
-    Some((x, y))
-  } else {
-    None
-  }
 }
 
 pub fn random_complex() -> Complex64 {
@@ -310,6 +435,13 @@ pub fn summed_area_table(grid: &[f64], width: usize) -> Vec<f64> {
   }
 
   sat
+}
+
+pub fn print_progress(i: u32, n: u32, interval: u32) {
+  if i % interval == interval - 1 || i == n - 1 {
+    let p = i as f64 / n as f64 * 100.;
+    print!("{}/{} iterations done ({:.2}%)\r", i + 1, n, p);
+  }
 }
 
 #[cfg(test)]

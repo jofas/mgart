@@ -2,7 +2,9 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJsonPretty;
 
-use crate::util::{ColorMap1d, ComplexNumber};
+use crate::util::{
+  BoundedInterval, ColorMap1d, ComplexNumber, Smoothing,
+};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct BuddhabrotArgs {
@@ -23,11 +25,15 @@ pub struct BuddhabrotArgs {
   #[serde(default)]
   pub color_map: ColorMap1d,
   #[serde(default = "default_sample_count")]
-  pub sample_count: u64,
-  #[serde(default = "default_deviation_factor")]
-  pub deviation_factor: f64,
-  #[serde(default = "default_transition_threshold")]
-  pub transition_threshold: f64,
+  pub sample_count: u32,
+  #[serde(default)]
+  pub sampler: SamplerArgs,
+  #[serde(default)]
+  pub bounds: Option<BoundedInterval>,
+  #[serde(default = "default_buffers_per_thread")]
+  pub buffers_per_thread: usize,
+  #[serde(default)]
+  pub smoothing: Option<Smoothing>,
 }
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
@@ -64,6 +70,26 @@ pub struct ColorMap1dArgs {
   pub color_map: ColorMap1d,
 }
 
+#[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
+pub struct SamplerArgs {
+  #[serde(default = "default_p_min")]
+  pub p_min: f64,
+  #[serde(default = "default_h")]
+  pub h: f64,
+  #[serde(default = "default_population")]
+  pub population: u32,
+}
+
+impl Default for SamplerArgs {
+  fn default() -> Self {
+    Self {
+      p_min: default_p_min(),
+      h: default_h(),
+      population: default_population(),
+    }
+  }
+}
+
 fn default_width() -> usize {
   1920
 }
@@ -88,16 +114,24 @@ fn default_iter() -> u32 {
   100
 }
 
-fn default_sample_count() -> u64 {
+fn default_sample_count() -> u32 {
   100_000_000
 }
 
-fn default_deviation_factor() -> f64 {
+fn default_buffers_per_thread() -> usize {
+  2
+}
+
+fn default_p_min() -> f64 {
+  0.5
+}
+
+fn default_h() -> f64 {
   0.1
 }
 
-fn default_transition_threshold() -> f64 {
-  0.1
+fn default_population() -> u32 {
+  1_000_000
 }
 
 fn default_buddhabrot_filename() -> String {

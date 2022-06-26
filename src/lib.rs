@@ -13,14 +13,16 @@ use map_macro::vec_no_clone;
 
 use std::cell::RefCell;
 use std::f64::consts::PI;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, RwLock};
 
 pub mod args;
 pub mod util;
 
 use args::{BuddhabrotArgs, ColorMap1dArgs, JuliaSetArgs};
+
 use util::colors::{LCH, RGB};
+use util::{Sampling, Viewport};
 
 fn attractor(
   z0: Complex64,
@@ -68,14 +70,77 @@ fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
   (1. - dz.norm_sqr()) / (dcdz + dzdz * dc / (1. - dz)).norm()
 }
 
+fn iter_mandel_check_vp(
+  c: Complex64,
+  iter: u32,
+  viewport: &Viewport,
+) -> (u32, bool) {
+  let mut z = c;
+  let mut z_sqr = z.norm_sqr();
+
+  let mut j = 0;
+  let mut passed_viewport = false;
+
+  while j < iter && z_sqr <= 4.0 {
+    z = z.powi(2) + c;
+    z_sqr = z.norm_sqr();
+
+    if viewport.contains_point(z.re, z.im) {
+      passed_viewport = true;
+    }
+
+    j = j + 1;
+  }
+
+  (j, passed_viewport)
+}
+
+fn samples(
+  sample_count: u32,
+  p_min: f64,
+  iter: u32,
+  viewport: &Viewport,
+) -> Vec<(Complex64, f64)> {
+  let processed_samples = AtomicU32::new(0);
+  (0..sample_count)
+    .into_par_iter()
+    .fold(
+      || Vec::new(),
+      |mut acc, i| {
+        let c = util::random_complex();
+
+        let (j, passed_viewport) =
+          iter_mandel_check_vp(c, iter, viewport);
+
+        if j != iter && passed_viewport {
+          let p = j as f64 / iter as f64;
+
+          if p >= p_min {
+            acc.push((c, p));
+          }
+        }
+
+        let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
+        util::print_progress(ps, sample_count, 2500);
+
+        acc
+      },
+    )
+    .reduce(
+      || Vec::new(),
+      |mut acc, mut v| {
+        acc.append(&mut v);
+        acc
+      },
+    )
+}
+
 pub fn buddhabrot(args: BuddhabrotArgs) {
   let num_pixel = args.width * args.height;
 
-  let num_buffers = 2;
-
   let buffers = vec_no_clone![
     Arc::new(Mutex::new(vec![0.; num_pixel]));
-    current_num_threads() * num_buffers
+    current_num_threads() * args.buffers_per_thread
   ];
 
   let (w, h) = (args.width as f64, args.height as f64);
@@ -94,108 +159,50 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   let y_min = args.zpy - vp_height_half;
   let y_max = vp_height - vp_height_half + args.zpy;
 
+  let viewport = Viewport::new(x_min, y_min, x_max, y_max);
+
   let delta_x = vp_width / w;
   let delta_y = vp_height / h;
 
-  let samples = (0..250_000_000)
-    .into_par_iter()
-    .fold(
-      || Vec::new(),
-      |mut acc, i| {
-        let c = util::random_complex();
+  let samples = samples(
+    args.sampler.population,
+    args.sampler.p_min,
+    args.iter,
+    &viewport,
+  );
 
-        let mut z = c;
-        let mut z_sqr = z.norm_sqr();
-
-        let mut j = 0;
-        let mut passed_viewport = false;
-        while j < args.iter && z_sqr <= 4.0 {
-          z = z.powi(2) + c;
-          z_sqr = z.norm_sqr();
-
-          if util::in_viewport(z.re, z.im, x_min, x_max, y_min, y_max)
-          {
-            passed_viewport = true;
-          }
-
-          j = j + 1;
-        }
-
-        if j != args.iter && passed_viewport {
-          let p = j as f64 / args.iter as f64;
-
-          if p >= 0.2 {
-            acc.push((c, p));
-          }
-        }
-
-        acc
-      },
-    )
-    .reduce(
-      || Vec::new(),
-      |mut acc, mut v| {
-        acc.append(&mut v);
-        acc
-      },
-    );
-
-  let h = 0.025;
   let uniform_kde = |c: &Complex64| {
-    let re = (random::<f64>() - 0.5) * h;
-    let im = (random::<f64>() - 0.5) * h;
+    let re = (random::<f64>() - 0.5) * args.sampler.h;
+    let im = (random::<f64>() - 0.5) * args.sampler.h;
 
     Complex64::new(c.re + re, c.im + im)
   };
 
   let sampler = util::KDE::new(samples, uniform_kde);
 
-  let processed_samples = AtomicU64::new(0);
-  let iter_count = AtomicU64::new(0);
-  let hits_count = AtomicU64::new(0);
-
+  let processed_samples = AtomicU32::new(0);
   (0..args.sample_count).into_par_iter().for_each(|_| {
     let c = sampler.sample();
 
-    let mut z = c;
-    let mut z_sqr = z.norm_sqr();
+    let (j, passed_viewport) =
+      iter_mandel_check_vp(c, args.iter, &viewport);
 
-    let mut j = 0;
-    let mut passed_viewport = false;
-    while j < args.iter && z_sqr <= 4.0 {
-      z = z.powi(2) + c;
-      z_sqr = z.norm_sqr();
-
-      if util::in_viewport(z.re, z.im, x_min, x_max, y_min, y_max) {
-        passed_viewport = true;
-      }
-
-      j = j + 1;
-    }
-
-    let p = if j != args.iter && passed_viewport {
-      iter_count.fetch_add(j as u64, Ordering::SeqCst);
-      hits_count.fetch_add(1, Ordering::SeqCst);
-
-      j as f64 / args.iter as f64
-    } else {
-      0.
-    };
-
-    if p > 0. {
+    if j != args.iter && passed_viewport {
       let mut z = c;
 
-      for i in 0..=j {
-        let idx = util::grid_pos(
-          z.re, z.im, x_min, x_max, y_min, y_max, delta_x, delta_y,
-        );
+      for _ in 0..=j {
+        let idx =
+          util::grid_pos(z.re, z.im, delta_x, delta_y, &viewport);
 
         if let Some((x, y)) = idx {
-          let b = current_thread_index().unwrap() * num_buffers;
-          let b = b + (random::<f64>() * num_buffers as f64) as usize;
+          let b =
+            current_thread_index().unwrap() * args.buffers_per_thread;
+
+          let b = b
+            + (random::<f64>() * args.buffers_per_thread as f64)
+              as usize;
 
           buffers[b].lock().unwrap()[y * args.width + x] += 1.;
-          //p - i as f64 / args.iter as f64;
         }
 
         z = z.powi(2) + c;
@@ -203,43 +210,23 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     }
 
     let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
-
-    if ps % 2500 == 0 || ps == args.sample_count - 1 {
-      print!(
-        "{}/{} samples iterated ({:.2}%)\r",
-        ps + 1,
-        args.sample_count,
-        (ps as f64 / args.sample_count as f64) * 100.,
-      );
-    }
+    util::print_progress(ps, args.sample_count, 2500);
   });
 
-  let avg_iter = iter_count.into_inner() / args.iter as u64;
-  let avg_iter = avg_iter as f64 / args.sample_count as f64;
-
-  let avg_hits =
-    hits_count.into_inner() as f64 / args.sample_count as f64;
-
-  println!("\naverage hits: {}", avg_hits);
-  println!("average iterations: {}", avg_iter);
-  println!("average probability: {}", sampler.average_probability());
+  println!("\nstarting post processing");
 
   let buffers: Vec<Vec<f64>> = buffers
     .into_iter()
     .map(|b| Arc::try_unwrap(b).unwrap().into_inner().unwrap())
     .collect();
 
-  let (mut min, mut max) = (f64::MAX, 0.);
+  let (mut min, mut max) = (f64::MAX, 0_f64);
 
   for b in &buffers {
     let (bmin, bmax) = util::min_max(&buffers[0]);
 
-    if bmin < min {
-      min = bmin;
-    }
-    if bmax > max {
-      max = bmax;
-    }
+    min = min.min(bmin);
+    max = max.max(bmax);
   }
 
   let n = buffers.len() as f64;
@@ -262,128 +249,57 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     variance[i] = (squared_sum / n - (sum / n).powi(2)).max(1e-4);
   }
 
-  let mut sorted_pixels = avg.clone();
-  sorted_pixels.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+  if let Some(bounds) = args.bounds {
+    println!("removing outliers");
 
-  let upper_boundry =
-    sorted_pixels[(num_pixel as f64 * 0.9999) as usize - 1];
+    let mut sorted_pixels = avg.clone();
+    sorted_pixels.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
-  let lower_boundry = sorted_pixels[(num_pixel as f64 * 0.) as usize];
+    let upper_boundry =
+      sorted_pixels[(num_pixel as f64 * bounds.max) as usize - 1];
 
-  let avg: Vec<f64> = avg
-    .into_iter()
-    .map(|p| p.clamp(lower_boundry, upper_boundry))
-    .collect();
+    let lower_boundry =
+      sorted_pixels[(num_pixel as f64 * bounds.min) as usize];
 
-  println!("starting smoothing process");
-
-  // TODO: parameterize
-
-  /*
-  let n = 31;
-  let window_size = 101;
-
-  let sat = util::summed_area_table(&avg, args.width);
-
-  let mut smoothed: Vec<f64> = vec![0.; num_pixel];
-
-  let processed_pixels = AtomicUsize::new(0);
-
-  smoothed.par_iter_mut().enumerate().for_each(|(i, pixel)| {
-    let x = i % args.width;
-    let y = i / args.width;
-
-    let (wx0, wy0, wx1, wy1) = util::discrete_bounded_square(
-      x,
-      y,
-      window_size,
-      args.width - 1,
-      args.height - 1,
-    );
-
-    let (x0, y0, x1, y1) = util::discrete_bounded_square(
-      x,
-      y,
-      n,
-      args.width - 1,
-      args.height - 1,
-    );
-
-    let c00 = sat[y0 * args.width + x0];
-    let c01 = sat[y0 * args.width + x1];
-    let c10 = sat[y1 * args.width + x0];
-    let c11 = sat[y1 * args.width + x1];
-
-    let bp = c00 + c11 - c01 - c10;
-
-    if bp.is_nan() {
-      dbg!(x, y, x0, y0, x1, y1, c00, c01, c10, c11);
-      panic!("bp is nan");
+    for p in &mut avg {
+      *p = p.clamp(lower_boundry, upper_boundry);
     }
 
-    let bp = bp / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
+    println!("removing outliers done");
+  }
 
-    let mut s = 0.;
-    let mut cp = 0.;
+  println!("post processing done");
 
-    for x in wx0..=wx1 {
-      for y in wy0..=wy1 {
-        let (x0, y0, x1, y1) = util::discrete_bounded_square(
-          x,
-          y,
-          n,
-          args.width - 1,
-          args.height - 1,
-        );
+  let buffer = if let Some(smoothing) = args.smoothing {
+    println!("starting smoothing process");
+    smoothing.smooth(&avg, &variance, args.width, args.height)
+  } else {
+    avg
+  };
 
-        let bq = sat[y1 * args.width + x1]
-          + sat[y0 * args.width + x0]
-          - sat[y1 * args.width + x0]
-          - sat[y0 * args.width + x1];
-        let bq = bq / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
+  println!("generating final color values");
 
-        let fpq = (-((bq - bp).powi(2) / variance[i])).exp();
+  let (min, max) = util::min_max(&buffer);
 
-        s += avg[i] * fpq;
-        cp += fpq;
-      }
-    }
+  let mut pixels = vec![0_u8; num_pixel * 3];
 
-    *pixel = s / cp;
+  pixels
+    .chunks_exact_mut(3)
+    .enumerate()
+    .for_each(|(i, pixel)| {
+      let count = buffer[i] as f64;
+      let count_norm = (count - min) / (max - min);
 
-    let pc = processed_pixels.fetch_add(1, Ordering::SeqCst);
+      let rgb = args.color_map.color(count_norm);
 
-    if pc % 10 == 0 || pc == num_pixel - 1 {
-      print!(
-        "{}/{} pixels smoothed ({:.2}%)\r",
-        pc + 1,
-        num_pixel,
-        (pc as f64 / num_pixel as f64) * 100.,
-      );
-    }
-  });
-  */
-
-  let counter_buf = avg; //smoothed;
-
-  let (min, max) = util::min_max(&counter_buf);
-
-  let mut buf = vec![0_u8; num_pixel * 3];
-
-  buf.chunks_exact_mut(3).enumerate().for_each(|(i, pixel)| {
-    let count = counter_buf[i] as f64;
-    let count_norm = (count - min) / (max - min);
-
-    let rgb = args.color_map.color(count_norm);
-
-    pixel[0] = rgb.r();
-    pixel[1] = rgb.g();
-    pixel[2] = rgb.b();
-  });
+      pixel[0] = rgb.r();
+      pixel[1] = rgb.g();
+      pixel[2] = rgb.b();
+    });
 
   image::save_buffer(
     &args.filename,
-    &buf,
+    &pixels,
     args.width as u32,
     args.height as u32,
     image::ColorType::Rgb8,
