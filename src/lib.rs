@@ -260,7 +260,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   println!("applying gamma correction and color gradient");
 
   for p in &mut avg {
-    *p = args.color_map.gradient().apply_to(p.powf(args.gamma));
+    *p = args.color_map.gradient().apply_to(*p).powf(args.gamma);
   }
 
   println!("gamma correction and color gradient applied");
