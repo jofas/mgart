@@ -155,7 +155,7 @@ impl ColorMap1d {
   pub fn color(&self, f: f64) -> RGB {
     let f = self.gradient.apply_to(f);
 
-    if (1.0 - f).abs() <= f64::EPSILON {
+    if f >= 1.0 {
       return self.map[self.map.len() - 1].rgb();
     }
 
