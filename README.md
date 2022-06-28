@@ -52,14 +52,9 @@
 
 * [x] buddhabrot
 
-* [ ] first normalize, then increase gamma, then apply gradient, then
-      denoise
-
-* [ ] try smoothstep (maybe even replace bounds with it)
+* [ ] smarter sampling (less iterations)
 
 * [ ] sampling visualization
-
-* [ ] buddhabrot: better sampling
 
 * [ ] time estimates
 

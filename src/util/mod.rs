@@ -130,6 +130,12 @@ impl Gradient {
   }
 }
 
+impl Default for Gradient {
+  fn default() -> Self {
+    Self::Linear { factor: 1. }
+  }
+}
+
 #[derive(Serialize, Deserialize, DisplayAsJson)]
 #[serde(from = "ColorMap1dDeserializer")]
 pub struct ColorMap1d {
@@ -150,6 +156,15 @@ impl ColorMap1d {
     let map: Vec<LCH> = map.into_iter().map(|c| c.lch()).collect();
 
     Self { map, gradient }
+  }
+
+  pub fn gradient(&self) -> &Gradient {
+    &self.gradient
+  }
+
+  pub fn with_gradient(mut self, g: Gradient) -> Self {
+    self.gradient = g;
+    self
   }
 
   pub fn color(&self, f: f64) -> RGB {
@@ -277,13 +292,6 @@ impl Smoothing {
       }
     }
   }
-}
-
-#[derive(Serialize, Deserialize, DisplayAsJson)]
-pub struct BoundedInterval {
-  #[serde(default)]
-  pub min: f64,
-  pub max: f64,
 }
 
 pub trait Sampling {

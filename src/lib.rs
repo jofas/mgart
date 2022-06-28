@@ -22,7 +22,7 @@ pub mod util;
 use args::{BuddhabrotArgs, ColorMap1dArgs, JuliaSetArgs};
 
 use util::colors::{LCH, RGB};
-use util::{Sampling, Viewport};
+use util::{Gradient, Sampling, Viewport};
 
 fn attractor(
   z0: Complex64,
@@ -257,31 +257,19 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     variance[i] = (squared_sum / n - (sum / n).powi(2)).max(1e-4);
   }
 
-  if let Some(bounds) = args.bounds {
-    println!("removing outliers");
+  println!("applying gamma correction and color gradient");
 
-    let mut sorted_pixels = avg.clone();
-    sorted_pixels.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
-
-    let upper_boundry =
-      sorted_pixels[(num_pixel as f64 * bounds.max) as usize - 1];
-
-    let lower_boundry =
-      sorted_pixels[(num_pixel as f64 * bounds.min) as usize];
-
-    for p in &mut avg {
-      *p = p.clamp(lower_boundry, upper_boundry);
-    }
-
-    println!("removing outliers done");
+  for p in &mut avg {
+    *p = args.color_map.gradient().apply_to(p.powf(args.gamma));
   }
 
-  println!("post processing done");
+  println!("gamma correction and color gradient applied");
 
   let buffer = if let Some(smoothing) = args.smoothing {
     println!("starting smoothing process");
 
-    let res = smoothing.smooth(&avg, &variance, args.width, args.height);
+    let res =
+      smoothing.smooth(&avg, &variance, args.width, args.height);
 
     println!("\nsmoothing process done");
 
@@ -290,9 +278,11 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     avg
   };
 
+  println!("post processing done");
+
   println!("generating final color values");
 
-  let (min, max) = util::min_max(&buffer);
+  let color_map = args.color_map.with_gradient(Gradient::default());
 
   let mut pixels = vec![0_u8; num_pixel * 3];
 
@@ -300,10 +290,10 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     .chunks_exact_mut(3)
     .enumerate()
     .for_each(|(i, pixel)| {
-      let count = buffer[i] as f64;
-      let count_norm = (count - min) / (max - min);
+      //let count = buffer[i] as f64;
+      //let count_norm = (count - min) / (max - min);
 
-      let rgb = args.color_map.color(count_norm);
+      let rgb = color_map.color(buffer[i]);
 
       pixel[0] = rgb.r();
       pixel[1] = rgb.g();

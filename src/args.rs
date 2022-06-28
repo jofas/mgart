@@ -2,9 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJsonPretty;
 
-use crate::util::{
-  BoundedInterval, ColorMap1d, ComplexNumber, Smoothing,
-};
+use crate::util::{ColorMap1d, ComplexNumber, Smoothing};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct BuddhabrotArgs {
@@ -28,8 +26,8 @@ pub struct BuddhabrotArgs {
   pub sample_count: u32,
   #[serde(default)]
   pub sampler: SamplerArgs,
-  #[serde(default)]
-  pub bounds: Option<BoundedInterval>,
+  #[serde(default = "default_gamma")]
+  pub gamma: f64,
   #[serde(default = "default_buffers_per_thread")]
   pub buffers_per_thread: usize,
   #[serde(default)]
@@ -116,6 +114,10 @@ fn default_iter() -> u32 {
 
 fn default_sample_count() -> u32 {
   100_000_000
+}
+
+fn default_gamma() -> f64 {
+  1.0
 }
 
 fn default_buffers_per_thread() -> usize {
