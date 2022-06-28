@@ -52,6 +52,8 @@
 
 * [x] buddhabrot
 
+* [ ] try smoothstep (maybe even replace bounds with it)
+
 * [ ] sampling visualization
 
 * [ ] buddhabrot: better sampling

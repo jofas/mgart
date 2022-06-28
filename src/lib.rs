@@ -115,7 +115,7 @@ fn samples(
         if j != iter && passed_viewport {
           let p = j as f64 / iter as f64;
 
-          if p >= p_min {
+          if p > p_min {
             acc.push((c, p));
           }
         }
