@@ -13,7 +13,9 @@ use map_macro::vec_no_clone;
 
 use std::cell::RefCell;
 use std::f64::consts::PI;
-use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
+use std::sync::atomic::{
+  AtomicU32, AtomicU64, AtomicUsize, Ordering,
+};
 use std::sync::{Arc, Mutex, RwLock};
 
 pub mod args;
@@ -138,7 +140,7 @@ fn samples(
 pub fn buddhabrot(args: BuddhabrotArgs) {
   let num_pixel = args.width * args.height;
 
-  let buffer = Arc::new(Mutex::new(vec![0.; num_pixel]));
+  let buffer = vec_no_clone![AtomicU64::new(0); num_pixel];
 
   let (w, h) = (args.width as f64, args.height as f64);
 
@@ -198,7 +200,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
           util::grid_pos(z.re, z.im, delta_x, delta_y, &viewport);
 
         if let Some((x, y)) = idx {
-          buffer.lock().unwrap()[y * args.width + x] += 1.;
+          buffer[y * args.width + x].fetch_add(1, Ordering::Relaxed);
         }
 
         z = z.powi(2) + c;
@@ -213,8 +215,8 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
 
   println!("starting post processing");
 
-  let mut buffer =
-    Arc::try_unwrap(buffer).unwrap().into_inner().unwrap();
+  let mut buffer: Vec<f64> =
+    buffer.into_iter().map(|x| x.into_inner() as f64).collect();
 
   for process in args.post_processing {
     process.apply(&mut buffer, args.width, args.height);
