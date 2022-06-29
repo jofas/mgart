@@ -246,7 +246,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   )
   .unwrap();
 
-  println!("\nsuccessfully written: {}", args.filename);
+  println!("successfully written: {}", args.filename);
 }
 
 pub fn julia_set_interior_distance(args: JuliaSetArgs) {
