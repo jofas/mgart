@@ -28,8 +28,6 @@ pub struct BuddhabrotArgs {
   pub sampler: SamplerArgs,
   #[serde(default)]
   pub post_processing: Vec<PostProcessing>,
-  #[serde(default = "default_buffers_per_thread")]
-  pub buffers_per_thread: usize,
 }
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
@@ -112,10 +110,6 @@ fn default_iter() -> u32 {
 
 fn default_sample_count() -> u32 {
   100_000_000
-}
-
-fn default_buffers_per_thread() -> usize {
-  2
 }
 
 fn default_p_min() -> f64 {

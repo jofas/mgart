@@ -138,10 +138,7 @@ fn samples(
 pub fn buddhabrot(args: BuddhabrotArgs) {
   let num_pixel = args.width * args.height;
 
-  let buffers = vec_no_clone![
-    Arc::new(Mutex::new(vec![0.; num_pixel]));
-    current_num_threads() * args.buffers_per_thread
-  ];
+  let buffer = Arc::new(Mutex::new(vec![0.; num_pixel]));
 
   let (w, h) = (args.width as f64, args.height as f64);
 
@@ -201,14 +198,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
           util::grid_pos(z.re, z.im, delta_x, delta_y, &viewport);
 
         if let Some((x, y)) = idx {
-          let b =
-            current_thread_index().unwrap() * args.buffers_per_thread;
-
-          let b = b
-            + (random::<f64>() * args.buffers_per_thread as f64)
-              as usize;
-
-          buffers[b].lock().unwrap()[y * args.width + x] += 1.;
+          buffer.lock().unwrap()[y * args.width + x] += 1.;
         }
 
         z = z.powi(2) + c;
@@ -223,24 +213,8 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
 
   println!("starting post processing");
 
-  let buffers: Vec<Vec<f64>> = buffers
-    .into_iter()
-    .map(|b| Arc::try_unwrap(b).unwrap().into_inner().unwrap())
-    .collect();
-
-  let n = buffers.len() as f64;
-
-  let mut buffer: Vec<f64> = vec![0.; num_pixel];
-
-  for i in 0..num_pixel {
-    let mut sum = 0.;
-
-    for b in &buffers {
-      sum += b[i];
-    }
-
-    buffer[i] = sum / n;
-  }
+  let mut buffer =
+    Arc::try_unwrap(buffer).unwrap().into_inner().unwrap();
 
   for process in args.post_processing {
     process.apply(&mut buffer, args.width, args.height);
