@@ -21,11 +21,11 @@ struct Cli {
 
 #[derive(Deserialize)]
 #[serde(tag = "command")]
-#[serde(rename_all = "kebab-case")]
+#[serde(rename_all = "snake_case")]
 enum Command {
   JuliaSet(JuliaSetArgs),
   Buddhabrot(BuddhabrotArgs),
-  #[serde(rename = "color-map-1d")]
+  #[serde(rename = "color_map_1d")]
   ColorMap1d(ColorMap1dArgs),
 }
 

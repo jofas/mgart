@@ -228,58 +228,27 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     .map(|b| Arc::try_unwrap(b).unwrap().into_inner().unwrap())
     .collect();
 
-  let (mut min, mut max) = (f64::MAX, 0_f64);
-
-  for b in &buffers {
-    let (bmin, bmax) = util::min_max(&buffers[0]);
-
-    min = min.min(bmin);
-    max = max.max(bmax);
-  }
-
   let n = buffers.len() as f64;
 
-  let mut avg: Vec<f64> = vec![0.; num_pixel];
+  let mut buffer: Vec<f64> = vec![0.; num_pixel];
 
   for i in 0..num_pixel {
     let mut sum = 0.;
-    let mut squared_sum = 0.;
 
     for b in &buffers {
-      let norm = (b[i] - min) / (max - min);
-
-      sum += norm;
-      squared_sum += norm.powi(2);
+      sum += b[i];
     }
 
-    avg[i] = sum / n;
+    buffer[i] = sum / n;
   }
 
-  println!("applying gamma correction and color gradient");
-
-  for p in &mut avg {
-    *p = args.color_map.gradient().apply_to(*p).powf(args.gamma);
+  for process in args.post_processing {
+    process.apply(&mut buffer, args.width, args.height);
   }
-
-  println!("gamma correction and color gradient applied");
-
-  let buffer = if let Some(smoothing) = args.smoothing {
-    println!("starting smoothing process");
-
-    let res = smoothing.smooth(&avg, args.width, args.height);
-
-    println!("\nsmoothing process done");
-
-    res
-  } else {
-    avg
-  };
 
   println!("post processing done");
 
   println!("generating final color values");
-
-  let color_map = args.color_map.with_gradient(Gradient::default());
 
   let mut pixels = vec![0_u8; num_pixel * 3];
 
@@ -287,10 +256,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     .chunks_exact_mut(3)
     .enumerate()
     .for_each(|(i, pixel)| {
-      //let count = buffer[i] as f64;
-      //let count_norm = (count - min) / (max - min);
-
-      let rgb = color_map.color(buffer[i]);
+      let rgb = args.color_map.color(buffer[i]);
 
       pixel[0] = rgb.r();
       pixel[1] = rgb.g();

@@ -22,26 +22,49 @@ pub mod colors;
 
 use colors::{Color, LCH, RGB};
 
-/// Representation of a complex number.
-///
-/// This is intended to be used as means for parsing user input,
-/// not for doing calculations.
-/// So [ComplexNumber] does not implement any math operations,
-/// but supports the conversion to [Complex64].
-///
-#[derive(Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum ComplexNumber {
-  Cartesian { re: f64, im: f64 },
-  Polar { r: f64, theta: f64 },
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(rename_all = "snake_case")]
+#[serde(tag = "process")]
+pub enum PostProcessing {
+  Normalize,
+  Clamp { min: f64, max: f64 },
+  ClampAndNormalize { min: f64, max: f64 },
+  Gradient(Gradient),
+  Smoothing(Smoothing),
 }
 
-impl Into<Complex64> for &ComplexNumber {
-  fn into(self) -> Complex64 {
+impl PostProcessing {
+  pub fn apply(
+    &self,
+    buffer: &mut [f64],
+    width: usize,
+    height: usize,
+  ) {
     match self {
-      ComplexNumber::Cartesian { re, im } => Complex64::new(*re, *im),
-      ComplexNumber::Polar { r, theta } => {
-        Complex64::from_polar(*r, *theta)
+      Self::Normalize => {
+        let (min, max) = min_max(buffer);
+
+        for v in buffer {
+          *v = (*v - min) / (max - min);
+        }
+      }
+      Self::Clamp { min, max } => {
+        for v in buffer {
+          *v = v.clamp(*min, *max);
+        }
+      }
+      Self::ClampAndNormalize { min, max } => {
+        for v in buffer {
+          *v = (v.clamp(*min, *max) - min) / (max - min);
+        }
+      }
+      Self::Gradient(g) => {
+        for v in buffer {
+          *v = g.apply(*v);
+        }
+      }
+      Self::Smoothing(s) => {
+        s.smooth(buffer, width, height);
       }
     }
   }
@@ -66,7 +89,7 @@ pub enum Gradient {
 }
 
 impl Gradient {
-  pub fn apply_to(&self, f: f64) -> f64 {
+  pub fn apply(&self, f: f64) -> f64 {
     match self {
       Self::Linear { factor } => {
         let f = f.clamp(0., 1.);
@@ -82,7 +105,7 @@ impl Gradient {
         }
       }
       Self::Sin { factor } => (f * factor * PI).sin() / 2. + 0.5,
-      Self::Inverted { gradient } => 1. - gradient.apply_to(f),
+      Self::Inverted { gradient } => 1. - gradient.apply(f),
       Self::Wave { factor } => {
         let f = (f * factor).fract();
 
@@ -103,7 +126,7 @@ impl Gradient {
       }
       Self::Discrete { gradient, n } => {
         let n = *n as f64;
-        let f = gradient.apply_to(f).clamp(0., 1.);
+        let f = gradient.apply(f).clamp(0., 1.);
 
         let res = (f * n).floor() / (n - 1.);
 
@@ -168,7 +191,7 @@ impl ColorMap1d {
   }
 
   pub fn color(&self, f: f64) -> RGB {
-    let f = self.gradient.apply_to(f);
+    let f = self.gradient.apply(f);
 
     if f >= 1.0 {
       return self.map[self.map.len() - 1].rgb();
@@ -202,7 +225,9 @@ impl From<ColorMap1dDeserializer> for ColorMap1d {
   }
 }
 
-#[derive(Serialize, Deserialize, DisplayAsJson)]
+#[derive(
+  Serialize, Deserialize, DisplayAsJson, Clone, PartialEq, Debug,
+)]
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "type")]
 pub enum Smoothing {
@@ -216,21 +241,19 @@ pub enum Smoothing {
 impl Smoothing {
   pub fn smooth(
     &self,
-    buffer: &[f64],
+    buffer: &mut [f64],
     width: usize,
     height: usize,
-  ) -> Vec<f64> {
+  ) {
     match self {
       Self::NonLocalMeans { n, window_size, h } => {
-        let num_pixel = buffer.len();
-
         let sat = summed_area_table(&buffer, width);
 
-        let mut smoothed: Vec<f64> = vec![0.; num_pixel];
+        let num_pixel = buffer.len();
 
         let processed_pixels = AtomicU32::new(0);
 
-        smoothed.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+        buffer.par_iter_mut().enumerate().for_each(|(i, pixel)| {
           let x = i % width;
           let y = i / width;
 
@@ -251,12 +274,6 @@ impl Smoothing {
           let c11 = sat[y1 * width + x1];
 
           let bp = c00 + c11 - c01 - c10;
-
-          if bp.is_nan() {
-            dbg!(x, y, x0, y0, x1, y1, c00, c01, c10, c11);
-            panic!("bp is nan");
-          }
-
           let bp = bp / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
 
           let mut s = 0.;
@@ -280,7 +297,7 @@ impl Smoothing {
 
               let fpq = (-((bq - bp).powi(2) / h)).exp();
 
-              s += buffer[i] * fpq;
+              s += *pixel * fpq;
               cp += fpq;
             }
           }
@@ -290,8 +307,31 @@ impl Smoothing {
           let pc = processed_pixels.fetch_add(1, Ordering::SeqCst);
           print_progress(pc, num_pixel as u32, 100);
         });
+      }
+    }
+  }
+}
 
-        smoothed
+/// Representation of a complex number.
+///
+/// This is intended to be used as means for parsing user input,
+/// not for doing calculations.
+/// So [ComplexNumber] does not implement any math operations,
+/// but supports the conversion to [Complex64].
+///
+#[derive(Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ComplexNumber {
+  Cartesian { re: f64, im: f64 },
+  Polar { r: f64, theta: f64 },
+}
+
+impl Into<Complex64> for &ComplexNumber {
+  fn into(self) -> Complex64 {
+    match self {
+      ComplexNumber::Cartesian { re, im } => Complex64::new(*re, *im),
+      ComplexNumber::Polar { r, theta } => {
+        Complex64::from_polar(*r, *theta)
       }
     }
   }
@@ -479,17 +519,17 @@ mod tests {
   fn linear_gradient() {
     let g = Gradient::Linear { factor: 1. };
 
-    assert_eq!(g.apply_to(0.), 0.);
-    assert_eq!(g.apply_to(0.5), 0.5);
-    assert_eq!(g.apply_to(1.), 1.);
+    assert_eq!(g.apply(0.), 0.);
+    assert_eq!(g.apply(0.5), 0.5);
+    assert_eq!(g.apply(1.), 1.);
 
     let g = Gradient::Linear { factor: 2. };
 
-    assert_eq!(g.apply_to(0.), 0.);
-    assert_eq!(g.apply_to(0.25), 0.5);
-    assert_eq!(g.apply_to(0.5), 1.);
-    assert_eq!(g.apply_to(0.75), 0.5);
-    assert_eq!(g.apply_to(1.), 1.);
+    assert_eq!(g.apply(0.), 0.);
+    assert_eq!(g.apply(0.25), 0.5);
+    assert_eq!(g.apply(0.5), 1.);
+    assert_eq!(g.apply(0.75), 0.5);
+    assert_eq!(g.apply(1.), 1.);
   }
 
   #[test]
@@ -499,37 +539,37 @@ mod tests {
       gradient: Box::new(Gradient::Linear { factor: 1. }),
     };
 
-    assert_eq!(g.apply_to(0.), 0.);
-    assert_eq!(g.apply_to(0.25), 0.);
-    assert_eq!(g.apply_to(0.5), 1.);
-    assert_eq!(g.apply_to(0.75), 1.);
-    assert_eq!(g.apply_to(1.), 1.);
+    assert_eq!(g.apply(0.), 0.);
+    assert_eq!(g.apply(0.25), 0.);
+    assert_eq!(g.apply(0.5), 1.);
+    assert_eq!(g.apply(0.75), 1.);
+    assert_eq!(g.apply(1.), 1.);
 
     let g = Gradient::Discrete {
       n: 3,
       gradient: Box::new(Gradient::Linear { factor: 1. }),
     };
 
-    assert_eq!(g.apply_to(0.), 0.);
-    assert_eq!(g.apply_to(0.33), 0.);
-    assert_eq!(g.apply_to(0.34), 0.5);
-    assert_eq!(g.apply_to(0.66), 0.5);
-    assert_eq!(g.apply_to(0.67), 1.);
-    assert_eq!(g.apply_to(1.), 1.);
+    assert_eq!(g.apply(0.), 0.);
+    assert_eq!(g.apply(0.33), 0.);
+    assert_eq!(g.apply(0.34), 0.5);
+    assert_eq!(g.apply(0.66), 0.5);
+    assert_eq!(g.apply(0.67), 1.);
+    assert_eq!(g.apply(1.), 1.);
 
     let g = Gradient::Discrete {
       n: 4,
       gradient: Box::new(Gradient::Linear { factor: 1. }),
     };
 
-    assert_eq!(g.apply_to(0.), 0.);
-    assert_eq!(g.apply_to(0.24), 0.);
-    assert_eq!((g.apply_to(0.25) * 100.).floor(), 33.);
-    assert_eq!((g.apply_to(0.49) * 100.).floor(), 33.);
-    assert_eq!((g.apply_to(0.5) * 100.).floor(), 66.);
-    assert_eq!((g.apply_to(0.74) * 100.).floor(), 66.);
-    assert_eq!(g.apply_to(0.75), 1.);
-    assert_eq!(g.apply_to(1.), 1.);
+    assert_eq!(g.apply(0.), 0.);
+    assert_eq!(g.apply(0.24), 0.);
+    assert_eq!((g.apply(0.25) * 100.).floor(), 33.);
+    assert_eq!((g.apply(0.49) * 100.).floor(), 33.);
+    assert_eq!((g.apply(0.5) * 100.).floor(), 66.);
+    assert_eq!((g.apply(0.74) * 100.).floor(), 66.);
+    assert_eq!(g.apply(0.75), 1.);
+    assert_eq!(g.apply(1.), 1.);
   }
 
   #[test]

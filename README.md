@@ -54,8 +54,7 @@
 
 * [x] NLM with global h
 
-* [ ] array of postprocessing steps (Normalize, Smooth, Gradient,
-  GammaCorrection (Gradient.Exp), Clamp, ClampAndNormalize)
+* [x] PostProcessing
 
 * [ ] smarter sampling (less iterations)
 
