@@ -206,19 +206,22 @@ impl From<ColorMap1dDeserializer> for ColorMap1d {
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "type")]
 pub enum Smoothing {
-  NonLocalMeans { n: usize, window_size: usize },
+  NonLocalMeans {
+    n: usize,
+    window_size: usize,
+    h: f64,
+  },
 }
 
 impl Smoothing {
   pub fn smooth(
     &self,
     buffer: &[f64],
-    variance: &[f64],
     width: usize,
     height: usize,
   ) -> Vec<f64> {
     match self {
-      Self::NonLocalMeans { n, window_size } => {
+      Self::NonLocalMeans { n, window_size, h } => {
         let num_pixel = buffer.len();
 
         let sat = summed_area_table(&buffer, width);
@@ -275,7 +278,7 @@ impl Smoothing {
               let bq =
                 bq / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
 
-              let fpq = (-((bq - bp).powi(2) / variance[i])).exp();
+              let fpq = (-((bq - bp).powi(2) / h)).exp();
 
               s += buffer[i] * fpq;
               cp += fpq;

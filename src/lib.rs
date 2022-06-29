@@ -240,7 +240,6 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   let n = buffers.len() as f64;
 
   let mut avg: Vec<f64> = vec![0.; num_pixel];
-  let mut variance: Vec<f64> = vec![0.; num_pixel];
 
   for i in 0..num_pixel {
     let mut sum = 0.;
@@ -254,7 +253,6 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
     }
 
     avg[i] = sum / n;
-    variance[i] = (squared_sum / n - (sum / n).powi(2)).max(1e-4);
   }
 
   println!("applying gamma correction and color gradient");
@@ -268,8 +266,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
   let buffer = if let Some(smoothing) = args.smoothing {
     println!("starting smoothing process");
 
-    let res =
-      smoothing.smooth(&avg, &variance, args.width, args.height);
+    let res = smoothing.smooth(&avg, args.width, args.height);
 
     println!("\nsmoothing process done");
 
