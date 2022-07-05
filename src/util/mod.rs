@@ -570,13 +570,35 @@ mod tests {
 
   #[test]
   fn clahe_bins() {
-    let image = [0., 0.34, 0.34, 0., 0.67, 1.];
+    let image = vec![0., 0.34, 0.34, 0., 0.67, 1.];
 
     let c = CLAHE::new(2, 4);
 
     let bins = c.create_bins(&image);
 
     assert_eq!(bins, vec![2, 4, 5, 6]);
+  }
+
+  #[test]
+  fn clahe_cl_no_clip() {
+    let image = vec![0., 0.34, 0.34, 0., 0.67, 1.];
+
+    let c = CLAHE::new(1, 4);
+
+    let bins = c.create_bins(&image);
+
+    assert_eq!(bins, vec![1, 2, 3, 4]);
+  }
+
+  #[test]
+  fn clahe_cl_clip() {
+    let image = vec![0., 0.34, 0.34, 0., 0.67, 1., 0., 0.34];
+
+    let c = CLAHE::new(1, 4);
+
+    let bins = c.create_bins(&image);
+
+    assert_eq!(bins, vec![2, 4, 6, 8]);
   }
 
   #[test]
