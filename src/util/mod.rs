@@ -421,6 +421,73 @@ pub fn grid_pos(
   }
 }
 
+// TODO: implement the A (adaptive) part
+pub struct CLAHE {
+  contrast_limit: usize,
+  bin_count: usize,
+}
+
+impl CLAHE {
+  pub fn new(contrast_limit: usize, bin_count: usize) -> Self {
+    Self {
+      contrast_limit,
+      bin_count,
+    }
+  }
+
+  pub fn apply(&self, buffer: &mut [f64]) {
+    let bins = self.create_bins(buffer);
+
+    let mut cdf_min = 0;
+    for b in &bins {
+      if *b > 0 {
+        cdf_min = *b;
+        break;
+      }
+    }
+
+    let n = buffer.len();
+
+    for v in buffer {
+      let bin = (*v * (self.bin_count - 1) as f64) as usize;
+
+      *v = (bins[bin] - cdf_min) as f64 / (n - cdf_min) as f64;
+    }
+  }
+
+  pub(self) fn create_bins(&self, buffer: &[f64]) -> Vec<usize> {
+    let mut bins = vec![0; self.bin_count];
+
+    let mut clv = 0;
+
+    for v in buffer.iter() {
+      let bin = (*v * (self.bin_count - 1) as f64) as usize;
+
+      dbg!(v, bin);
+
+      if bins[bin] < self.contrast_limit {
+        bins[bin] += 1;
+      } else {
+        clv += 1;
+      }
+    }
+
+    clv = clv / self.bin_count;
+
+    if clv > 0 {
+      for b in &mut bins {
+        *b += clv;
+      }
+    }
+
+    for i in 1..bins.len() {
+      bins[i] += bins[i - 1];
+    }
+
+    bins
+  }
+}
+
 pub fn discrete_bounded_square(
   x: usize,
   y: usize,
@@ -497,7 +564,31 @@ pub fn print_progress(i: u32, n: u32, interval: u32) {
 
 #[cfg(test)]
 mod tests {
-  use super::{grid_pos, summed_area_table, Gradient};
+  use super::{
+    grid_pos, summed_area_table, Gradient, Viewport, CLAHE,
+  };
+
+  #[test]
+  fn clahe_bins() {
+    let image = [0., 0.34, 0.34, 0., 0.67, 1.];
+
+    let c = CLAHE::new(2, 4);
+
+    let bins = c.create_bins(&image);
+
+    assert_eq!(bins, vec![2, 4, 5, 6]);
+  }
+
+  #[test]
+  fn clahe() {
+    let mut image = vec![0., 0.34, 0.34, 0., 0.67, 1.];
+
+    let c = CLAHE::new(2, 4);
+
+    c.apply(&mut image);
+
+    assert_eq!(image, vec![0., 0.5, 0.5, 0., 0.75, 1.]);
+  }
 
   #[test]
   fn sat() {
@@ -574,27 +665,37 @@ mod tests {
 
   #[test]
   fn grid_pos1() {
-    let (x, y) = grid_pos(1.5, 0.5, 0., 2., 0., 2., 1., 1.).unwrap();
+    let vp = Viewport::new(0., 0., 2., 2.);
+
+    let (x, y) = grid_pos(1.5, 0.5, 1., 1., &vp).unwrap();
+
     assert_eq!(x, 1);
     assert_eq!(y, 0);
   }
 
   #[test]
   fn grid_pos2() {
-    let p = grid_pos(1.5, -0.5, 0., 2., 0., 2., 1., 1.);
+    let vp = Viewport::new(0., 0., 2., 2.);
+
+    let p = grid_pos(1.5, -0.5, 1., 1., &vp);
+
     assert_eq!(p, None);
   }
 
   #[test]
   fn grid_pos3() {
-    let p = grid_pos(1.5, 2.5, 0., 2., 0., 2., 1., 1.);
+    let vp = Viewport::new(0., 0., 2., 2.);
+
+    let p = grid_pos(1.5, 2.5, 1., 1., &vp);
+
     assert_eq!(p, None);
   }
 
   #[test]
   fn grid_pos4() {
-    let (x, y) =
-      grid_pos(0., 0., -50., 50., -50., 50., 1., 1.).unwrap();
+    let vp = Viewport::new(-50., -50., 50., 50.);
+
+    let (x, y) = grid_pos(0., 0., 1., 1., &vp).unwrap();
 
     assert_eq!(x, 50);
     assert_eq!(y, 50);
@@ -602,8 +703,9 @@ mod tests {
 
   #[test]
   fn grid_pos5() {
-    let (x, y) =
-      grid_pos(0., 0., -1., 1., -1., 1., 0.01, 0.005).unwrap();
+    let vp = Viewport::new(-1., -1., 1., 1.);
+
+    let (x, y) = grid_pos(0., 0., 0.01, 0.005, &vp).unwrap();
 
     assert_eq!(x, 100);
     assert_eq!(y, 200);
@@ -611,8 +713,9 @@ mod tests {
 
   #[test]
   fn grid_pos6() {
-    let (x, y) =
-      grid_pos(0.999, 0.999, -1., 1., -1., 1., 0.01, 0.005).unwrap();
+    let vp = Viewport::new(-1., -1., 1., 1.);
+
+    let (x, y) = grid_pos(0.999, 0.999, 0.01, 0.005, &vp).unwrap();
 
     assert_eq!(x, 199);
     assert_eq!(y, 399);
