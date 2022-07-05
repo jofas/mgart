@@ -56,6 +56,8 @@
 
 * [x] PostProcessing
 
+* [ ] some sort of histogram equalization (maybe with cdf from kde?)
+
 * [ ] smarter sampling (less iterations)
 
 * [ ] sampling visualization
