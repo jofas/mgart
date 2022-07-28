@@ -425,17 +425,32 @@ pub fn grid_pos(
 pub struct CLAHE {
   contrast_limit: usize,
   bin_count: usize,
+  tile_size: usize,
 }
 
 impl CLAHE {
-  pub fn new(contrast_limit: usize, bin_count: usize) -> Self {
+  pub fn new(contrast_limit: usize, bin_count: usize, tile_size: usize) -> Self {
     Self {
       contrast_limit,
       bin_count,
+      tile_size,
     }
   }
 
-  pub fn apply(&self, buffer: &mut [f64]) {
+  pub fn apply(&self, buffer: &mut [f64], width: usize, height: usize) {
+    if width % self.tile_size != 0 || height % self.tile_size != 0 {
+      panic!("width and height must be divisible by tile_size");
+    }
+
+    // TODO: create histogram for each tile
+    //
+    // Tile struct containing histogram
+    //
+    // 3 possilbe pixels:
+    //  1. center tile || corner (1 TF)
+    //  2. border (2 TF)
+    //  3. area (4 TF)
+
     let bins = self.create_bins(buffer);
 
     let mut cdf_min = 0;
@@ -451,6 +466,7 @@ impl CLAHE {
     for v in buffer {
       let bin = (*v * (self.bin_count - 1) as f64) as usize;
 
+      // Transformation function
       *v = (bins[bin] - cdf_min) as f64 / (n - cdf_min) as f64;
     }
   }
