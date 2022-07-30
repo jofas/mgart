@@ -425,11 +425,15 @@ pub fn grid_pos(
 pub struct CLAHE {
   contrast_limit: usize,
   bin_count: usize,
-  tile_size: usize,
+  tile_size: usize, // TODO: x and y
 }
 
 impl CLAHE {
-  pub fn new(contrast_limit: usize, bin_count: usize, tile_size: usize) -> Self {
+  pub fn new(
+    contrast_limit: usize,
+    bin_count: usize,
+    tile_size: usize,
+  ) -> Self {
     Self {
       contrast_limit,
       bin_count,
@@ -437,7 +441,12 @@ impl CLAHE {
     }
   }
 
-  pub fn apply(&self, buffer: &mut [f64], width: usize, height: usize) {
+  pub fn apply(
+    &self,
+    buffer: &mut [f64],
+    width: usize,
+    height: usize,
+  ) {
     if width % self.tile_size != 0 || height % self.tile_size != 0 {
       panic!("width and height must be divisible by tile_size");
     }
@@ -466,7 +475,7 @@ impl CLAHE {
     for v in buffer {
       let bin = (*v * (self.bin_count - 1) as f64) as usize;
 
-      // Transformation function
+      // transformation function
       *v = (bins[bin] - cdf_min) as f64 / (n - cdf_min) as f64;
     }
   }
@@ -478,8 +487,6 @@ impl CLAHE {
 
     for v in buffer.iter() {
       let bin = (*v * (self.bin_count - 1) as f64) as usize;
-
-      dbg!(v, bin);
 
       if bins[bin] < self.contrast_limit {
         bins[bin] += 1;
@@ -501,6 +508,78 @@ impl CLAHE {
     }
 
     bins
+  }
+}
+
+struct Tile {}
+
+impl Tile {
+  pub fn new(
+    buffer: &[f64],
+    block_size: usize,
+    elements: usize,
+    offset: usize,
+  ) -> Self {
+    assert_eq!(buffer.len() % block_size, 0);
+    Self {}
+  }
+}
+
+struct Strided<'a, T> {
+  block_size: usize,
+  elements: usize,
+  offset: usize,
+  block_count: Option<usize>,
+  start_block: usize,
+  buffer: &'a [T],
+  block: usize,
+  element: usize,
+}
+
+impl<'a, T> Strided<'a, T> {
+  pub fn new(
+    block_size: usize,
+    elements: usize,
+    offset: usize,
+    block_count: Option<usize>,
+    start_block: Option<usize>,
+    buffer: &'a [T],
+  ) -> Self {
+    Self {
+      block_size,
+      elements,
+      offset,
+      block_count,
+      start_block: start_block.unwrap_or(0),
+      buffer,
+      block: 0,
+      element: 0,
+    }
+  }
+}
+
+impl<'a, T> Iterator for Strided<'a, T> {
+  type Item = &'a T;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    // early exit if block_count is defined and has been reached
+    match self.block_count {
+      Some(bc) if bc == self.block => return None,
+      _ => (),
+    }
+
+    let i = (self.start_block + self.block) * self.block_size
+      + self.offset
+      + self.element;
+
+    if self.element < self.elements - 1 {
+      self.element += 1;
+    } else {
+      self.element = 0;
+      self.block += 1;
+    }
+
+    self.buffer.get(i)
   }
 }
 
@@ -581,9 +660,10 @@ pub fn print_progress(i: u32, n: u32, interval: u32) {
 #[cfg(test)]
 mod tests {
   use super::{
-    grid_pos, summed_area_table, Gradient, Viewport, CLAHE,
+    grid_pos, summed_area_table, Gradient, Strided, Viewport, CLAHE,
   };
 
+  /*
   #[test]
   fn clahe_bins() {
     let image = vec![0., 0.34, 0.34, 0., 0.67, 1.];
@@ -626,6 +706,43 @@ mod tests {
     c.apply(&mut image);
 
     assert_eq!(image, vec![0., 0.5, 0.5, 0., 0.75, 1.]);
+  }
+  */
+
+  #[test]
+  fn strided() {
+    let buf: Vec<f64> = (0..16).map(|x| x as f64).collect();
+
+    let s = Strided::new(4, 2, 0, None, None, &buf);
+    let v: Vec<f64> = s.map(|x| *x).collect();
+    assert_eq!(v, vec![0., 1., 4., 5., 8., 9., 12., 13.]);
+
+    let s = Strided::new(4, 2, 2, None, None, &buf);
+    let v: Vec<f64> = s.map(|x| *x).collect();
+    assert_eq!(v, vec![2., 3., 6., 7., 10., 11., 14., 15.]);
+
+    let s = Strided::new(4, 3, 1, None, None, &buf);
+    let v: Vec<f64> = s.map(|x| *x).collect();
+    assert_eq!(
+      v,
+      vec![1., 2., 3., 5., 6., 7., 9., 10., 11., 13., 14., 15.]
+    );
+
+    let s = Strided::new(4, 2, 0, Some(2), None, &buf);
+    let v: Vec<f64> = s.map(|x| *x).collect();
+    assert_eq!(v, vec![0., 1., 4., 5.]);
+
+    let s = Strided::new(4, 2, 2, Some(2), None, &buf);
+    let v: Vec<f64> = s.map(|x| *x).collect();
+    assert_eq!(v, vec![2., 3., 6., 7.]);
+
+    let s = Strided::new(4, 2, 0, Some(2), Some(2), &buf);
+    let v: Vec<f64> = s.map(|x| *x).collect();
+    assert_eq!(v, vec![8., 9., 12., 13.]);
+
+    let s = Strided::new(4, 2, 2, Some(2), Some(2), &buf);
+    let v: Vec<f64> = s.map(|x| *x).collect();
+    assert_eq!(v, vec![10., 11., 14., 15.]);
   }
 
   #[test]

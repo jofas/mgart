@@ -56,11 +56,7 @@
 
 * [x] PostProcessing
 
-* [ ] some sort of histogram equalization (maybe with cdf from kde?)
-
-* [ ] smarter sampling (less iterations)
-
-* [ ] sampling visualization
+* [ ] CLAHE
 
 * [ ] time estimates
 
@@ -84,6 +80,10 @@
 
       else:
       - [ ] PickoverStalks
+
+* [ ] smarter sampling (less iterations)
+
+* [ ] sampling visualization
 
 * [ ] rotation parameter
 
