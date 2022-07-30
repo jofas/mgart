@@ -451,77 +451,164 @@ impl CLAHE {
       panic!("width and height must be divisible by tile_size");
     }
 
-    // TODO: create histogram for each tile
-    //
-    // Tile struct containing histogram
-    //
-    // 3 possilbe pixels:
-    //  1. center tile || corner (1 TF)
-    //  2. border (2 TF)
-    //  3. area (4 TF)
+    let w = width / self.tile_size;
+    let h = height / self.tile_size;
 
-    let bins = self.create_bins(buffer);
+    let mut tiles: Vec<Tile> = Vec::with_capacity(w * h);
+
+    for start_block in 0..h {
+      for offset in 0..w {
+        let stride = Strided::new(
+          width,
+          self.tile_size,
+          offset * self.tile_size,
+          Some(self.tile_size),
+          Some(start_block * self.tile_size),
+          &buffer,
+        );
+
+        tiles.push(Tile::new(
+          stride,
+          self.bin_count,
+          self.contrast_limit,
+        ));
+      }
+    }
+
+    for (i, v) in buffer.iter_mut().enumerate() {
+      let x = i % width;
+      let y = i / width;
+
+      // TODO: which tiles are important?
+
+      if self.is_corner_or_tile_center(
+        x,
+        y,
+        width,
+        height,
+        self.tile_size,
+      ) {
+
+        // transformation function of tile
+      } else if self.is_border(x, y, width, height) {
+        // linear interpolation
+      } else {
+        // bilinear interpolation
+      }
+    }
+  }
+
+  fn is_corner(
+    &self,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+  ) -> bool {
+    (x == 0 || x == width - 1) && (y == 0 || y == height - 1)
+  }
+
+  fn is_border(
+    &self,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+  ) -> bool {
+    x == 0 || x == width - 1 || y == 0 || y == height - 1
+  }
+
+  fn is_tile_center(
+    &self,
+    x: usize,
+    y: usize,
+    tile_size: usize,
+  ) -> bool {
+    let x = x % tile_size;
+    let y = y % tile_size;
+
+    if tile_size % 2 == 0 {
+      let x_center = x == tile_size / 2 || x == tile_size / 2 - 1;
+      let y_center = y == tile_size / 2 || y == tile_size / 2 - 1;
+
+      x_center && y_center
+    } else {
+      x == tile_size / 2 && y == tile_size / 2
+    }
+  }
+
+  fn is_corner_or_tile_center(
+    &self,
+    x: usize,
+    y: usize,
+    width: usize,
+    height: usize,
+    tile_size: usize,
+  ) -> bool {
+    self.is_corner(x, y, width, height)
+      || self.is_tile_center(x, y, self.tile_size)
+  }
+}
+
+struct Tile {
+  hist: Vec<usize>,
+  cdf_min: usize,
+  n: usize,
+}
+
+impl Tile {
+  pub fn new(
+    buffer: impl Iterator<Item = f64>,
+    bin_count: usize,
+    contrast_limit: usize,
+  ) -> Self {
+    let mut hist = vec![0; bin_count];
+    let mut n = 0;
+
+    // contrast limiting
+    let mut clv = 0;
+
+    for v in buffer {
+      let bin = (v * (bin_count - 1) as f64) as usize;
+
+      if hist[bin] < contrast_limit {
+        hist[bin] += 1;
+      } else {
+        clv += 1;
+      }
+
+      n += 1;
+    }
+
+    clv = clv / bin_count;
+
+    if clv > 0 {
+      for b in &mut hist {
+        *b += clv;
+      }
+    }
+
+    for i in 1..hist.len() {
+      hist[i] += hist[i - 1];
+    }
 
     let mut cdf_min = 0;
-    for b in &bins {
+    for b in &hist {
       if *b > 0 {
         cdf_min = *b;
         break;
       }
     }
 
-    let n = buffer.len();
-
-    for v in buffer {
-      let bin = (*v * (self.bin_count - 1) as f64) as usize;
-
-      // transformation function
-      *v = (bins[bin] - cdf_min) as f64 / (n - cdf_min) as f64;
-    }
+    Self { hist, cdf_min, n }
   }
 
-  pub(self) fn create_bins(&self, buffer: &[f64]) -> Vec<usize> {
-    let mut bins = vec![0; self.bin_count];
+  pub fn transform(&self, v: f64) -> f64 {
+    let bin = (v * (self.hist.len() - 1) as f64) as usize;
 
-    let mut clv = 0;
+    let res = (self.hist[bin] - self.cdf_min) as f64;
 
-    for v in buffer.iter() {
-      let bin = (*v * (self.bin_count - 1) as f64) as usize;
-
-      if bins[bin] < self.contrast_limit {
-        bins[bin] += 1;
-      } else {
-        clv += 1;
-      }
-    }
-
-    clv = clv / self.bin_count;
-
-    if clv > 0 {
-      for b in &mut bins {
-        *b += clv;
-      }
-    }
-
-    for i in 1..bins.len() {
-      bins[i] += bins[i - 1];
-    }
-
-    bins
-  }
-}
-
-struct Tile {}
-
-impl Tile {
-  pub fn new(
-    buffer: &[f64],
-    block_size: usize,
-    elements: usize,
-    offset: usize,
-  ) -> Self {
-    assert_eq!(buffer.len() % block_size, 0);
-    Self {}
+    res / (self.n - self.cdf_min) as f64
   }
 }
 
@@ -558,8 +645,8 @@ impl<'a, T> Strided<'a, T> {
   }
 }
 
-impl<'a, T> Iterator for Strided<'a, T> {
-  type Item = &'a T;
+impl<'a, T: Copy> Iterator for Strided<'a, T> {
+  type Item = T;
 
   fn next(&mut self) -> Option<Self::Item> {
     // early exit if block_count is defined and has been reached
@@ -579,7 +666,7 @@ impl<'a, T> Iterator for Strided<'a, T> {
       self.block += 1;
     }
 
-    self.buffer.get(i)
+    self.buffer.get(i).map(|x| *x)
   }
 }
 
