@@ -451,6 +451,8 @@ impl CLAHE {
       panic!("width and height must be divisible by tile_size");
     }
 
+    // TODO: into method
+
     let w = width / self.tile_size;
     let h = height / self.tile_size;
 
@@ -475,11 +477,42 @@ impl CLAHE {
       }
     }
 
+    // TODO: into method
+
     for (i, v) in buffer.iter_mut().enumerate() {
       let x = i % width;
       let y = i / width;
 
+      // TODO: x_tile
+      // TODO: y_tile
+      // TODO: i_tile
+
       // TODO: which tiles are important?
+
+      // five intra-tile positions:
+      //
+      // nw, ne, se, sw, c
+      //
+      // * n -> y - 1
+      // * s -> y + 1
+      //
+      // * w -> x - 1
+      // * e -> x + 1
+      //
+      // nine tile positions:
+      //
+      // * corner nw
+      // * corner ne
+      // * corner se
+      // * corner sw
+      //
+      // * border n
+      // * border e
+      // * border s
+      // * border w
+      //
+      // * area
+      //
 
       if self.is_corner_or_tile_center(
         x,
@@ -505,7 +538,8 @@ impl CLAHE {
     width: usize,
     height: usize,
   ) -> bool {
-    (x == 0 || x == width - 1) && (y == 0 || y == height - 1)
+    (x < self.tile_size / 2 || x > width - self.tile_size / 2)
+      && (y < self.tile_size / 2 || y > height - -self.tile_size / 2)
   }
 
   fn is_border(
@@ -515,25 +549,26 @@ impl CLAHE {
     width: usize,
     height: usize,
   ) -> bool {
-    x == 0 || x == width - 1 || y == 0 || y == height - 1
+    x < self.tile_size / 2
+      || x > width - self.tile_size / 2
+      || y < self.tile_size / 2
+      || y > height - self.tile_size / 2
   }
 
-  fn is_tile_center(
-    &self,
-    x: usize,
-    y: usize,
-    tile_size: usize,
-  ) -> bool {
-    let x = x % tile_size;
-    let y = y % tile_size;
+  fn is_tile_center(&self, x: usize, y: usize) -> bool {
+    let x = x % self.tile_size;
+    let y = y % self.tile_size;
 
     if tile_size % 2 == 0 {
-      let x_center = x == tile_size / 2 || x == tile_size / 2 - 1;
-      let y_center = y == tile_size / 2 || y == tile_size / 2 - 1;
+      let x_center =
+        x == self.tile_size / 2 || x == self.tile_size / 2 - 1;
+
+      let y_center =
+        y == self.tile_size / 2 || y == self.tile_size / 2 - 1;
 
       x_center && y_center
     } else {
-      x == tile_size / 2 && y == tile_size / 2
+      x == self.tile_size / 2 && y == self.tile_size / 2
     }
   }
 
