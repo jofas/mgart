@@ -483,6 +483,12 @@ impl CLAHE {
       let x = i % width;
       let y = i / width;
 
+      // TODO: test this
+      let x_tile = x / w;
+      let y_tile = y / h;
+
+      let i_tile = y_tile * w + x_tile;
+
       // TODO: x_tile
       // TODO: y_tile
       // TODO: i_tile
