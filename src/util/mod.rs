@@ -507,13 +507,27 @@ impl CLAHE {
       let intra_tile_x = x % self.tile_size;
       let intra_tile_y = y % self.tile_size;
 
-      // TODO: intra-tile pos_vert, pos_hori
+      let (c_min, c_max) = if self.tile_size % 2 == 0 {
+        (self.tile_size / 2, self.tile_size / 2 + 1)
+      } else {
+        (self.tile_size / 2, self.tile_size / 2)
+      };
 
-      // TODO: x_tile
-      // TODO: y_tile
-      // TODO: i_tile
+      let pos_vert = if intra_tile_y < c_min {
+        Pos::North
+      } else if intra_tile_y > c_max {
+        Pos::South
+      } else {
+        Pos::Center
+      };
 
-      // TODO: which tiles are important?
+      let pos_hori = if intra_tile_x < c_min {
+        Pos::West
+      } else if intra_tile_x > c_max {
+        Pos::East
+      } else {
+        Pos::Center
+      };
 
       // five intra-tile positions:
       //
