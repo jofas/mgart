@@ -526,7 +526,7 @@ impl CLAHE {
       } else if intra_tile_x > c_max {
         Pos::East
       } else {
-        Pos::Center
+        Pos::Center // TODO: wrong, now I have a center cross
       };
 
       // five intra-tile positions:
