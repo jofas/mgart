@@ -469,10 +469,24 @@ impl CLAHE {
           &buffer,
         );
 
+        let pos_vert = match start_block {
+          0 => Pos::North,
+          _ if start_block == h - 1 => Pos::South,
+          _ => Pos::Center,
+        };
+
+        let pos_hori = match offset {
+          0 => Pos::West,
+          _ if offset == w - 1 => Pos::East,
+          _ => Pos::Center,
+        };
+
         tiles.push(Tile::new(
           stride,
           self.bin_count,
           self.contrast_limit,
+          pos_vert,
+          pos_hori,
         ));
       }
     }
@@ -487,7 +501,13 @@ impl CLAHE {
       let x_tile = x / w;
       let y_tile = y / h;
 
+      // the tile in which v lies
       let i_tile = y_tile * w + x_tile;
+
+      let intra_tile_x = x % self.tile_size;
+      let intra_tile_y = y % self.tile_size;
+
+      // TODO: intra-tile pos_vert, pos_hori
 
       // TODO: x_tile
       // TODO: y_tile
@@ -507,26 +527,23 @@ impl CLAHE {
       //
       // nine tile positions:
       //
-      // * corner nw
-      // * corner ne
-      // * corner se
-      // * corner sw
+      // * corner nw -> tile nw -> corner
+      // * corner ne -> tile ne -> corner
+      // * corner se -> tile se -> corner
+      // * corner sw -> tile sw -> corner
       //
-      // * border n
-      // * border e
-      // * border s
-      // * border w
+      // * corner nw, se -> tile ne, sw -> border
+      // * corner ne, sw -> tile nw, se -> border
+      //
+      // * border n -> tile nw, ne -> border
+      // * border e -> tile ne, se -> border
+      // * border s -> tile sw, se -> border
+      // * border w -> tile nw, sw -> border
       //
       // * area
       //
 
-      if self.is_corner_or_tile_center(
-        x,
-        y,
-        width,
-        height,
-        self.tile_size,
-      ) {
+      if self.is_corner_or_tile_center(x, y, width, height) {
 
         // transformation function of tile
       } else if self.is_border(x, y, width, height) {
@@ -545,7 +562,7 @@ impl CLAHE {
     height: usize,
   ) -> bool {
     (x < self.tile_size / 2 || x > width - self.tile_size / 2)
-      && (y < self.tile_size / 2 || y > height - -self.tile_size / 2)
+      && (y < self.tile_size / 2 || y > height - self.tile_size / 2)
   }
 
   fn is_border(
@@ -565,7 +582,7 @@ impl CLAHE {
     let x = x % self.tile_size;
     let y = y % self.tile_size;
 
-    if tile_size % 2 == 0 {
+    if self.tile_size % 2 == 0 {
       let x_center =
         x == self.tile_size / 2 || x == self.tile_size / 2 - 1;
 
@@ -584,17 +601,25 @@ impl CLAHE {
     y: usize,
     width: usize,
     height: usize,
-    tile_size: usize,
   ) -> bool {
-    self.is_corner(x, y, width, height)
-      || self.is_tile_center(x, y, self.tile_size)
+    self.is_corner(x, y, width, height) || self.is_tile_center(x, y)
   }
+}
+
+enum Pos {
+  North,
+  East,
+  South,
+  West,
+  Center,
 }
 
 struct Tile {
   hist: Vec<usize>,
   cdf_min: usize,
   n: usize,
+  pos_vert: Pos,
+  pos_hori: Pos,
 }
 
 impl Tile {
@@ -602,6 +627,8 @@ impl Tile {
     buffer: impl Iterator<Item = f64>,
     bin_count: usize,
     contrast_limit: usize,
+    pos_vert: Pos,
+    pos_hori: Pos,
   ) -> Self {
     let mut hist = vec![0; bin_count];
     let mut n = 0;
@@ -641,7 +668,13 @@ impl Tile {
       }
     }
 
-    Self { hist, cdf_min, n }
+    Self {
+      hist,
+      cdf_min,
+      n,
+      pos_vert,
+      pos_hori,
+    }
   }
 
   pub fn transform(&self, v: f64) -> f64 {
