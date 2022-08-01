@@ -513,20 +513,21 @@ impl CLAHE {
         (self.tile_size / 2, self.tile_size / 2)
       };
 
-      let pos_vert = if intra_tile_y < c_min {
-        Pos::North
-      } else if intra_tile_y > c_max {
-        Pos::South
+      // TODO: test this
+      let (pos_vert, pos_hori) = if c_min <= intra_tile_y
+        && intra_tile_y <= c_max
+        && c_min <= intra_tile_x
+        && intra_tile_x <= c_max
+      {
+        (Pos::Center, Pos::Center)
+      } else if intra_tile_y < c_min && intra_tile_x < c_min {
+        (Pos::North, Pos::West)
+      } else if intra_tile_y < c_min && intra_tile_x > c_max {
+        (Pos::North, Pos::East)
+      } else if intra_tile_y > c_max && intra_tile_x < c_min {
+        (Pos::South, Pos::West)
       } else {
-        Pos::Center
-      };
-
-      let pos_hori = if intra_tile_x < c_min {
-        Pos::West
-      } else if intra_tile_x > c_max {
-        Pos::East
-      } else {
-        Pos::Center // TODO: wrong, now I have a center cross
+        (Pos::South, Pos::East)
       };
 
       // five intra-tile positions:
