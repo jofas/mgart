@@ -530,6 +530,39 @@ impl CLAHE {
         (Pos::South, Pos::East)
       };
 
+      match (
+        tiles[i_tile].pos_vert,
+        tiles[i_tile].pos_hori,
+        pos_vert,
+        pos_hori,
+      ) {
+        // just tile value
+        (_, _, Pos::Center, Pos::Center) => {}
+        (Pos::North, Pos::West, Pos::North, Pos::West) => {}
+        (Pos::North, Pos::East, Pos::North, Pos::East) => {}
+        (Pos::South, Pos::West, Pos::South, Pos::West) => {}
+        (Pos::South, Pos::East, Pos::South, Pos::East) => {}
+
+        // linear interpolation (corner tiles)
+        (Pos::North, Pos::West, Pos::North, Pos::East) => {}
+        (Pos::North, Pos::West, Pos::South, Pos::West) => {}
+        (Pos::South, Pos::East, Pos::North, Pos::East) => {}
+        (Pos::South, Pos::East, Pos::South, Pos::West) => {}
+        (Pos::North, Pos::East, Pos::North, Pos::West) => {}
+        (Pos::North, Pos::East, Pos::South, Pos::East) => {}
+        (Pos::South, Pos::West, Pos::North, Pos::West) => {}
+        (Pos::South, Pos::West, Pos::South, Pos::East) => {}
+
+        // linear interpolation (border tiles)
+        (Pos::North, _, Pos::North, _) => {}
+        (Pos::South, _, Pos::South, _) => {}
+        (_, Pos::West, _, Pos::West) => {}
+        (_, Pos::East, _, Pos::East) => {}
+
+        // bilinear interpolation
+        _ => {}
+      }
+
       // five intra-tile positions:
       //
       // nw, ne, se, sw, c
@@ -621,6 +654,7 @@ impl CLAHE {
   }
 }
 
+#[derive(Clone, Copy)]
 enum Pos {
   North,
   East,
