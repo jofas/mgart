@@ -469,24 +469,23 @@ impl CLAHE {
           &buffer,
         );
 
-        let pos_vert = match start_block {
-          0 => Pos::North,
-          _ if start_block == h - 1 => Pos::South,
-          _ => Pos::Center,
+        let pos_v = match start_block {
+          0 => PosV::North,
+          _ if start_block == h - 1 => PosV::South,
+          _ => PosV::Center,
         };
 
-        let pos_hori = match offset {
-          0 => Pos::West,
-          _ if offset == w - 1 => Pos::East,
-          _ => Pos::Center,
+        let pos_h = match offset {
+          0 => PosH::West,
+          _ if offset == w - 1 => PosH::East,
+          _ => PosH::Center,
         };
 
         tiles.push(Tile::new(
           stride,
           self.bin_count,
           self.contrast_limit,
-          pos_vert,
-          pos_hori,
+          (pos_v, pos_h),
         ));
       }
     }
@@ -513,55 +512,62 @@ impl CLAHE {
         (self.tile_size / 2, self.tile_size / 2)
       };
 
-      // TODO: test this
-      let (pos_vert, pos_hori) = if c_min <= intra_tile_y
-        && intra_tile_y <= c_max
-        && c_min <= intra_tile_x
-        && intra_tile_x <= c_max
-      {
-        (Pos::Center, Pos::Center)
-      } else if intra_tile_y < c_min && intra_tile_x < c_min {
-        (Pos::North, Pos::West)
-      } else if intra_tile_y < c_min && intra_tile_x > c_max {
-        (Pos::North, Pos::East)
-      } else if intra_tile_y > c_max && intra_tile_x < c_min {
-        (Pos::South, Pos::West)
+      // no idea how to efficiently compute this ...
+
+      // try to get 4 values -> bilinear
+      // if I only get 2 -> linear
+      // if I only get 1 -> single
+
+      // [upper left, upper right, lower left, lower right]
+      //
+
+      /*
+      let pos_v = if intra_tile_y < c_min {
+        PosV::North
+      } else if intra_tile_y > c_max {
+        PosV::South
       } else {
-        (Pos::South, Pos::East)
+        PosV::Center
       };
 
-      match (
-        tiles[i_tile].pos_vert,
-        tiles[i_tile].pos_hori,
-        pos_vert,
-        pos_hori,
-      ) {
-        // just tile value
-        (_, _, Pos::Center, Pos::Center) => {}
-        (Pos::North, Pos::West, Pos::North, Pos::West) => {}
-        (Pos::North, Pos::East, Pos::North, Pos::East) => {}
-        (Pos::South, Pos::West, Pos::South, Pos::West) => {}
-        (Pos::South, Pos::East, Pos::South, Pos::East) => {}
+      let pos_h = if intra_tile_x < c_min {
+        PosH::West
+      } else if intra_tile_x > c_max {
+        PosH::East
+      } else {
+        PosH::Center
+      };
 
-        // linear interpolation (corner tiles)
-        (Pos::North, Pos::West, Pos::North, Pos::East) => {}
-        (Pos::North, Pos::West, Pos::South, Pos::West) => {}
-        (Pos::South, Pos::East, Pos::North, Pos::East) => {}
-        (Pos::South, Pos::East, Pos::South, Pos::West) => {}
-        (Pos::North, Pos::East, Pos::North, Pos::West) => {}
-        (Pos::North, Pos::East, Pos::South, Pos::East) => {}
-        (Pos::South, Pos::West, Pos::North, Pos::West) => {}
-        (Pos::South, Pos::West, Pos::South, Pos::East) => {}
+      // first compute vertical interpolation
 
-        // linear interpolation (border tiles)
-        (Pos::North, _, Pos::North, _) => {}
-        (Pos::South, _, Pos::South, _) => {}
-        (_, Pos::West, _, Pos::West) => {}
-        (_, Pos::East, _, Pos::East) => {}
+      let ip_v = match pos_v {
+        PosV::North => {
+          // get upper tile and interpolate
+        }
+        PosV::South => {
+          // get lower tile and interpolate
+        }
+        PosV::Center => {
+          // no interpolation
+        }
+      };
 
-        // bilinear interpolation
-        _ => {}
-      }
+      let ip_h = match pos_h {
+        PosV::West => {
+          // get left tile and interpolate
+        }
+        PosV::East => {
+          // get right tile and interpolate
+        }
+        PosV::Center => {
+          // no interpolation
+        }
+      };
+      */
+      // then compute horizontal interpolation
+
+      // just try to bilinearly interpolate -> fall back to linear ->
+      // fall back to single
 
       // five intra-tile positions:
       //
@@ -569,9 +575,11 @@ impl CLAHE {
       //
       // * n -> y - 1
       // * s -> y + 1
+      // * c -> y
       //
       // * w -> x - 1
       // * e -> x + 1
+      // * c -> x
       //
       // nine tile positions:
       //
@@ -655,20 +663,26 @@ impl CLAHE {
 }
 
 #[derive(Clone, Copy)]
-enum Pos {
+enum PosV {
   North,
-  East,
   South,
-  West,
   Center,
 }
+
+#[derive(Clone, Copy)]
+enum PosH {
+  West,
+  East,
+  Center,
+}
+
+type Pos = (PosV, PosH);
 
 struct Tile {
   hist: Vec<usize>,
   cdf_min: usize,
   n: usize,
-  pos_vert: Pos,
-  pos_hori: Pos,
+  pos: Pos,
 }
 
 impl Tile {
@@ -676,8 +690,7 @@ impl Tile {
     buffer: impl Iterator<Item = f64>,
     bin_count: usize,
     contrast_limit: usize,
-    pos_vert: Pos,
-    pos_hori: Pos,
+    pos: Pos,
   ) -> Self {
     let mut hist = vec![0; bin_count];
     let mut n = 0;
@@ -721,8 +734,7 @@ impl Tile {
       hist,
       cdf_min,
       n,
-      pos_vert,
-      pos_hori,
+      pos,
     }
   }
 
