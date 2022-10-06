@@ -5,10 +5,10 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::stdin;
 
-use algorithmic_art::args::{
+use mgart::args::{
   BuddhabrotArgs, ColorMap1dArgs, JuliaSetArgs,
 };
-use algorithmic_art::{
+use mgart::{
   buddhabrot, color_map_1d, julia_set, julia_set_interior_distance,
 };
 
