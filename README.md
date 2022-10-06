@@ -1,4 +1,6 @@
-# Algorithmic Art
+![mgart](./icon.svg)
+
+# mgart
 
 ## TODO
 
