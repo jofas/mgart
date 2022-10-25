@@ -31,6 +31,7 @@ pub enum PostProcessing {
   ClampAndNormalize { min: f64, max: f64 },
   Gradient(Gradient),
   Smoothing(Smoothing),
+  Clahe(CLAHE),
 }
 
 impl PostProcessing {
@@ -65,6 +66,9 @@ impl PostProcessing {
       }
       Self::Smoothing(s) => {
         s.smooth(buffer, width, height);
+      }
+      Self::Clahe(c) => {
+        c.apply(buffer, width, height);
       }
     }
   }
@@ -422,6 +426,7 @@ pub fn grid_pos(
   }
 }
 
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct CLAHE {
   contrast_limit: usize,
   bin_count: usize,
