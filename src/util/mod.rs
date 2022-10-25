@@ -456,15 +456,13 @@ impl CLAHE {
       panic!("width and height must be divisible by tile_size");
     }
 
-    // TODO: into method (computes tiles with their histogram)
+    let tiles_w = width / self.tile_size;
+    let tiles_h = height / self.tile_size;
 
-    let w = width / self.tile_size;
-    let h = height / self.tile_size;
+    let mut tiles: Vec<Tile> = Vec::with_capacity(tiles_w * tiles_h);
 
-    let mut tiles: Vec<Tile> = Vec::with_capacity(w * h);
-
-    for start_block in 0..h {
-      for offset in 0..w {
+    for start_block in 0..tiles_h {
+      for offset in 0..tiles_w {
         let stride = Strided::new(
           width,
           self.tile_size,
@@ -489,9 +487,7 @@ impl CLAHE {
       let x = i % width;
       let y = i / width;
 
-      // TODO: test this
-      let x_tile = x / w;
-      let y_tile = y / h;
+      let (x_tile, y_tile) = self.tile_indices(x, y);
 
       let center = self.tile_size as f64 / 2.;
 
@@ -510,20 +506,20 @@ impl CLAHE {
         Pos::NW => {
           let mut nw = None;
           let mut ne = None;
-          let se = Some(&tiles[y_tile * w + x_tile]);
+          let se = Some(&tiles[y_tile * tiles_w + x_tile]);
           let mut sw = None;
 
           match (x_tile > 0, y_tile > 0) {
             (true, true) => {
-              nw = Some(&tiles[(y_tile - 1) * w + x_tile - 1]);
-              ne = Some(&tiles[(y_tile - 1) * w + x_tile]);
-              sw = Some(&tiles[y_tile * w + x_tile - 1]);
+              nw = Some(&tiles[(y_tile - 1) * tiles_w + x_tile - 1]);
+              ne = Some(&tiles[(y_tile - 1) * tiles_w + x_tile]);
+              sw = Some(&tiles[y_tile * tiles_w + x_tile - 1]);
             }
             (true, false) => {
-              sw = Some(&tiles[y_tile * w + x_tile - 1]);
+              sw = Some(&tiles[y_tile * tiles_w + x_tile - 1]);
             }
             (false, true) => {
-              ne = Some(&tiles[(y_tile - 1) * w + x_tile]);
+              ne = Some(&tiles[(y_tile - 1) * tiles_w + x_tile]);
             }
             (false, false) => {}
           }
@@ -534,19 +530,19 @@ impl CLAHE {
           let mut nw = None;
           let mut ne = None;
           let mut se = None;
-          let sw = Some(&tiles[y_tile * w + x_tile]);
+          let sw = Some(&tiles[y_tile * tiles_w + x_tile]);
 
-          match (x_tile < w - 1, y_tile > 0) {
+          match (x_tile < tiles_w - 1, y_tile > 0) {
             (true, true) => {
-              nw = Some(&tiles[(y_tile - 1) * w + x_tile]);
-              ne = Some(&tiles[(y_tile - 1) * w + x_tile + 1]);
-              se = Some(&tiles[y_tile * w + x_tile + 1]);
+              nw = Some(&tiles[(y_tile - 1) * tiles_w + x_tile]);
+              ne = Some(&tiles[(y_tile - 1) * tiles_w + x_tile + 1]);
+              se = Some(&tiles[y_tile * tiles_w + x_tile + 1]);
             }
             (true, false) => {
-              se = Some(&tiles[y_tile * w + x_tile + 1]);
+              se = Some(&tiles[y_tile * tiles_w + x_tile + 1]);
             }
             (false, true) => {
-              nw = Some(&tiles[(y_tile - 1) * w + x_tile]);
+              nw = Some(&tiles[(y_tile - 1) * tiles_w + x_tile]);
             }
             (false, false) => {}
           }
@@ -554,22 +550,22 @@ impl CLAHE {
           InterpolationTiles::new(nw, ne, se, sw, dyi, dy, dx, dxi)
         }
         Pos::SE => {
-          let nw = Some(&tiles[y_tile * w + x_tile]);
+          let nw = Some(&tiles[y_tile * tiles_w + x_tile]);
           let mut ne = None;
           let mut se = None;
           let mut sw = None;
 
-          match (x_tile < w - 1, y_tile < h - 1) {
+          match (x_tile < tiles_w - 1, y_tile < tiles_h - 1) {
             (true, true) => {
-              ne = Some(&tiles[y_tile * w + x_tile + 1]);
-              se = Some(&tiles[(y_tile + 1) * w + x_tile + 1]);
-              sw = Some(&tiles[(y_tile + 1) * w + x_tile]);
+              ne = Some(&tiles[y_tile * tiles_w + x_tile + 1]);
+              se = Some(&tiles[(y_tile + 1) * tiles_w + x_tile + 1]);
+              sw = Some(&tiles[(y_tile + 1) * tiles_w + x_tile]);
             }
             (true, false) => {
-              ne = Some(&tiles[y_tile * w + x_tile + 1]);
+              ne = Some(&tiles[y_tile * tiles_w + x_tile + 1]);
             }
             (false, true) => {
-              sw = Some(&tiles[(y_tile + 1) * w + x_tile]);
+              sw = Some(&tiles[(y_tile + 1) * tiles_w + x_tile]);
             }
             (false, false) => {}
           }
@@ -578,21 +574,21 @@ impl CLAHE {
         }
         Pos::SW => {
           let mut nw = None;
-          let ne = Some(&tiles[y_tile * w + x_tile]);
+          let ne = Some(&tiles[y_tile * tiles_w + x_tile]);
           let mut se = None;
           let mut sw = None;
 
-          match (x_tile > 0, y_tile < h - 1) {
+          match (x_tile > 0, y_tile < tiles_h - 1) {
             (true, true) => {
-              nw = Some(&tiles[y_tile * w + x_tile - 1]);
-              se = Some(&tiles[(y_tile + 1) * w + x_tile]);
-              sw = Some(&tiles[(y_tile + 1) * w + x_tile - 1]);
+              nw = Some(&tiles[y_tile * tiles_w + x_tile - 1]);
+              se = Some(&tiles[(y_tile + 1) * tiles_w + x_tile]);
+              sw = Some(&tiles[(y_tile + 1) * tiles_w + x_tile - 1]);
             }
             (true, false) => {
-              nw = Some(&tiles[y_tile * w + x_tile - 1]);
+              nw = Some(&tiles[y_tile * tiles_w + x_tile - 1]);
             }
             (false, true) => {
-              se = Some(&tiles[(y_tile + 1) * w + x_tile]);
+              se = Some(&tiles[(y_tile + 1) * tiles_w + x_tile]);
             }
             (false, false) => {}
           }
@@ -600,7 +596,7 @@ impl CLAHE {
           InterpolationTiles::new(nw, ne, se, sw, dy, dyi, dxi, dx)
         }
         Pos::Center => {
-          *v = tiles[y_tile * w + x_tile].transform(*v);
+          *v = tiles[y_tile * tiles_w + x_tile].transform(*v);
           continue;
         }
       };
@@ -617,6 +613,10 @@ impl CLAHE {
 
       *v = (q_nw + q_ne + q_se + q_sw) / self.tile_size.pow(2) as f64;
     }
+  }
+
+  fn tile_indices(&self, x: usize, y: usize) -> (usize, usize) {
+    (x / self.tile_size, y / self.tile_size)
   }
 }
 
@@ -995,6 +995,31 @@ mod tests {
     assert_eq!(image, vec![0., 0.5, 0.5, 0., 0.75, 1.]);
   }
   */
+
+  #[test]
+  fn tile_indexing() {
+    let c = CLAHE::new(0, 0, 8);
+
+    assert_eq!((0, 0), c.tile_indices(0, 0));
+    assert_eq!((0, 0), c.tile_indices(7, 0));
+    assert_eq!((0, 0), c.tile_indices(0, 7));
+    assert_eq!((0, 0), c.tile_indices(7, 7));
+
+    assert_eq!((1, 1), c.tile_indices(8, 8));
+    assert_eq!((1, 1), c.tile_indices(15, 8));
+    assert_eq!((1, 1), c.tile_indices(8, 15));
+    assert_eq!((1, 1), c.tile_indices(15, 15));
+
+    assert_eq!((2, 2), c.tile_indices(16, 16));
+    assert_eq!((2, 2), c.tile_indices(23, 16));
+    assert_eq!((2, 2), c.tile_indices(16, 23));
+    assert_eq!((2, 2), c.tile_indices(23, 23));
+
+    assert_eq!((3, 3), c.tile_indices(24, 24));
+    assert_eq!((3, 3), c.tile_indices(31, 24));
+    assert_eq!((3, 3), c.tile_indices(24, 31));
+    assert_eq!((3, 3), c.tile_indices(31, 31));
+  }
 
   #[test]
   fn strided() {
