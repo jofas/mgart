@@ -5,9 +5,7 @@ use serde::Deserialize;
 use std::fs::File;
 use std::io::stdin;
 
-use mgart::args::{
-  BuddhabrotArgs, ColorMap1dArgs, JuliaSetArgs,
-};
+use mgart::args::{BuddhabrotArgs, ColorMap1dArgs, JuliaSetArgs};
 use mgart::{
   buddhabrot, color_map_1d, julia_set, julia_set_interior_distance,
 };

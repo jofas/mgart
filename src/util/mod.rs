@@ -343,6 +343,7 @@ pub trait Sampling {
   fn sample(&self) -> Self::Output;
 }
 
+// kernel density estimation
 pub struct KDE<T, K> {
   elems: Vec<T>,
   probabilities: Vec<f64>,
@@ -451,7 +452,7 @@ impl CLAHE {
       panic!("width and height must be divisible by tile_size");
     }
 
-    // TODO: into method
+    // TODO: into method (computes tiles with their histogram)
 
     let w = width / self.tile_size;
     let h = height / self.tile_size;
@@ -469,28 +470,16 @@ impl CLAHE {
           &buffer,
         );
 
-        let pos_v = match start_block {
-          0 => PosV::North,
-          _ if start_block == h - 1 => PosV::South,
-          _ => PosV::Center,
-        };
-
-        let pos_h = match offset {
-          0 => PosH::West,
-          _ if offset == w - 1 => PosH::East,
-          _ => PosH::Center,
-        };
-
         tiles.push(Tile::new(
           stride,
           self.bin_count,
           self.contrast_limit,
-          (pos_v, pos_h),
         ));
       }
     }
 
-    // TODO: into method
+    // TODO: into method (for each pixel, apply equalization
+    // via interpolation)
 
     for (i, v) in buffer.iter_mut().enumerate() {
       let x = i % width;
@@ -500,12 +489,130 @@ impl CLAHE {
       let x_tile = x / w;
       let y_tile = y / h;
 
-      // the tile in which v lies
-      let i_tile = y_tile * w + x_tile;
+      let interpolation_tiles = match Pos::new(
+        x % self.tile_size,
+        y % self.tile_size,
+        self.tile_size,
+        self.tile_size,
+      ) {
+        Pos::NW => {
+          let mut nw = None;
+          let mut ne = None;
+          let se = Some(&tiles[y_tile * w + x_tile]);
+          let mut sw = None;
 
-      let intra_tile_x = x % self.tile_size;
-      let intra_tile_y = y % self.tile_size;
+          match (x_tile > 0, y_tile > 0) {
+            (true, true) => {
+              nw = Some(&tiles[(y_tile - 1) * w + x_tile - 1]);
+              ne = Some(&tiles[(y_tile - 1) * w + x_tile]);
+              sw = Some(&tiles[y_tile * w + x_tile - 1]);
+            }
+            (true, false) => {
+              sw = Some(&tiles[y_tile * w + x_tile - 1]);
+            }
+            (false, true) => {
+              ne = Some(&tiles[(y_tile - 1) * w + x_tile]);
+            }
+            (false, false) => {}
+          }
 
+          InterpolationTiles::new(nw, ne, se, sw)
+        }
+        Pos::NE => {
+          let mut nw = None;
+          let mut ne = None;
+          let mut se = None;
+          let sw = Some(&tiles[y_tile * w + x_tile]);
+
+          match (x_tile < w - 1, y_tile > 0) {
+            (true, true) => {
+              nw = Some(&tiles[(y_tile - 1) * w + x_tile]);
+              ne = Some(&tiles[(y_tile - 1) * w + x_tile + 1]);
+              se = Some(&tiles[y_tile * w + x_tile + 1]);
+            }
+            (true, false) => {
+              se = Some(&tiles[y_tile * w + x_tile + 1]);
+            }
+            (false, true) => {
+              nw = Some(&tiles[(y_tile - 1) * w + x_tile]);
+            }
+            (false, false) => {}
+          }
+
+          InterpolationTiles::new(nw, ne, se, sw)
+        }
+        Pos::SE => {
+          let nw = Some(&tiles[y_tile * w + x_tile]);
+          let mut ne = None;
+          let mut se = None;
+          let mut sw = None;
+
+          match (x_tile < w - 1, y_tile < h - 1) {
+            (true, true) => {
+              ne = Some(&tiles[y_tile * w + x_tile + 1]);
+              se = Some(&tiles[(y_tile + 1) * w + x_tile + 1]);
+              sw = Some(&tiles[(y_tile + 1) * w + x_tile]);
+            }
+            (true, false) => {
+              ne = Some(&tiles[y_tile * w + x_tile + 1]);
+            }
+            (false, true) => {
+              sw = Some(&tiles[(y_tile + 1) * w + x_tile]);
+            }
+            (false, false) => {}
+          }
+
+          InterpolationTiles::new(nw, ne, se, sw)
+        }
+        Pos::SW => {
+          let mut nw = None;
+          let ne = Some(&tiles[y_tile * w + x_tile]);
+          let mut se = None;
+          let mut sw = None;
+
+          match (x_tile > 0, y_tile < h - 1) {
+            (true, true) => {
+              nw = Some(&tiles[y_tile * w + x_tile - 1]);
+              se = Some(&tiles[(y_tile + 1) * w + x_tile]);
+              sw = Some(&tiles[(y_tile + 1) * w + x_tile - 1]);
+            }
+            (true, false) => {
+              nw = Some(&tiles[y_tile * w + x_tile - 1]);
+            }
+            (false, true) => {
+              se = Some(&tiles[(y_tile + 1) * w + x_tile]);
+            }
+            (false, false) => {}
+          }
+
+          InterpolationTiles::new(nw, ne, se, sw)
+        }
+        Pos::Center => {
+          *v = tiles[y_tile * w + x_tile].transform(*v);
+          continue;
+        }
+      };
+
+      // TODO: get distance from x, y to center pixels of tiles
+      let xw = 0.;
+      let xe = 0.;
+
+      let yn = 0.;
+      let ys = 0.;
+
+      let q_nw = interpolation_tiles.nw.transform(*v);
+      let q_ne = interpolation_tiles.ne.transform(*v);
+      let q_se = interpolation_tiles.se.transform(*v);
+      let q_sw = interpolation_tiles.sw.transform(*v);
+
+      let q_nw = q_nw * (xe - x as f64) * (ys - y as f64);
+      let q_ne = q_ne * (x as f64 - xw) * (y as f64 - yn);
+      let q_se = q_se * (x as f64 - xw) * (y as f64 - yn);
+      let q_sw = q_sw * (xe - x as f64) * (ys - y as f64);
+
+      *v = (q_nw + q_ne + q_se + q_sw) / ((xe - xw) * (ys - yn));
+
+      /*
       let (c_min, c_max) = if self.tile_size % 2 == 0 {
         (self.tile_size / 2, self.tile_size / 2 + 1)
       } else {
@@ -521,7 +628,6 @@ impl CLAHE {
       // [upper left, upper right, lower left, lower right]
       //
 
-      /*
       let pos_v = if intra_tile_y < c_min {
         PosV::North
       } else if intra_tile_y > c_max {
@@ -598,7 +704,7 @@ impl CLAHE {
       //
       // * area
       //
-
+      /*
       if self.is_corner_or_tile_center(x, y, width, height) {
 
         // transformation function of tile
@@ -607,9 +713,11 @@ impl CLAHE {
       } else {
         // bilinear interpolation
       }
+      */
     }
   }
 
+  /*
   fn is_corner(
     &self,
     x: usize,
@@ -633,6 +741,7 @@ impl CLAHE {
       || y < self.tile_size / 2
       || y > height - self.tile_size / 2
   }
+  */
 
   fn is_tile_center(&self, x: usize, y: usize) -> bool {
     let x = x % self.tile_size;
@@ -651,6 +760,7 @@ impl CLAHE {
     }
   }
 
+  /*
   fn is_corner_or_tile_center(
     &self,
     x: usize,
@@ -660,29 +770,114 @@ impl CLAHE {
   ) -> bool {
     self.is_corner(x, y, width, height) || self.is_tile_center(x, y)
   }
+  */
 }
 
-#[derive(Clone, Copy)]
-enum PosV {
-  North,
-  South,
+enum Pos {
+  NW,
+  NE,
+  SE,
+  SW,
   Center,
 }
 
-#[derive(Clone, Copy)]
+impl Pos {
+  fn new(x: usize, y: usize, x_max: usize, y_max: usize) -> Self {
+    let pos_x = PosH::new(x, x_max);
+    let pos_y = PosV::new(y, y_max);
+
+    match (pos_y, pos_x) {
+      (PosV::N, PosH::W) => Self::NW,
+      (PosV::N, PosH::E) => Self::NE,
+      (PosV::S, PosH::E) => Self::SE,
+      (PosV::S, PosH::W) => Self::SW,
+      _ => Self::Center,
+    }
+  }
+}
+
 enum PosH {
-  West,
-  East,
+  W,
+  E,
   Center,
 }
 
-type Pos = (PosV, PosH);
+impl PosH {
+  fn new(x: usize, x_max: usize) -> Self {
+    if x_max % 2 == 0 {
+      if x < x_max / 2 {
+        Self::W
+      } else if x > x_max / 2 + 1 {
+        Self::E
+      } else {
+        Self::Center
+      }
+    } else {
+      if x < x_max / 2 {
+        Self::W
+      } else if x > x_max / 2 {
+        Self::E
+      } else {
+        Self::Center
+      }
+    }
+  }
+}
+
+enum PosV {
+  N,
+  S,
+  Center,
+}
+
+impl PosV {
+  fn new(y: usize, y_max: usize) -> Self {
+    if y_max % 2 == 0 {
+      if y < y_max / 2 {
+        Self::N
+      } else if y > y_max / 2 + 1 {
+        Self::S
+      } else {
+        Self::Center
+      }
+    } else {
+      if y < y_max / 2 {
+        Self::N
+      } else if y > y_max / 2 {
+        Self::S
+      } else {
+        Self::Center
+      }
+    }
+  }
+}
+
+struct InterpolationTiles<'a> {
+  nw: Option<&'a Tile>,
+  ne: Option<&'a Tile>,
+  se: Option<&'a Tile>,
+  sw: Option<&'a Tile>,
+}
+
+impl<'a> InterpolationTiles<'a> {
+  fn new(
+    nw: Option<&'a Tile>,
+    ne: Option<&'a Tile>,
+    se: Option<&'a Tile>,
+    sw: Option<&'a Tile>,
+  ) -> Self {
+    Self { nw, ne, se, sw }
+  }
+}
+
+trait HistogramEqualization {
+  fn transform(&self, v: f64) -> f64;
+}
 
 struct Tile {
   hist: Vec<usize>,
   cdf_min: usize,
   n: usize,
-  pos: Pos,
 }
 
 impl Tile {
@@ -690,7 +885,6 @@ impl Tile {
     buffer: impl Iterator<Item = f64>,
     bin_count: usize,
     contrast_limit: usize,
-    pos: Pos,
   ) -> Self {
     let mut hist = vec![0; bin_count];
     let mut n = 0;
@@ -722,6 +916,7 @@ impl Tile {
       hist[i] += hist[i - 1];
     }
 
+    // minimum value in histogram
     let mut cdf_min = 0;
     for b in &hist {
       if *b > 0 {
@@ -730,20 +925,26 @@ impl Tile {
       }
     }
 
-    Self {
-      hist,
-      cdf_min,
-      n,
-      pos,
-    }
+    Self { hist, cdf_min, n }
   }
+}
 
-  pub fn transform(&self, v: f64) -> f64 {
+impl HistogramEqualization for Tile {
+  fn transform(&self, v: f64) -> f64 {
     let bin = (v * (self.hist.len() - 1) as f64) as usize;
 
     let res = (self.hist[bin] - self.cdf_min) as f64;
 
     res / (self.n - self.cdf_min) as f64
+  }
+}
+
+impl HistogramEqualization for Option<&Tile> {
+  fn transform(&self, v: f64) -> f64 {
+    match self {
+      Some(t) => t.transform(v),
+      None => 0.,
+    }
   }
 }
 
@@ -936,34 +1137,34 @@ mod tests {
     let buf: Vec<f64> = (0..16).map(|x| x as f64).collect();
 
     let s = Strided::new(4, 2, 0, None, None, &buf);
-    let v: Vec<f64> = s.map(|x| *x).collect();
+    let v: Vec<f64> = s.map(|x| x).collect();
     assert_eq!(v, vec![0., 1., 4., 5., 8., 9., 12., 13.]);
 
     let s = Strided::new(4, 2, 2, None, None, &buf);
-    let v: Vec<f64> = s.map(|x| *x).collect();
+    let v: Vec<f64> = s.map(|x| x).collect();
     assert_eq!(v, vec![2., 3., 6., 7., 10., 11., 14., 15.]);
 
     let s = Strided::new(4, 3, 1, None, None, &buf);
-    let v: Vec<f64> = s.map(|x| *x).collect();
+    let v: Vec<f64> = s.map(|x| x).collect();
     assert_eq!(
       v,
       vec![1., 2., 3., 5., 6., 7., 9., 10., 11., 13., 14., 15.]
     );
 
     let s = Strided::new(4, 2, 0, Some(2), None, &buf);
-    let v: Vec<f64> = s.map(|x| *x).collect();
+    let v: Vec<f64> = s.map(|x| x).collect();
     assert_eq!(v, vec![0., 1., 4., 5.]);
 
     let s = Strided::new(4, 2, 2, Some(2), None, &buf);
-    let v: Vec<f64> = s.map(|x| *x).collect();
+    let v: Vec<f64> = s.map(|x| x).collect();
     assert_eq!(v, vec![2., 3., 6., 7.]);
 
     let s = Strided::new(4, 2, 0, Some(2), Some(2), &buf);
-    let v: Vec<f64> = s.map(|x| *x).collect();
+    let v: Vec<f64> = s.map(|x| x).collect();
     assert_eq!(v, vec![8., 9., 12., 13.]);
 
     let s = Strided::new(4, 2, 2, Some(2), Some(2), &buf);
-    let v: Vec<f64> = s.map(|x| *x).collect();
+    let v: Vec<f64> = s.map(|x| x).collect();
     assert_eq!(v, vec![10., 11., 14., 15.]);
   }
 
