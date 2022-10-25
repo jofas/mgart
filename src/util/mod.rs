@@ -491,6 +491,50 @@ impl CLAHE {
       let x = i % width;
       let y = i / width;
 
+      let pos = Pos::new(
+        x % self.tile_size_x,
+        y % self.tile_size_y,
+        self.tile_size_x,
+        self.tile_size_y,
+      );
+
+      let (x_tile, y_tile) = self.tile_indices(x, y);
+
+      let x_tile_i = x_tile as isize;
+      let y_tile_i = y_tile as isize;
+
+      let (x1, x2, y1, y2) = match pos {
+        Pos::NW => (x_tile_i - 1, x_tile_i, y_tile_i - 1, y_tile_i),
+        Pos::NE => (x_tile_i, x_tile_i + 1, y_tile_i - 1, y_tile_i),
+        Pos::SE => (x_tile_i, x_tile_i + 1, y_tile_i, y_tile_i + 1),
+        Pos::SW => (x_tile_i - 1, x_tile_i, y_tile_i, y_tile_i + 1),
+        Pos::Center => {
+          *v = tiles[y_tile * tiles_w + x_tile].transform(*v);
+          continue;
+        }
+      };
+
+      let mut nw = None;
+      let mut ne = None;
+      let mut se = None;
+      let mut sw = None;
+
+      if x1 >= 0 && y1 >= 0 {
+        nw = Some(&tiles[y1 as usize * tiles_w + x1 as usize]);
+      }
+
+      if x1 >= 0 && y2 < tiles_h as isize {
+        ne = Some(&tiles[y2 as usize * tiles_w + x1 as usize]);
+      }
+
+      if x2 < tiles_w as isize && y2 < tiles_h as isize {
+        se = Some(&tiles[y2 as usize * tiles_w + x2 as usize]);
+      }
+
+      if x2 < tiles_w as isize && y1 >= 0 {
+        sw = Some(&tiles[y1 as usize * tiles_w + x2 as usize]);
+      }
+
       let center_x = self.tile_size_x as f64 / 2.;
       let center_y = self.tile_size_y as f64 / 2.;
 
@@ -503,121 +547,34 @@ impl CLAHE {
       let dxi = 1. - dx;
       let dyi = 1. - dy;
 
-      let (x_tile, y_tile) = self.tile_indices(x, y);
-
-      let ip_tiles = match Pos::new(
-        x % self.tile_size_x,
-        y % self.tile_size_y,
-        self.tile_size_x,
-        self.tile_size_y,
-      ) {
-        Pos::NW => {
-          let mut nw = None;
-          let mut ne = None;
-          let se = Some(&tiles[y_tile * tiles_w + x_tile]);
-          let mut sw = None;
-
-          match (x_tile > 0, y_tile > 0) {
-            (true, true) => {
-              nw = Some(&tiles[(y_tile - 1) * tiles_w + x_tile - 1]);
-              ne = Some(&tiles[(y_tile - 1) * tiles_w + x_tile]);
-              sw = Some(&tiles[y_tile * tiles_w + x_tile - 1]);
-            }
-            (true, false) => {
-              sw = Some(&tiles[y_tile * tiles_w + x_tile - 1]);
-            }
-            (false, true) => {
-              ne = Some(&tiles[(y_tile - 1) * tiles_w + x_tile]);
-            }
-            (false, false) => {}
-          }
-
-          InterpolationTiles::new(nw, ne, se, sw, dyi, dy, dxi, dx)
-        }
-        Pos::NE => {
-          let mut nw = None;
-          let mut ne = None;
-          let mut se = None;
-          let sw = Some(&tiles[y_tile * tiles_w + x_tile]);
-
-          match (x_tile < tiles_w - 1, y_tile > 0) {
-            (true, true) => {
-              nw = Some(&tiles[(y_tile - 1) * tiles_w + x_tile]);
-              ne = Some(&tiles[(y_tile - 1) * tiles_w + x_tile + 1]);
-              se = Some(&tiles[y_tile * tiles_w + x_tile + 1]);
-            }
-            (true, false) => {
-              se = Some(&tiles[y_tile * tiles_w + x_tile + 1]);
-            }
-            (false, true) => {
-              nw = Some(&tiles[(y_tile - 1) * tiles_w + x_tile]);
-            }
-            (false, false) => {}
-          }
-
-          InterpolationTiles::new(nw, ne, se, sw, dyi, dy, dx, dxi)
-        }
-        Pos::SE => {
-          let nw = Some(&tiles[y_tile * tiles_w + x_tile]);
-          let mut ne = None;
-          let mut se = None;
-          let mut sw = None;
-
-          match (x_tile < tiles_w - 1, y_tile < tiles_h - 1) {
-            (true, true) => {
-              ne = Some(&tiles[y_tile * tiles_w + x_tile + 1]);
-              se = Some(&tiles[(y_tile + 1) * tiles_w + x_tile + 1]);
-              sw = Some(&tiles[(y_tile + 1) * tiles_w + x_tile]);
-            }
-            (true, false) => {
-              ne = Some(&tiles[y_tile * tiles_w + x_tile + 1]);
-            }
-            (false, true) => {
-              sw = Some(&tiles[(y_tile + 1) * tiles_w + x_tile]);
-            }
-            (false, false) => {}
-          }
-
-          InterpolationTiles::new(nw, ne, se, sw, dy, dyi, dx, dxi)
-        }
-        Pos::SW => {
-          let mut nw = None;
-          let ne = Some(&tiles[y_tile * tiles_w + x_tile]);
-          let mut se = None;
-          let mut sw = None;
-
-          match (x_tile > 0, y_tile < tiles_h - 1) {
-            (true, true) => {
-              nw = Some(&tiles[y_tile * tiles_w + x_tile - 1]);
-              se = Some(&tiles[(y_tile + 1) * tiles_w + x_tile]);
-              sw = Some(&tiles[(y_tile + 1) * tiles_w + x_tile - 1]);
-            }
-            (true, false) => {
-              nw = Some(&tiles[y_tile * tiles_w + x_tile - 1]);
-            }
-            (false, true) => {
-              se = Some(&tiles[(y_tile + 1) * tiles_w + x_tile]);
-            }
-            (false, false) => {}
-          }
-
-          InterpolationTiles::new(nw, ne, se, sw, dy, dyi, dxi, dx)
-        }
-        Pos::Center => {
-          *v = tiles[y_tile * tiles_w + x_tile].transform(*v);
-          continue;
-        }
+      let (dn, ds, dw, de) = match pos {
+        Pos::NW => (dyi, dy, dxi, dx),
+        Pos::NE => (dyi, dy, dx, dxi),
+        Pos::SE => (dy, dyi, dx, dxi),
+        Pos::SW => (dy, dyi, dxi, dx),
+        Pos::Center => panic!("impossible to reach"),
       };
 
-      let q_nw = ip_tiles.nw.transform(*v);
-      let q_ne = ip_tiles.ne.transform(*v);
-      let q_se = ip_tiles.se.transform(*v);
-      let q_sw = ip_tiles.sw.transform(*v);
+      let (dn, ds, dw, de) = match (nw, ne, se, sw) {
+        // corners
+        (Some(_), None, None, None) => (1., 0., 1., 0.),
+        (None, Some(_), None, None) => (1., 0., 0., 1.),
+        (None, None, Some(_), None) => (0., 1., 0., 1.),
+        (None, None, None, Some(_)) => (0., 1., 1., 0.),
+        // borders
+        (Some(_), Some(_), None, None) => (1., 0., dw, de),
+        (Some(_), None, None, Some(_)) => (dn, ds, 1., 0.),
+        (None, Some(_), Some(_), None) => (dn, ds, 1., 0.),
+        (None, None, Some(_), Some(_)) => (1., 0., dw, de),
+        // center
+        (Some(_), Some(_), Some(_), Some(_)) => (dn, ds, dw, de),
+        _ => panic!("impossible state"),
+      };
 
-      let q_nw = q_nw * ip_tiles.dn * ip_tiles.dw;
-      let q_ne = q_ne * ip_tiles.dn * ip_tiles.de;
-      let q_se = q_se * ip_tiles.ds * ip_tiles.de;
-      let q_sw = q_sw * ip_tiles.ds * ip_tiles.dw;
+      let q_nw = nw.transform(*v) * dn * dw;
+      let q_ne = ne.transform(*v) * dn * de;
+      let q_se = se.transform(*v) * ds * de;
+      let q_sw = sw.transform(*v) * ds * dw;
 
       *v = q_nw + q_ne + q_se + q_sw;
     }
@@ -644,16 +601,13 @@ impl Pos {
     match (pos_y, pos_x) {
       (PosV::N, PosH::W) => Self::NW,
       (PosV::N, PosH::E) => Self::NE,
+      (PosV::N, PosH::Center) => Self::NW,
       (PosV::S, PosH::E) => Self::SE,
       (PosV::S, PosH::W) => Self::SW,
-      (PosV::CenterN, PosH::W) => Self::NW,
-      (PosV::CenterN, PosH::E) => Self::NE,
-      (PosV::CenterS, PosH::W) => Self::SW,
-      (PosV::CenterS, PosH::E) => Self::SE,
-      (PosV::N, PosH::CenterW) => Self::NW,
-      (PosV::S, PosH::CenterW) => Self::SW,
-      (PosV::N, PosH::CenterE) => Self::NE,
-      (PosV::S, PosH::CenterE) => Self::SE,
+      (PosV::S, PosH::Center) => Self::SW,
+      (PosV::Center, PosH::E) => Self::NE,
+      (PosV::Center, PosH::W) => Self::NW,
+      (PosV::Center, PosH::Center) => Self::Center,
       _ => Self::Center,
     }
   }
@@ -662,8 +616,7 @@ impl Pos {
 enum PosH {
   W,
   E,
-  CenterW,
-  CenterE,
+  Center,
 }
 
 impl PosH {
@@ -671,10 +624,6 @@ impl PosH {
     if x_max % 2 == 0 {
       if x < x_max / 2 {
         Self::W
-      } else if x == x_max / 2 {
-        Self::CenterW
-      } else if x == x_max / 2 + 1 {
-        Self::CenterE
       } else {
         Self::E
       }
@@ -684,7 +633,7 @@ impl PosH {
       } else if x > x_max / 2 {
         Self::E
       } else {
-        Self::CenterW
+        Self::Center
       }
     }
   }
@@ -693,8 +642,7 @@ impl PosH {
 enum PosV {
   N,
   S,
-  CenterN,
-  CenterS,
+  Center,
 }
 
 impl PosV {
@@ -702,10 +650,6 @@ impl PosV {
     if y_max % 2 == 0 {
       if y < y_max / 2 {
         Self::N
-      } else if y == y_max / 2 {
-        Self::CenterN
-      } else if y == y_max / 2 + 1 {
-        Self::CenterS
       } else {
         Self::S
       }
@@ -715,43 +659,8 @@ impl PosV {
       } else if y > y_max / 2 {
         Self::S
       } else {
-        Self::CenterN
+        Self::Center
       }
-    }
-  }
-}
-
-struct InterpolationTiles<'a> {
-  nw: Option<&'a Tile>,
-  ne: Option<&'a Tile>,
-  se: Option<&'a Tile>,
-  sw: Option<&'a Tile>,
-  dn: f64,
-  ds: f64,
-  dw: f64,
-  de: f64,
-}
-
-impl<'a> InterpolationTiles<'a> {
-  fn new(
-    nw: Option<&'a Tile>,
-    ne: Option<&'a Tile>,
-    se: Option<&'a Tile>,
-    sw: Option<&'a Tile>,
-    dn: f64,
-    ds: f64,
-    dw: f64,
-    de: f64,
-  ) -> Self {
-    Self {
-      nw,
-      ne,
-      se,
-      sw,
-      dn,
-      ds,
-      dw,
-      de,
     }
   }
 }
@@ -790,14 +699,28 @@ impl Tile {
       n += 1;
     }
 
-    clv = clv / bin_count;
+    loop {
+      let clv_bin = clv / bin_count;
 
-    if clv > 0 {
+      let mut new_clv = 0;
+
       for b in &mut hist {
-        *b += clv;
+        *b += clv_bin;
+
+        if *b > contrast_limit {
+          new_clv += *b - contrast_limit;
+          *b = contrast_limit;
+        }
       }
+
+      if new_clv == 0 || new_clv == clv {
+        break;
+      }
+
+      clv = new_clv;
     }
 
+    // sum up histograms
     for i in 1..hist.len() {
       hist[i] += hist[i - 1];
     }
