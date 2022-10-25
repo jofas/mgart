@@ -498,6 +498,21 @@ impl CLAHE {
         self.tile_size_y,
       );
 
+      // TODO: part of debugging
+      if x % self.tile_size_x == 0
+        || x % self.tile_size_x == self.tile_size_x - 1
+      {
+        *v = 1.;
+        continue;
+      }
+
+      if y % self.tile_size_y == 0
+        || y % self.tile_size_y == self.tile_size_y - 1
+      {
+        *v = 1.;
+        continue;
+      }
+
       let (x_tile, y_tile) = self.tile_indices(x, y);
 
       let x_tile_i = x_tile as isize;
@@ -547,11 +562,30 @@ impl CLAHE {
       let dxi = 1. - dx;
       let dyi = 1. - dy;
 
+      // TODO: I think something with the interpolation factors
+      //       is still wrong, debug here
+
+      if x == self.tile_size_x + x % self.tile_size_x
+        && y == self.tile_size_y + y % self.tile_size_y
+      {
+        dbg!(
+          x % self.tile_size_x,
+          y % self.tile_size_y,
+          center_x,
+          center_y,
+          dx,
+          dy,
+          dxi,
+          dyi
+        );
+        println!();
+      }
+
       let (dn, ds, dw, de) = match pos {
-        Pos::NW => (dyi, dy, dxi, dx),
-        Pos::NE => (dyi, dy, dx, dxi),
-        Pos::SE => (dy, dyi, dx, dxi),
-        Pos::SW => (dy, dyi, dxi, dx),
+        Pos::NW => (dy, dyi, dx, dxi),
+        Pos::NE => (dy, dyi, dxi, dx),
+        Pos::SE => (dyi, dy, dxi, dx),
+        Pos::SW => (dyi, dy, dx, dxi),
         Pos::Center => panic!("impossible to reach"),
       };
 
@@ -604,9 +638,9 @@ impl Pos {
       (PosV::N, PosH::Center) => Self::NW,
       (PosV::S, PosH::E) => Self::SE,
       (PosV::S, PosH::W) => Self::SW,
-      (PosV::S, PosH::Center) => Self::SW,
+      (PosV::S, PosH::Center) => Self::SE,
       (PosV::Center, PosH::E) => Self::NE,
-      (PosV::Center, PosH::W) => Self::NW,
+      (PosV::Center, PosH::W) => Self::SW,
       (PosV::Center, PosH::Center) => Self::Center,
       _ => Self::Center,
     }
