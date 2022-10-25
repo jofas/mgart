@@ -638,6 +638,14 @@ impl Pos {
       (PosV::N, PosH::E) => Self::NE,
       (PosV::S, PosH::E) => Self::SE,
       (PosV::S, PosH::W) => Self::SW,
+      (PosV::CenterN, PosH::W) => Self::NW,
+      (PosV::CenterN, PosH::E) => Self::NE,
+      (PosV::CenterS, PosH::W) => Self::SW,
+      (PosV::CenterS, PosH::E) => Self::SE,
+      (PosV::N, PosH::CenterW) => Self::NW,
+      (PosV::S, PosH::CenterW) => Self::SW,
+      (PosV::N, PosH::CenterE) => Self::NE,
+      (PosV::S, PosH::CenterE) => Self::SE,
       _ => Self::Center,
     }
   }
@@ -646,7 +654,8 @@ impl Pos {
 enum PosH {
   W,
   E,
-  Center,
+  CenterW,
+  CenterE,
 }
 
 impl PosH {
@@ -654,10 +663,12 @@ impl PosH {
     if x_max % 2 == 0 {
       if x < x_max / 2 {
         Self::W
-      } else if x > x_max / 2 + 1 {
-        Self::E
+      } else if x == x_max / 2 {
+        Self::CenterW
+      } else if x == x_max / 2 + 1 {
+        Self::CenterE
       } else {
-        Self::Center
+        Self::E
       }
     } else {
       if x < x_max / 2 {
@@ -665,7 +676,7 @@ impl PosH {
       } else if x > x_max / 2 {
         Self::E
       } else {
-        Self::Center
+        Self::CenterW
       }
     }
   }
@@ -674,7 +685,8 @@ impl PosH {
 enum PosV {
   N,
   S,
-  Center,
+  CenterN,
+  CenterS,
 }
 
 impl PosV {
@@ -682,10 +694,12 @@ impl PosV {
     if y_max % 2 == 0 {
       if y < y_max / 2 {
         Self::N
-      } else if y > y_max / 2 + 1 {
-        Self::S
+      } else if y == y_max / 2 {
+        Self::CenterN
+      } else if y == y_max / 2 + 1 {
+        Self::CenterS
       } else {
-        Self::Center
+        Self::S
       }
     } else {
       if y < y_max / 2 {
@@ -693,7 +707,7 @@ impl PosV {
       } else if y > y_max / 2 {
         Self::S
       } else {
-        Self::Center
+        Self::CenterN
       }
     }
   }
