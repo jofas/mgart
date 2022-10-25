@@ -430,19 +430,22 @@ pub fn grid_pos(
 pub struct CLAHE {
   contrast_limit: usize,
   bin_count: usize,
-  tile_size: usize, // TODO: x and y
+  tile_size_x: usize,
+  tile_size_y: usize,
 }
 
 impl CLAHE {
   pub fn new(
     contrast_limit: usize,
     bin_count: usize,
-    tile_size: usize,
+    tile_size_x: usize,
+    tile_size_y: usize,
   ) -> Self {
     Self {
       contrast_limit,
       bin_count,
-      tile_size,
+      tile_size_x,
+      tile_size_y,
     }
   }
 
@@ -452,12 +455,13 @@ impl CLAHE {
     width: usize,
     height: usize,
   ) {
-    if width % self.tile_size != 0 || height % self.tile_size != 0 {
-      panic!("width and height must be divisible by tile_size");
+    if width % self.tile_size_x != 0 || height % self.tile_size_y != 0
+    {
+      panic!("width and height must be divisible by tile_size_x and tile_size_y, respectively");
     }
 
-    let tiles_w = width / self.tile_size;
-    let tiles_h = height / self.tile_size;
+    let tiles_w = width / self.tile_size_x;
+    let tiles_h = height / self.tile_size_y;
 
     let mut tiles: Vec<Tile> = Vec::with_capacity(tiles_w * tiles_h);
 
@@ -465,10 +469,10 @@ impl CLAHE {
       for offset in 0..tiles_w {
         let stride = Strided::new(
           width,
-          self.tile_size,
-          offset * self.tile_size,
-          Some(self.tile_size),
-          Some(start_block * self.tile_size),
+          self.tile_size_x,
+          offset * self.tile_size_x,
+          Some(self.tile_size_y),
+          Some(start_block * self.tile_size_y),
           &buffer,
         );
 
@@ -487,21 +491,25 @@ impl CLAHE {
       let x = i % width;
       let y = i / width;
 
+      let center_x = self.tile_size_x as f64 / 2.;
+      let center_y = self.tile_size_y as f64 / 2.;
+
+      let dx = (center_x - (x % self.tile_size_x) as f64).abs();
+      let dy = (center_y - (y % self.tile_size_y) as f64).abs();
+
+      let dx = dx / self.tile_size_x as f64;
+      let dy = dy / self.tile_size_y as f64;
+
+      let dxi = 1. - dx;
+      let dyi = 1. - dy;
+
       let (x_tile, y_tile) = self.tile_indices(x, y);
 
-      let center = self.tile_size as f64 / 2.;
-
-      let dx = (center - (x % self.tile_size) as f64).abs();
-      let dy = (center - (y % self.tile_size) as f64).abs();
-
-      let dxi = self.tile_size as f64 - dx;
-      let dyi = self.tile_size as f64 - dy;
-
       let ip_tiles = match Pos::new(
-        x % self.tile_size,
-        y % self.tile_size,
-        self.tile_size,
-        self.tile_size,
+        x % self.tile_size_x,
+        y % self.tile_size_y,
+        self.tile_size_x,
+        self.tile_size_y,
       ) {
         Pos::NW => {
           let mut nw = None;
@@ -611,12 +619,12 @@ impl CLAHE {
       let q_se = q_se * ip_tiles.ds * ip_tiles.de;
       let q_sw = q_sw * ip_tiles.ds * ip_tiles.dw;
 
-      *v = (q_nw + q_ne + q_se + q_sw) / self.tile_size.pow(2) as f64;
+      *v = q_nw + q_ne + q_se + q_sw;
     }
   }
 
   fn tile_indices(&self, x: usize, y: usize) -> (usize, usize) {
-    (x / self.tile_size, y / self.tile_size)
+    (x / self.tile_size_x, y / self.tile_size_y)
   }
 }
 
@@ -1012,7 +1020,7 @@ mod tests {
 
   #[test]
   fn tile_indexing() {
-    let c = CLAHE::new(0, 0, 8);
+    let c = CLAHE::new(0, 0, 8, 8);
 
     assert_eq!((0, 0), c.tile_indices(0, 0));
     assert_eq!((0, 0), c.tile_indices(7, 0));
