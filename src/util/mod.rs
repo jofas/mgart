@@ -422,7 +422,6 @@ pub fn grid_pos(
   }
 }
 
-// TODO: implement the A (adaptive) part
 pub struct CLAHE {
   contrast_limit: usize,
   bin_count: usize,
@@ -489,7 +488,15 @@ impl CLAHE {
       let x_tile = x / w;
       let y_tile = y / h;
 
-      let interpolation_tiles = match Pos::new(
+      let center = self.tile_size as f64 / 2.;
+
+      let dx = (center - (x % self.tile_size) as f64).abs();
+      let dy = (center - (y % self.tile_size) as f64).abs();
+
+      let dxi = self.tile_size as f64 - dx;
+      let dyi = self.tile_size as f64 - dy;
+
+      let ip_tiles = match Pos::new(
         x % self.tile_size,
         y % self.tile_size,
         self.tile_size,
@@ -516,7 +523,7 @@ impl CLAHE {
             (false, false) => {}
           }
 
-          InterpolationTiles::new(nw, ne, se, sw)
+          InterpolationTiles::new(nw, ne, se, sw, dyi, dy, dxi, dx)
         }
         Pos::NE => {
           let mut nw = None;
@@ -539,7 +546,7 @@ impl CLAHE {
             (false, false) => {}
           }
 
-          InterpolationTiles::new(nw, ne, se, sw)
+          InterpolationTiles::new(nw, ne, se, sw, dyi, dy, dx, dxi)
         }
         Pos::SE => {
           let nw = Some(&tiles[y_tile * w + x_tile]);
@@ -562,7 +569,7 @@ impl CLAHE {
             (false, false) => {}
           }
 
-          InterpolationTiles::new(nw, ne, se, sw)
+          InterpolationTiles::new(nw, ne, se, sw, dy, dyi, dx, dxi)
         }
         Pos::SW => {
           let mut nw = None;
@@ -585,7 +592,7 @@ impl CLAHE {
             (false, false) => {}
           }
 
-          InterpolationTiles::new(nw, ne, se, sw)
+          InterpolationTiles::new(nw, ne, se, sw, dy, dyi, dxi, dx)
         }
         Pos::Center => {
           *v = tiles[y_tile * w + x_tile].transform(*v);
@@ -593,184 +600,19 @@ impl CLAHE {
         }
       };
 
-      // TODO: get distance from x, y to center pixels of tiles
-      let xw = 0.;
-      let xe = 0.;
+      let q_nw = ip_tiles.nw.transform(*v);
+      let q_ne = ip_tiles.ne.transform(*v);
+      let q_se = ip_tiles.se.transform(*v);
+      let q_sw = ip_tiles.sw.transform(*v);
 
-      let yn = 0.;
-      let ys = 0.;
+      let q_nw = q_nw * ip_tiles.dn * ip_tiles.dw;
+      let q_ne = q_ne * ip_tiles.dn * ip_tiles.de;
+      let q_se = q_se * ip_tiles.ds * ip_tiles.de;
+      let q_sw = q_sw * ip_tiles.ds * ip_tiles.dw;
 
-      let q_nw = interpolation_tiles.nw.transform(*v);
-      let q_ne = interpolation_tiles.ne.transform(*v);
-      let q_se = interpolation_tiles.se.transform(*v);
-      let q_sw = interpolation_tiles.sw.transform(*v);
-
-      let q_nw = q_nw * (xe - x as f64) * (ys - y as f64);
-      let q_ne = q_ne * (x as f64 - xw) * (y as f64 - yn);
-      let q_se = q_se * (x as f64 - xw) * (y as f64 - yn);
-      let q_sw = q_sw * (xe - x as f64) * (ys - y as f64);
-
-      *v = (q_nw + q_ne + q_se + q_sw) / ((xe - xw) * (ys - yn));
-
-      /*
-      let (c_min, c_max) = if self.tile_size % 2 == 0 {
-        (self.tile_size / 2, self.tile_size / 2 + 1)
-      } else {
-        (self.tile_size / 2, self.tile_size / 2)
-      };
-
-      // no idea how to efficiently compute this ...
-
-      // try to get 4 values -> bilinear
-      // if I only get 2 -> linear
-      // if I only get 1 -> single
-
-      // [upper left, upper right, lower left, lower right]
-      //
-
-      let pos_v = if intra_tile_y < c_min {
-        PosV::North
-      } else if intra_tile_y > c_max {
-        PosV::South
-      } else {
-        PosV::Center
-      };
-
-      let pos_h = if intra_tile_x < c_min {
-        PosH::West
-      } else if intra_tile_x > c_max {
-        PosH::East
-      } else {
-        PosH::Center
-      };
-
-      // first compute vertical interpolation
-
-      let ip_v = match pos_v {
-        PosV::North => {
-          // get upper tile and interpolate
-        }
-        PosV::South => {
-          // get lower tile and interpolate
-        }
-        PosV::Center => {
-          // no interpolation
-        }
-      };
-
-      let ip_h = match pos_h {
-        PosV::West => {
-          // get left tile and interpolate
-        }
-        PosV::East => {
-          // get right tile and interpolate
-        }
-        PosV::Center => {
-          // no interpolation
-        }
-      };
-      */
-      // then compute horizontal interpolation
-
-      // just try to bilinearly interpolate -> fall back to linear ->
-      // fall back to single
-
-      // five intra-tile positions:
-      //
-      // nw, ne, se, sw, c
-      //
-      // * n -> y - 1
-      // * s -> y + 1
-      // * c -> y
-      //
-      // * w -> x - 1
-      // * e -> x + 1
-      // * c -> x
-      //
-      // nine tile positions:
-      //
-      // * corner nw -> tile nw -> corner
-      // * corner ne -> tile ne -> corner
-      // * corner se -> tile se -> corner
-      // * corner sw -> tile sw -> corner
-      //
-      // * corner nw, se -> tile ne, sw -> border
-      // * corner ne, sw -> tile nw, se -> border
-      //
-      // * border n -> tile nw, ne -> border
-      // * border e -> tile ne, se -> border
-      // * border s -> tile sw, se -> border
-      // * border w -> tile nw, sw -> border
-      //
-      // * area
-      //
-      /*
-      if self.is_corner_or_tile_center(x, y, width, height) {
-
-        // transformation function of tile
-      } else if self.is_border(x, y, width, height) {
-        // linear interpolation
-      } else {
-        // bilinear interpolation
-      }
-      */
+      *v = (q_nw + q_ne + q_se + q_sw) / self.tile_size.pow(2) as f64;
     }
   }
-
-  /*
-  fn is_corner(
-    &self,
-    x: usize,
-    y: usize,
-    width: usize,
-    height: usize,
-  ) -> bool {
-    (x < self.tile_size / 2 || x > width - self.tile_size / 2)
-      && (y < self.tile_size / 2 || y > height - self.tile_size / 2)
-  }
-
-  fn is_border(
-    &self,
-    x: usize,
-    y: usize,
-    width: usize,
-    height: usize,
-  ) -> bool {
-    x < self.tile_size / 2
-      || x > width - self.tile_size / 2
-      || y < self.tile_size / 2
-      || y > height - self.tile_size / 2
-  }
-  */
-
-  fn is_tile_center(&self, x: usize, y: usize) -> bool {
-    let x = x % self.tile_size;
-    let y = y % self.tile_size;
-
-    if self.tile_size % 2 == 0 {
-      let x_center =
-        x == self.tile_size / 2 || x == self.tile_size / 2 - 1;
-
-      let y_center =
-        y == self.tile_size / 2 || y == self.tile_size / 2 - 1;
-
-      x_center && y_center
-    } else {
-      x == self.tile_size / 2 && y == self.tile_size / 2
-    }
-  }
-
-  /*
-  fn is_corner_or_tile_center(
-    &self,
-    x: usize,
-    y: usize,
-    width: usize,
-    height: usize,
-  ) -> bool {
-    self.is_corner(x, y, width, height) || self.is_tile_center(x, y)
-  }
-  */
 }
 
 enum Pos {
@@ -857,6 +699,10 @@ struct InterpolationTiles<'a> {
   ne: Option<&'a Tile>,
   se: Option<&'a Tile>,
   sw: Option<&'a Tile>,
+  dn: f64,
+  ds: f64,
+  dw: f64,
+  de: f64,
 }
 
 impl<'a> InterpolationTiles<'a> {
@@ -865,8 +711,21 @@ impl<'a> InterpolationTiles<'a> {
     ne: Option<&'a Tile>,
     se: Option<&'a Tile>,
     sw: Option<&'a Tile>,
+    dn: f64,
+    ds: f64,
+    dw: f64,
+    de: f64,
   ) -> Self {
-    Self { nw, ne, se, sw }
+    Self {
+      nw,
+      ne,
+      se,
+      sw,
+      dn,
+      ds,
+      dw,
+      de,
+    }
   }
 }
 
