@@ -498,33 +498,16 @@ impl CLAHE {
         self.tile_size_y,
       );
 
-      // TODO: part of debugging
-      if x % self.tile_size_x == 0
-        || x % self.tile_size_x == self.tile_size_x - 1
-      {
-        *v = 1.;
-        continue;
-      }
-
-      if y % self.tile_size_y == 0
-        || y % self.tile_size_y == self.tile_size_y - 1
-      {
-        *v = 1.;
-        continue;
-      }
-
       let (x_tile, y_tile) = self.tile_indices(x, y);
 
-      let x_tile_i = x_tile as isize;
-      let y_tile_i = y_tile as isize;
-
       let (x1, x2, y1, y2) = match pos {
-        Pos::NW => (x_tile_i - 1, x_tile_i, y_tile_i - 1, y_tile_i),
-        Pos::NE => (x_tile_i, x_tile_i + 1, y_tile_i - 1, y_tile_i),
-        Pos::SE => (x_tile_i, x_tile_i + 1, y_tile_i, y_tile_i + 1),
-        Pos::SW => (x_tile_i - 1, x_tile_i, y_tile_i, y_tile_i + 1),
+        Pos::NW => (x_tile - 1, x_tile, y_tile - 1, y_tile),
+        Pos::NE => (x_tile, x_tile + 1, y_tile - 1, y_tile),
+        Pos::SE => (x_tile, x_tile + 1, y_tile, y_tile + 1),
+        Pos::SW => (x_tile - 1, x_tile, y_tile, y_tile + 1),
         Pos::Center => {
-          *v = tiles[y_tile * tiles_w + x_tile].transform(*v);
+          let i = y_tile as usize * tiles_w + x_tile as usize;
+          *v = tiles[i].transform(*v);
           continue;
         }
       };
@@ -538,16 +521,16 @@ impl CLAHE {
         nw = Some(&tiles[y1 as usize * tiles_w + x1 as usize]);
       }
 
-      if x1 >= 0 && y2 < tiles_h as isize {
-        ne = Some(&tiles[y2 as usize * tiles_w + x1 as usize]);
+      if x2 < tiles_w as isize && y1 >= 0 {
+        ne = Some(&tiles[y1 as usize * tiles_w + x2 as usize]);
       }
 
       if x2 < tiles_w as isize && y2 < tiles_h as isize {
         se = Some(&tiles[y2 as usize * tiles_w + x2 as usize]);
       }
 
-      if x2 < tiles_w as isize && y1 >= 0 {
-        sw = Some(&tiles[y1 as usize * tiles_w + x2 as usize]);
+      if x1 >= 0 && y2 < tiles_h as isize {
+        sw = Some(&tiles[y2 as usize * tiles_w + x1 as usize]);
       }
 
       let center_x = self.tile_size_x as f64 / 2.;
@@ -559,33 +542,11 @@ impl CLAHE {
       let dx = dx / self.tile_size_x as f64;
       let dy = dy / self.tile_size_y as f64;
 
-      let dxi = 1. - dx;
-      let dyi = 1. - dy;
-
-      // TODO: I think something with the interpolation factors
-      //       is still wrong, debug here
-
-      if x == self.tile_size_x + x % self.tile_size_x
-        && y == self.tile_size_y + y % self.tile_size_y
-      {
-        dbg!(
-          x % self.tile_size_x,
-          y % self.tile_size_y,
-          center_x,
-          center_y,
-          dx,
-          dy,
-          dxi,
-          dyi
-        );
-        println!();
-      }
-
       let (dn, ds, dw, de) = match pos {
-        Pos::NW => (dy, dyi, dx, dxi),
-        Pos::NE => (dy, dyi, dxi, dx),
-        Pos::SE => (dyi, dy, dxi, dx),
-        Pos::SW => (dyi, dy, dx, dxi),
+        Pos::NW => (dy, 1. - dy, dx, 1. - dx),
+        Pos::NE => (dy, 1. - dy, 1. - dx, dx),
+        Pos::SE => (1. - dy, dy, 1. - dx, dx),
+        Pos::SW => (1. - dy, dy, dx, 1. - dx),
         Pos::Center => panic!("impossible to reach"),
       };
 
@@ -614,11 +575,15 @@ impl CLAHE {
     }
   }
 
-  fn tile_indices(&self, x: usize, y: usize) -> (usize, usize) {
-    (x / self.tile_size_x, y / self.tile_size_y)
+  fn tile_indices(&self, x: usize, y: usize) -> (isize, isize) {
+    (
+      (x / self.tile_size_x) as isize,
+      (y / self.tile_size_y) as isize,
+    )
   }
 }
 
+#[derive(Debug)]
 enum Pos {
   NW,
   NE,
