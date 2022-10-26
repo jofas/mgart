@@ -54,7 +54,7 @@
 
 * [x] PostProcessing
 
-* [ ] CLAHE
+* [x] CLAHE
 
 * [ ] time estimates
 

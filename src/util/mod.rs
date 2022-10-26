@@ -463,6 +463,54 @@ impl CLAHE {
     let tiles_w = width / self.tile_size_x;
     let tiles_h = height / self.tile_size_y;
 
+    let tiles = self.tiles(buffer, width, height, tiles_w, tiles_h);
+
+    for (i, v) in buffer.iter_mut().enumerate() {
+      let x = i % width;
+      let y = i / width;
+
+      let pos = Pos::new(
+        x % self.tile_size_x,
+        y % self.tile_size_y,
+        self.tile_size_x,
+        self.tile_size_y,
+      );
+
+      let (x_tile, y_tile) = self.tile_indices(x, y);
+
+      if let Pos::Center = pos {
+        let i = y_tile as usize * tiles_w + x_tile as usize;
+        *v = tiles[i].transform(*v);
+        continue;
+      }
+
+      let (nw, ne, se, sw) = self.interpolation_tiles(
+        &pos, x_tile, y_tile, &tiles, tiles_w, tiles_h,
+      );
+
+      let (dn, ds, dw, de) = self.interpolation_distances(x, y, &pos);
+
+      let (dn, ds, dw, de) = self.handle_corners_and_borders(
+        &nw, &ne, &se, &sw, dn, ds, dw, de,
+      );
+
+      let q_nw = nw.transform(*v) * dn * dw;
+      let q_ne = ne.transform(*v) * dn * de;
+      let q_se = se.transform(*v) * ds * de;
+      let q_sw = sw.transform(*v) * ds * dw;
+
+      *v = q_nw + q_ne + q_se + q_sw;
+    }
+  }
+
+  fn tiles(
+    &self,
+    buffer: &[f64],
+    width: usize,
+    height: usize,
+    tiles_w: usize,
+    tiles_h: usize,
+  ) -> Vec<Tile> {
     let mut tiles: Vec<Tile> = Vec::with_capacity(tiles_w * tiles_h);
 
     for start_block in 0..tiles_h {
@@ -484,94 +532,104 @@ impl CLAHE {
       }
     }
 
-    // TODO: into method (for each pixel, apply equalization
-    // via interpolation)
+    tiles
+  }
 
-    for (i, v) in buffer.iter_mut().enumerate() {
-      let x = i % width;
-      let y = i / width;
+  fn interpolation_tiles<'a>(
+    &self,
+    pos: &Pos,
+    x_tile: isize,
+    y_tile: isize,
+    tiles: &'a [Tile],
+    tiles_w: usize,
+    tiles_h: usize,
+  ) -> (
+    Option<&'a Tile>,
+    Option<&'a Tile>,
+    Option<&'a Tile>,
+    Option<&'a Tile>,
+  ) {
+    let (x1, x2, y1, y2) = match pos {
+      Pos::NW => (x_tile - 1, x_tile, y_tile - 1, y_tile),
+      Pos::NE => (x_tile, x_tile + 1, y_tile - 1, y_tile),
+      Pos::SE => (x_tile, x_tile + 1, y_tile, y_tile + 1),
+      Pos::SW => (x_tile - 1, x_tile, y_tile, y_tile + 1),
+      Pos::Center => panic!("Cannot handle pixels at tile center"),
+    };
 
-      let pos = Pos::new(
-        x % self.tile_size_x,
-        y % self.tile_size_y,
-        self.tile_size_x,
-        self.tile_size_y,
-      );
+    let mut nw = None;
+    let mut ne = None;
+    let mut se = None;
+    let mut sw = None;
 
-      let (x_tile, y_tile) = self.tile_indices(x, y);
+    if x1 >= 0 && y1 >= 0 {
+      nw = Some(&tiles[y1 as usize * tiles_w + x1 as usize]);
+    }
 
-      let (x1, x2, y1, y2) = match pos {
-        Pos::NW => (x_tile - 1, x_tile, y_tile - 1, y_tile),
-        Pos::NE => (x_tile, x_tile + 1, y_tile - 1, y_tile),
-        Pos::SE => (x_tile, x_tile + 1, y_tile, y_tile + 1),
-        Pos::SW => (x_tile - 1, x_tile, y_tile, y_tile + 1),
-        Pos::Center => {
-          let i = y_tile as usize * tiles_w + x_tile as usize;
-          *v = tiles[i].transform(*v);
-          continue;
-        }
-      };
+    if x2 < tiles_w as isize && y1 >= 0 {
+      ne = Some(&tiles[y1 as usize * tiles_w + x2 as usize]);
+    }
 
-      let mut nw = None;
-      let mut ne = None;
-      let mut se = None;
-      let mut sw = None;
+    if x2 < tiles_w as isize && y2 < tiles_h as isize {
+      se = Some(&tiles[y2 as usize * tiles_w + x2 as usize]);
+    }
 
-      if x1 >= 0 && y1 >= 0 {
-        nw = Some(&tiles[y1 as usize * tiles_w + x1 as usize]);
-      }
+    if x1 >= 0 && y2 < tiles_h as isize {
+      sw = Some(&tiles[y2 as usize * tiles_w + x1 as usize]);
+    }
 
-      if x2 < tiles_w as isize && y1 >= 0 {
-        ne = Some(&tiles[y1 as usize * tiles_w + x2 as usize]);
-      }
+    (nw, ne, se, sw)
+  }
 
-      if x2 < tiles_w as isize && y2 < tiles_h as isize {
-        se = Some(&tiles[y2 as usize * tiles_w + x2 as usize]);
-      }
+  fn interpolation_distances(
+    &self,
+    x: usize,
+    y: usize,
+    pos: &Pos,
+  ) -> (f64, f64, f64, f64) {
+    let center_x = self.tile_size_x as f64 / 2.;
+    let center_y = self.tile_size_y as f64 / 2.;
 
-      if x1 >= 0 && y2 < tiles_h as isize {
-        sw = Some(&tiles[y2 as usize * tiles_w + x1 as usize]);
-      }
+    let dx = (center_x - (x % self.tile_size_x) as f64).abs();
+    let dy = (center_y - (y % self.tile_size_y) as f64).abs();
 
-      let center_x = self.tile_size_x as f64 / 2.;
-      let center_y = self.tile_size_y as f64 / 2.;
+    let dx = dx / self.tile_size_x as f64;
+    let dy = dy / self.tile_size_y as f64;
 
-      let dx = (center_x - (x % self.tile_size_x) as f64).abs();
-      let dy = (center_y - (y % self.tile_size_y) as f64).abs();
+    match pos {
+      Pos::NW => (dy, 1. - dy, dx, 1. - dx),
+      Pos::NE => (dy, 1. - dy, 1. - dx, dx),
+      Pos::SE => (1. - dy, dy, 1. - dx, dx),
+      Pos::SW => (1. - dy, dy, dx, 1. - dx),
+      Pos::Center => panic!("Unable to handle pixels at tile center"),
+    }
+  }
 
-      let dx = dx / self.tile_size_x as f64;
-      let dy = dy / self.tile_size_y as f64;
-
-      let (dn, ds, dw, de) = match pos {
-        Pos::NW => (dy, 1. - dy, dx, 1. - dx),
-        Pos::NE => (dy, 1. - dy, 1. - dx, dx),
-        Pos::SE => (1. - dy, dy, 1. - dx, dx),
-        Pos::SW => (1. - dy, dy, dx, 1. - dx),
-        Pos::Center => panic!("impossible to reach"),
-      };
-
-      let (dn, ds, dw, de) = match (nw, ne, se, sw) {
-        // corners
-        (Some(_), None, None, None) => (1., 0., 1., 0.),
-        (None, Some(_), None, None) => (1., 0., 0., 1.),
-        (None, None, Some(_), None) => (0., 1., 0., 1.),
-        (None, None, None, Some(_)) => (0., 1., 1., 0.),
-        // borders
-        (Some(_), Some(_), None, None) => (1., 0., dw, de),
-        (Some(_), None, None, Some(_)) => (dn, ds, 1., 0.),
-        (None, Some(_), Some(_), None) => (dn, ds, 1., 0.),
-        (None, None, Some(_), Some(_)) => (1., 0., dw, de),
-        // center
-        (Some(_), Some(_), Some(_), Some(_)) => (dn, ds, dw, de),
-        _ => panic!("impossible state"),
-      };
-
-      let q_nw = nw.transform(*v) * dn * dw;
-      let q_ne = ne.transform(*v) * dn * de;
-      let q_se = se.transform(*v) * ds * de;
-      let q_sw = sw.transform(*v) * ds * dw;
-
-      *v = q_nw + q_ne + q_se + q_sw;
+  fn handle_corners_and_borders(
+    &self,
+    nw: &Option<&Tile>,
+    ne: &Option<&Tile>,
+    se: &Option<&Tile>,
+    sw: &Option<&Tile>,
+    dn: f64,
+    ds: f64,
+    dw: f64,
+    de: f64,
+  ) -> (f64, f64, f64, f64) {
+    match (nw, ne, se, sw) {
+      // corners
+      (Some(_), None, None, None) => (1., 0., 1., 0.),
+      (None, Some(_), None, None) => (1., 0., 0., 1.),
+      (None, None, Some(_), None) => (0., 1., 0., 1.),
+      (None, None, None, Some(_)) => (0., 1., 1., 0.),
+      // borders
+      (Some(_), Some(_), None, None) => (1., 0., dw, de),
+      (Some(_), None, None, Some(_)) => (dn, ds, 1., 0.),
+      (None, Some(_), Some(_), None) => (dn, ds, 1., 0.),
+      (None, None, Some(_), Some(_)) => (1., 0., dw, de),
+      // center
+      (Some(_), Some(_), Some(_), Some(_)) => (dn, ds, dw, de),
+      _ => panic!("impossible state"),
     }
   }
 
@@ -893,52 +951,6 @@ mod tests {
   use super::{
     grid_pos, summed_area_table, Gradient, Strided, Viewport, CLAHE,
   };
-
-  /*
-  #[test]
-  fn clahe_bins() {
-    let image = vec![0., 0.34, 0.34, 0., 0.67, 1.];
-
-    let c = CLAHE::new(2, 4);
-
-    let bins = c.create_bins(&image);
-
-    assert_eq!(bins, vec![2, 4, 5, 6]);
-  }
-
-  #[test]
-  fn clahe_cl_no_clip() {
-    let image = vec![0., 0.34, 0.34, 0., 0.67, 1.];
-
-    let c = CLAHE::new(1, 4);
-
-    let bins = c.create_bins(&image);
-
-    assert_eq!(bins, vec![1, 2, 3, 4]);
-  }
-
-  #[test]
-  fn clahe_cl_clip() {
-    let image = vec![0., 0.34, 0.34, 0., 0.67, 1., 0., 0.34];
-
-    let c = CLAHE::new(1, 4);
-
-    let bins = c.create_bins(&image);
-
-    assert_eq!(bins, vec![2, 4, 6, 8]);
-  }
-
-  #[test]
-  fn clahe() {
-    let mut image = vec![0., 0.34, 0.34, 0., 0.67, 1.];
-
-    let c = CLAHE::new(2, 4);
-
-    c.apply(&mut image);
-
-    assert_eq!(image, vec![0., 0.5, 0.5, 0., 0.75, 1.]);
-  }
-  */
 
   #[test]
   fn tile_indexing() {
