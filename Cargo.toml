@@ -1,7 +1,12 @@
 [package]
 name = "mgart"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
+license = "MIT"
+readme = "README.md"
+description = "Machine Generated Art. CLI app for generating algorithmic art"
+keywords = ["cli", "terminal", "graphics", "image", "cgi"]
+repository = "https://github.com/jofas/mgart"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
