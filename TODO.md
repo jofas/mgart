@@ -56,6 +56,12 @@
 
 * [x] CLAHE
 
+* [ ] sampling api
+
+* [ ] examples 
+
+* [ ] documentation
+
 * [ ] time estimates
 
 * [ ] API for describing drawing algorithms
