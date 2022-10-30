@@ -62,7 +62,7 @@
 
 * [x] uniform random sampler
 
-* [ ] weighted KDE vs KDE
+* [x] weighted KDE vs KDE
 
 * [ ] weighted KDE: smarter sampling (less iterations)
 

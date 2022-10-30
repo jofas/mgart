@@ -12,7 +12,9 @@ use map_macro::vec_no_clone;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::util::sampler::{Sampler as Sampler_, Uniform, KDE};
+use crate::util::sampler::{
+  Sampler as Sampler_, Uniform, WeightedKDE, KDE,
+};
 use crate::util::{
   grid_pos, print_progress, ColorMap1d, PostProcessing, Viewport,
 };
@@ -46,6 +48,11 @@ pub enum Sampler {
     h: f64,
     population: u64,
   },
+  WeightedKde {
+    p_min: f64,
+    h: f64,
+    population: u64,
+  },
 }
 
 impl Sampler {
@@ -63,7 +70,10 @@ impl Sampler {
       } => {
         println!("initializing sampler population");
 
-        let samples = samples(population, p_min, iter, viewport);
+        let (samples, _): (Vec<Complex64>, Vec<f64>) =
+          samples(population, p_min, iter, viewport)
+            .into_iter()
+            .unzip();
 
         println!("\ninitializing sampler population done");
 
@@ -75,6 +85,26 @@ impl Sampler {
         };
 
         Box::new(KDE::new(samples, uniform_kde))
+      }
+      Self::WeightedKde {
+        p_min,
+        h,
+        population,
+      } => {
+        println!("initializing sampler population");
+
+        let samples = samples(population, p_min, iter, viewport);
+
+        println!("\ninitializing sampler population done");
+
+        let uniform_kde = move |c: &Complex64| {
+          let re = (random::<f64>() - 0.5) * h;
+          let im = (random::<f64>() - 0.5) * h;
+
+          Complex64::new(c.re + re, c.im + im)
+        };
+
+        Box::new(WeightedKDE::new(samples, uniform_kde))
       }
     }
   }

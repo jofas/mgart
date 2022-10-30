@@ -41,11 +41,36 @@ impl Sampler for Uniform<Complex64> {
 ///
 pub struct KDE<T, K> {
   elems: Vec<T>,
-  probabilities: Vec<f64>,
   kernel: K,
 }
 
 impl<T, K: Fn(&T) -> T> KDE<T, K> {
+  pub fn new(samples: Vec<T>, kernel: K) -> Self {
+    Self {
+      elems: samples,
+      kernel,
+    }
+  }
+}
+
+impl<T, K: Fn(&T) -> T> Sampler for KDE<T, K> {
+  type Output = T;
+
+  fn sample(&self) -> Self::Output {
+    let idx = (random::<f64>() * self.elems.len() as f64) as usize;
+    return (self.kernel)(&self.elems[idx]);
+  }
+}
+
+/// Weighted Kernel Density Estimation.
+///
+pub struct WeightedKDE<T, K> {
+  elems: Vec<T>,
+  probabilities: Vec<f64>,
+  kernel: K,
+}
+
+impl<T, K: Fn(&T) -> T> WeightedKDE<T, K> {
   pub fn new(samples: Vec<(T, f64)>, kernel: K) -> Self {
     let (elems, probabilities) = samples.into_iter().unzip();
 
@@ -61,7 +86,7 @@ impl<T, K: Fn(&T) -> T> KDE<T, K> {
   }
 }
 
-impl<T, K: Fn(&T) -> T> Sampler for KDE<T, K> {
+impl<T, K: Fn(&T) -> T> Sampler for WeightedKDE<T, K> {
   type Output = T;
 
   fn sample(&self) -> Self::Output {
