@@ -56,6 +56,8 @@
 
 * [x] CLAHE
 
+* [x] buddhabrot exponent param
+
 * [ ] sampling api
 
 * [ ] examples 

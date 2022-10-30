@@ -22,6 +22,8 @@ pub struct BuddhabrotArgs {
   pub filename: String,
   #[serde(default)]
   pub color_map: ColorMap1d,
+  #[serde(default = "default_exponent")]
+  pub exponent: f64,
   #[serde(default = "default_sample_count")]
   pub sample_count: u32,
   #[serde(default)]
@@ -106,6 +108,10 @@ fn default_zpy() -> f64 {
 
 fn default_iter() -> u32 {
   100
+}
+
+fn default_exponent() -> f64 {
+  2.
 }
 
 fn default_sample_count() -> u32 {

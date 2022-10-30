@@ -203,7 +203,7 @@ pub fn buddhabrot(args: BuddhabrotArgs) {
           buffer[y * args.width + x].fetch_add(1, Ordering::Relaxed);
         }
 
-        z = z.powi(2) + c;
+        z = z.powf(args.exponent) + c;
       }
     }
 
