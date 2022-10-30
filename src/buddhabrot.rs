@@ -40,14 +40,21 @@ pub struct Args {
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "type")]
 pub enum Sampler {
+  /// Uniformly randomly sample a complex number with a radius in
+  /// `[0, 2]` from the origin.
+  ///
+  /// See [Uniform].
+  ///
   Uniform,
-  /// Kernel density estimation with a uniform kernel.
+  /// [KDE] with a uniform kernel.
   ///
   Kde {
     p_min: f64,
     h: f64,
     population: u64,
   },
+  /// [WeightedKDE] with a uniform kernel.
+  ///
   WeightedKde {
     p_min: f64,
     h: f64,
