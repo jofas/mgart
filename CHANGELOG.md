@@ -12,6 +12,8 @@ and this project adheres to
 
 * `BuddhaBrotArgs.exponent`
 
+* `util::sampler::WeightedKDE`
+
 ### Changed
 
 * crate structure
