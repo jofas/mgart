@@ -13,8 +13,10 @@ use map_macro::vec_no_clone;
 use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
 use crate::util::{
-  grid_pos, print_progress, random_complex, ColorMap1d,
-  PostProcessing, Sampling, Viewport, KDE,
+  grid_pos, print_progress, ColorMap1d, PostProcessing, Viewport,
+};
+use crate::util::sampler::{
+  random_complex, Sampler as Sampler_, Uniform, KDE,
 };
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
@@ -29,16 +31,55 @@ pub struct Args {
   pub color_map: ColorMap1d,
   pub exponent: f64,
   pub sample_count: u32,
-  pub sampler: SamplerArgs,
+  pub sampler: Sampler,
   #[serde(default)]
   pub post_processing: Vec<PostProcessing>,
 }
 
-#[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
-pub struct SamplerArgs {
-  pub p_min: f64,
-  pub h: f64,
-  pub population: u32,
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(rename_all = "snake_case")]
+#[serde(tag = "type")]
+pub enum Sampler {
+  Uniform,
+  /// Kernel density estimation with a uniform kernel.
+  ///
+  Kde {
+    p_min: f64,
+    h: f64,
+    population: u32,
+  },
+}
+
+impl Sampler {
+  pub fn create_executor(
+    self,
+    iter: u32,
+    viewport: &Viewport,
+  ) -> Box<dyn Sampler_<Output = Complex64> + Sync + Send> {
+    match self {
+      Self::Uniform => Box::new(Uniform::<Complex64>::new()),
+      Self::Kde {
+        p_min,
+        h,
+        population,
+      } => {
+        println!("initializing sampler population");
+
+        let samples = samples(population, p_min, iter, viewport);
+
+        println!("\ninitializing sampler population done");
+
+        let uniform_kde = move |c: &Complex64| {
+          let re = (random::<f64>() - 0.5) * h;
+          let im = (random::<f64>() - 0.5) * h;
+
+          Complex64::new(c.re + re, c.im + im)
+        };
+
+        Box::new(KDE::new(samples, uniform_kde))
+      }
+    }
+  }
 }
 
 pub fn buddhabrot(args: Args) {
@@ -67,25 +108,7 @@ pub fn buddhabrot(args: Args) {
   let delta_x = vp_width / w;
   let delta_y = vp_height / h;
 
-  println!("initializing sampler");
-
-  let samples = samples(
-    args.sampler.population,
-    args.sampler.p_min,
-    args.iter,
-    &viewport,
-  );
-
-  let uniform_kde = |c: &Complex64| {
-    let re = (random::<f64>() - 0.5) * args.sampler.h;
-    let im = (random::<f64>() - 0.5) * args.sampler.h;
-
-    Complex64::new(c.re + re, c.im + im)
-  };
-
-  let sampler = KDE::new(samples, uniform_kde);
-
-  println!("\ninitializing sampler done");
+  let sampler = args.sampler.create_executor(args.iter, &viewport);
 
   println!("starting buddhabrot generation");
 
