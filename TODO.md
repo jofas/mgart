@@ -60,6 +60,10 @@
 
 * [ ] sampling api
 
+* [ ] restructure util mod
+
+* [ ] restructure crate root
+
 * [ ] examples 
 
 * [ ] documentation
