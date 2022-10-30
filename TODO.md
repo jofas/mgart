@@ -60,6 +60,12 @@
 
 * [ ] sampling api
 
+* [ ] uniform random sampler
+
+* [ ] smarter sampling (less iterations)
+
+* [ ] sampling visualization
+
 * [ ] restructure util mod
 
 * [ ] restructure crate root
@@ -91,10 +97,6 @@
       else:
       - [ ] PickoverStalks
 
-* [ ] smarter sampling (less iterations)
-
-* [ ] sampling visualization
-
 * [ ] rotation parameter
 
 * [ ] color algorithms: ColorMap1D, LCH, RGB, Nebula
@@ -107,8 +109,6 @@
 
 * [ ] find cool points and colormaps where I can see the effect of
   the following visualization methods
-
-* [ ] curvature estimation
 
 * [ ] statistical methods (mean, avg, etc.)
 
