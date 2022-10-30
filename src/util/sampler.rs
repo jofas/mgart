@@ -26,8 +26,14 @@ impl<T> Uniform<T> {
 impl Sampler for Uniform<Complex64> {
   type Output = Complex64;
 
+  /// Generates a uniformly random complex number with a radius between
+  /// `[0, 2]` from the origin.
+  ///
   fn sample(&self) -> Self::Output {
-    random_complex()
+    Complex64::from_polar(
+      2. * random::<f64>(),
+      2. * PI * random::<f64>(),
+    )
   }
 }
 
@@ -67,14 +73,4 @@ impl<T, K: Fn(&T) -> T> Sampler for KDE<T, K> {
       }
     }
   }
-}
-
-/// Random complex number with a radius between `[0, 2]` from the
-/// origin.
-///
-pub fn random_complex() -> Complex64 {
-  Complex64::from_polar(
-    2. * random::<f64>(),
-    2. * PI * random::<f64>(),
-  )
 }
