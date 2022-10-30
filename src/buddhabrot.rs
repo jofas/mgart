@@ -10,7 +10,7 @@ use rand::random;
 
 use map_macro::vec_no_clone;
 
-use std::sync::atomic::{AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::util::sampler::{Sampler as Sampler_, Uniform, KDE};
 use crate::util::{
@@ -24,11 +24,11 @@ pub struct Args {
   pub zoom: f64,
   pub zpx: f64,
   pub zpy: f64,
-  pub iter: u32,
+  pub iter: u64,
   pub filename: String,
   pub color_map: ColorMap1d,
   pub exponent: f64,
-  pub sample_count: u32,
+  pub sample_count: u64,
   pub sampler: Sampler,
   #[serde(default)]
   pub post_processing: Vec<PostProcessing>,
@@ -44,14 +44,14 @@ pub enum Sampler {
   Kde {
     p_min: f64,
     h: f64,
-    population: u32,
+    population: u64,
   },
 }
 
 impl Sampler {
   pub fn create_executor(
     self,
-    iter: u32,
+    iter: u64,
     viewport: &Viewport,
   ) -> Box<dyn Sampler_<Output = Complex64> + Sync + Send> {
     match self {
@@ -110,7 +110,7 @@ pub fn buddhabrot(args: Args) {
 
   println!("starting buddhabrot generation");
 
-  let processed_samples = AtomicU32::new(0);
+  let processed_samples = AtomicU64::new(0);
   (0..args.sample_count).into_par_iter().for_each(|_| {
     let c = sampler.sample();
 
@@ -176,14 +176,14 @@ pub fn buddhabrot(args: Args) {
 }
 
 fn samples(
-  sample_count: u32,
+  sample_count: u64,
   p_min: f64,
-  iter: u32,
+  iter: u64,
   viewport: &Viewport,
 ) -> Vec<(Complex64, f64)> {
   let sampler = Uniform::<Complex64>::new();
 
-  let processed_samples = AtomicU32::new(0);
+  let processed_samples = AtomicU64::new(0);
 
   (0..sample_count)
     .into_par_iter()
@@ -220,9 +220,9 @@ fn samples(
 
 fn iter_mandel_check_vp(
   c: Complex64,
-  iter: u32,
+  iter: u64,
   viewport: &Viewport,
-) -> (u32, bool) {
+) -> (u64, bool) {
   let mut z = c;
   let mut z_sqr = z.norm_sqr();
 

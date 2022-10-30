@@ -17,7 +17,7 @@ pub struct JuliaSetArgs {
   #[serde(default = "default_zpy")]
   pub zpy: f64,
   #[serde(default = "default_iter")]
-  pub iter: u32,
+  pub iter: u64,
   #[serde(default = "default_julia_set_filename")]
   pub filename: String,
   #[serde(default)]
@@ -58,7 +58,7 @@ fn default_zpy() -> f64 {
   0.
 }
 
-fn default_iter() -> u32 {
+fn default_iter() -> u64 {
   100
 }
 

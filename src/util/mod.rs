@@ -10,7 +10,7 @@ use display_json::DisplayAsJson;
 use num_complex::Complex64;
 
 use std::f64::consts::PI;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 pub mod colors;
 pub mod sampler;
@@ -250,7 +250,7 @@ impl Smoothing {
 
         let num_pixel = buffer.len();
 
-        let processed_pixels = AtomicU32::new(0);
+        let processed_pixels = AtomicU64::new(0);
 
         buffer.par_iter_mut().enumerate().for_each(|(i, pixel)| {
           let x = i % width;
@@ -304,7 +304,7 @@ impl Smoothing {
           *pixel = s / cp;
 
           let pc = processed_pixels.fetch_add(1, Ordering::SeqCst);
-          print_progress(pc, num_pixel as u32, 100);
+          print_progress(pc, num_pixel as u64, 100);
         });
       }
     }
@@ -902,7 +902,7 @@ pub fn summed_area_table(grid: &[f64], width: usize) -> Vec<f64> {
   sat
 }
 
-pub fn print_progress(i: u32, n: u32, interval: u32) {
+pub fn print_progress(i: u64, n: u64, interval: u64) {
   if i % interval == interval - 1 || i == n - 1 {
     let p = i as f64 / n as f64 * 100.;
     print!("{}/{} iterations done ({:.2}%)\r", i + 1, n, p);
