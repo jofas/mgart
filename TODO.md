@@ -58,9 +58,9 @@
 
 * [x] buddhabrot exponent param
 
-* [ ] sampling api
+* [x] sampling api
 
-* [ ] uniform random sampler
+* [x] uniform random sampler
 
 * [ ] smarter sampling (less iterations)
 
