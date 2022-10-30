@@ -62,7 +62,9 @@
 
 * [x] uniform random sampler
 
-* [ ] smarter sampling (less iterations)
+* [ ] weighted KDE vs KDE
+
+* [ ] weighted KDE: smarter sampling (less iterations)
 
 * [ ] sampling visualization
 
