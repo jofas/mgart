@@ -11,3 +11,7 @@ and this project adheres to
 ### Added
 
 * `BuddhaBrotArgs.exponent`
+
+### Changed
+
+* crate structure

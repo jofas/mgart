@@ -1,8 +1,7 @@
 use rayon::iter::{
-  IndexedParallelIterator, IntoParallelIterator,
-  IntoParallelRefMutIterator, ParallelIterator,
+  IndexedParallelIterator, IntoParallelRefMutIterator,
+  ParallelIterator,
 };
-use rayon::slice::ParallelSliceMut;
 
 use serde::{Deserialize, Serialize};
 
@@ -10,10 +9,7 @@ use display_json::DisplayAsJson;
 
 use num_complex::Complex64;
 
-use map_macro::vec_no_clone;
-
 use rand::random;
-use rand_distr::{Distribution, Normal};
 
 use std::f64::consts::PI;
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -341,6 +337,30 @@ impl Into<Complex64> for &ComplexNumber {
   }
 }
 
+/*
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(rename_all = "snake_case")]
+#[serde(tag = "process")]
+pub struct Sampler {
+  Uniform,
+  Kde,
+}
+
+impl Sampler {
+  pub fn into_sampler(self) -> dyn Sampling {
+    match Self {
+      Kde => {
+       samples =
+      }
+    }
+  }
+}
+*/
+
+// sampler has an initialization and
+//
+// TODO: buddhabrot module with buddhabrot function, args and sampler
+
 pub trait Sampling {
   type Output;
 
@@ -463,7 +483,7 @@ impl CLAHE {
     let tiles_w = width / self.tile_size_x;
     let tiles_h = height / self.tile_size_y;
 
-    let tiles = self.tiles(buffer, width, height, tiles_w, tiles_h);
+    let tiles = self.tiles(buffer, width, tiles_w, tiles_h);
 
     for (i, v) in buffer.iter_mut().enumerate() {
       let x = i % width;
@@ -507,7 +527,6 @@ impl CLAHE {
     &self,
     buffer: &[f64],
     width: usize,
-    height: usize,
     tiles_w: usize,
     tiles_h: usize,
   ) -> Vec<Tile> {
@@ -665,7 +684,6 @@ impl Pos {
       (PosV::Center, PosH::E) => Self::NE,
       (PosV::Center, PosH::W) => Self::SW,
       (PosV::Center, PosH::Center) => Self::Center,
-      _ => Self::Center,
     }
   }
 }
