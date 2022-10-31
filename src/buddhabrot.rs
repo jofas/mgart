@@ -222,7 +222,6 @@ fn iter_mandel_check_vp(
   let mut passed_viewport = false;
 
   while j < iter && z_sqr <= 4.0 {
-    //z = z.powi(2) + c;
     z = z.powf(exponent) + c;
     z_sqr = z.norm_sqr();
 
