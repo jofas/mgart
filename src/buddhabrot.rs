@@ -48,24 +48,17 @@ pub enum Sampler {
   Uniform,
   /// [KDE] with a uniform kernel.
   ///
-  Kde {
-    p_min: f64,
-    h: f64,
-    population: u64,
-  },
+  Kde { p_min: f64, h: f64, population: u64 },
   /// [WeightedKDE] with a uniform kernel.
   ///
-  WeightedKde {
-    p_min: f64,
-    h: f64,
-    population: u64,
-  },
+  WeightedKde { p_min: f64, h: f64, population: u64 },
 }
 
 impl Sampler {
   pub fn create_executor(
     self,
     iter: u64,
+    exponent: f64,
     viewport: &Viewport,
   ) -> Box<dyn Sampler_<Output = Complex64> + Sync + Send> {
     match self {
@@ -78,7 +71,7 @@ impl Sampler {
         println!("initializing sampler population");
 
         let (samples, _): (Vec<Complex64>, Vec<f64>) =
-          samples(population, p_min, iter, viewport)
+          samples(population, p_min, iter, exponent, viewport)
             .into_iter()
             .unzip();
 
@@ -100,7 +93,8 @@ impl Sampler {
       } => {
         println!("initializing sampler population");
 
-        let samples = samples(population, p_min, iter, viewport);
+        let samples =
+          samples(population, p_min, iter, exponent, viewport);
 
         println!("\ninitializing sampler population done");
 
@@ -143,7 +137,10 @@ pub fn buddhabrot(args: Args) {
   let delta_x = vp_width / w;
   let delta_y = vp_height / h;
 
-  let sampler = args.sampler.create_executor(args.iter, &viewport);
+  let sampler =
+    args
+      .sampler
+      .create_executor(args.iter, args.exponent, &viewport);
 
   println!("starting buddhabrot generation");
 
@@ -152,7 +149,7 @@ pub fn buddhabrot(args: Args) {
     let c = sampler.sample();
 
     let (j, passed_viewport) =
-      iter_mandel_check_vp(c, args.iter, &viewport);
+      iter_mandel_check_vp(c, args.iter, args.exponent, &viewport);
 
     if j != args.iter && passed_viewport {
       let mut z = c;
@@ -212,10 +209,38 @@ pub fn buddhabrot(args: Args) {
   println!("successfully written: {}", args.filename);
 }
 
+fn iter_mandel_check_vp(
+  c: Complex64,
+  iter: u64,
+  exponent: f64,
+  viewport: &Viewport,
+) -> (u64, bool) {
+  let mut z = c;
+  let mut z_sqr = z.norm_sqr();
+
+  let mut j = 0;
+  let mut passed_viewport = false;
+
+  while j < iter && z_sqr <= 4.0 {
+    //z = z.powi(2) + c;
+    z = z.powf(exponent) + c;
+    z_sqr = z.norm_sqr();
+
+    if viewport.contains_point(z.re, z.im) {
+      passed_viewport = true;
+    }
+
+    j = j + 1;
+  }
+
+  (j, passed_viewport)
+}
+
 fn samples(
   sample_count: u64,
   p_min: f64,
   iter: u64,
+  exponent: f64,
   viewport: &Viewport,
 ) -> Vec<(Complex64, f64)> {
   let sampler = Uniform::<Complex64>::new();
@@ -230,7 +255,7 @@ fn samples(
         let c = sampler.sample();
 
         let (j, passed_viewport) =
-          iter_mandel_check_vp(c, iter, viewport);
+          iter_mandel_check_vp(c, iter, exponent, viewport);
 
         if j != iter && passed_viewport {
           let p = j as f64 / iter as f64;
@@ -253,29 +278,4 @@ fn samples(
         acc
       },
     )
-}
-
-fn iter_mandel_check_vp(
-  c: Complex64,
-  iter: u64,
-  viewport: &Viewport,
-) -> (u64, bool) {
-  let mut z = c;
-  let mut z_sqr = z.norm_sqr();
-
-  let mut j = 0;
-  let mut passed_viewport = false;
-
-  while j < iter && z_sqr <= 4.0 {
-    z = z.powi(2) + c;
-    z_sqr = z.norm_sqr();
-
-    if viewport.contains_point(z.re, z.im) {
-      passed_viewport = true;
-    }
-
-    j = j + 1;
-  }
-
-  (j, passed_viewport)
 }
