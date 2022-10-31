@@ -1,4 +1,4 @@
-![mgart](./icon.svg)
+![mgart](static/icon.svg)
 
 # mgart
 
