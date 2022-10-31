@@ -12,12 +12,9 @@ use map_macro::vec_no_clone;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::util::sampler::{
-  Sampler as Sampler_, Uniform, WeightedKDE, KDE,
-};
-use crate::util::{
-  grid_pos, print_progress, ColorMap1d, PostProcessing, Viewport,
-};
+use crate::util::sampler::{Sampler, Uniform, WeightedKDE, KDE};
+use crate::util::viewport::Viewport;
+use crate::util::{print_progress, ColorMap1d, PostProcessing};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct Args {
@@ -31,7 +28,7 @@ pub struct Args {
   pub color_map: ColorMap1d,
   pub exponent: f64,
   pub sample_count: u64,
-  pub sampler: Sampler,
+  pub sampler: SamplerArgs,
   #[serde(default)]
   pub post_processing: Vec<PostProcessing>,
 }
@@ -39,7 +36,7 @@ pub struct Args {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "snake_case")]
 #[serde(tag = "type")]
-pub enum Sampler {
+pub enum SamplerArgs {
   /// Uniformly randomly sample a complex number with a radius in
   /// `[0, 2]` from the origin.
   ///
@@ -54,13 +51,13 @@ pub enum Sampler {
   WeightedKde { p_min: f64, h: f64, population: u64 },
 }
 
-impl Sampler {
+impl SamplerArgs {
   pub fn create_executor(
     self,
     iter: u64,
     exponent: f64,
     viewport: &Viewport,
-  ) -> Box<dyn Sampler_<Output = Complex64> + Sync + Send> {
+  ) -> Box<dyn Sampler<Output = Complex64> + Sync + Send> {
     match self {
       Self::Uniform => Box::new(Uniform::<Complex64>::new()),
       Self::Kde {
@@ -155,7 +152,7 @@ pub fn buddhabrot(args: Args) {
       let mut z = c;
 
       for _ in 0..=j {
-        let idx = grid_pos(z.re, z.im, delta_x, delta_y, &viewport);
+        let idx = viewport.grid_pos(z.re, z.im, delta_x, delta_y);
 
         if let Some((x, y)) = idx {
           buffer[y * args.width + x].fetch_add(1, Ordering::Relaxed);
@@ -219,7 +216,7 @@ fn iter_mandel_check_vp(
   let mut z_sqr = z.norm_sqr();
 
   let mut j = 0;
-  let mut passed_viewport = false;
+  let mut passed_viewport = viewport.contains_point(z.re, z.im);
 
   while j < iter && z_sqr <= 4.0 {
     z = z.powf(exponent) + c;
