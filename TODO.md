@@ -64,7 +64,8 @@
 
 * [x] weighted KDE vs KDE
 
-* [ ] weighted KDE: smarter sampling (less iterations)
+* [ ] weighted KDE: smarter sampling (less iterations - 
+  stratified sampling)
 
 * [ ] sampling visualization
 
