@@ -1,6 +1,8 @@
 /target
 
+# files I use for debugging
 config.jsonnet
+test.py
 
 *.png
 *.gif

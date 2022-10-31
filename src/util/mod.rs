@@ -295,7 +295,7 @@ impl Smoothing {
               let bq =
                 bq / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
 
-              let fpq = (-((bq - bp).powi(2) / h)).exp();
+              let fpq = (-((bq - bp).powi(2) / h.powi(2))).exp();
 
               s += *pixel * fpq;
               cp += fpq;
