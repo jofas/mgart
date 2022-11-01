@@ -68,6 +68,8 @@
 
 * [x] CLAHE fixed north and west borders
 
+* [ ] `Uniform` sampler: `r` parameter
+
 * [ ] `post_processing` module
 
 * [ ] weighted KDE: smarter sampling (less iterations - 
