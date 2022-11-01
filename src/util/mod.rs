@@ -247,17 +247,18 @@ impl Smoothing {
   ) {
     match self {
       Self::NonLocalMeans { n, window_size, h } => {
-        let sat = summed_area_table(&buffer, width);
+        let wm = self.window_mean(&buffer, width, height, *n);
 
         let num_pixel = buffer.len();
 
         let processed_pixels = AtomicU64::new(0);
 
-        buffer.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+        //buffer.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+        buffer.iter_mut().enumerate().for_each(|(i, pixel)| {
           let x = i % width;
           let y = i / width;
 
-          let (wx0, wy0, wx1, wy1) = discrete_bounded_square(
+          let (wx0, wy0, wx1, wy1) = self.discrete_bounded_square(
             x,
             y,
             *window_size,
@@ -265,32 +266,16 @@ impl Smoothing {
             height,
           );
 
-          let (x0, y0, x1, y1) =
-            discrete_bounded_square(x, y, *n, width, height);
-
-          let c00 = sat[y0 * width + x0];
-          let c01 = sat[y0 * width + x1];
-          let c10 = sat[y1 * width + x0];
-          let c11 = sat[y1 * width + x1];
-
-          let bp = c00 + c11 - c01 - c10;
-          let bp = bp / ((x1 - x0 + 1) * (y1 - y0 + 1)) as f64;
+          let bp = wm[i];
 
           let mut s = 0.;
           let mut cp = 0.;
 
           for x in wx0..=wx1 {
             for y in wy0..=wy1 {
-              let (x0, y0, x1, y1) =
-                discrete_bounded_square(x, y, *n, width, height);
+              let j = y * width + x;
 
-              let c00 = sat[y0 * width + x0];
-              let c01 = sat[y0 * width + x1];
-              let c10 = sat[y1 * width + x0];
-              let c11 = sat[y1 * width + x1];
-
-              let bq = c00 + c11 - c01 - c10;
-              let bq = bq / ((x1 - x0 + 1) * (y1 - y0 + 1)) as f64;
+              let bq = wm[j];
 
               let fpq = (-(bq - bp).powi(2) / h.powi(2)).exp();
 
@@ -299,6 +284,8 @@ impl Smoothing {
             }
           }
 
+          dbg!(&pixel, s / cp, s, cp, bp);
+
           *pixel = s / cp;
 
           let pc = processed_pixels.fetch_add(1, Ordering::SeqCst);
@@ -306,6 +293,86 @@ impl Smoothing {
         });
       }
     }
+  }
+
+  fn window_mean(
+    &self,
+    buffer: &[f64],
+    width: usize,
+    height: usize,
+    n: usize,
+  ) -> Vec<f64> {
+    let sat = self.summed_area_table(&buffer, width);
+
+    let mut res = vec![0.; width * height];
+
+    res.par_iter_mut().enumerate().for_each(|(i, p)| {
+      let x = i % width;
+      let y = i / width;
+
+      let (x0, y0, x1, y1) =
+        self.discrete_bounded_square(x, y, n, width, height);
+
+      let c00 = sat[y0 * width + x0];
+      let c01 = sat[y0 * width + x1];
+      let c10 = sat[y1 * width + x0];
+      let c11 = sat[y1 * width + x1];
+
+      let bp = c00 + c11 - c01 - c10;
+      let bp = bp / ((x1 - x0 + 1) * (y1 - y0 + 1)) as f64;
+
+      *p = bp;
+    });
+
+    res
+  }
+
+  fn summed_area_table(
+    &self,
+    buffer: &[f64],
+    width: usize,
+  ) -> Vec<f64> {
+    let mut sat = buffer.to_vec();
+
+    for i in 1..sat.len() {
+      let x = i % width;
+      let y = i / width;
+
+      if x > 0 {
+        sat[i] += sat[i - 1];
+      }
+
+      if y > 0 {
+        sat[i] += sat[(y - 1) * width + x];
+      }
+
+      if x > 0 && y > 0 {
+        sat[i] -= sat[(y - 1) * width + x - 1];
+      }
+    }
+
+    sat
+  }
+
+  fn discrete_bounded_square(
+    &self,
+    x: usize,
+    y: usize,
+    n: usize,
+    width: usize,
+    height: usize,
+  ) -> (usize, usize, usize, usize) {
+    let nh = n / 2;
+
+    let xupper = (x + nh).min(width - 1);
+    let yupper = (y + nh).min(height - 1);
+
+    let (x, y) = if n % 2 == 0 { (x + 1, y + 1) } else { (x, y) };
+
+    let xlower = x.checked_sub(nh).unwrap_or(0);
+    let ylower = y.checked_sub(nh).unwrap_or(0);
+
+    (xlower, ylower, xupper, yupper)
   }
 }
 
@@ -333,26 +400,6 @@ impl Into<Complex64> for &ComplexNumber {
     }
   }
 }
-
-/*
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(tag = "process")]
-pub struct Sampler {
-  Uniform,
-  Kde,
-}
-
-impl Sampler {
-  pub fn into_sampler(self) -> dyn Sampling {
-    match Self {
-      Kde => {
-       samples =
-      }
-    }
-  }
-}
-*/
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct CLAHE {
@@ -798,26 +845,6 @@ impl<'a, T: Copy> Iterator for Strided<'a, T> {
   }
 }
 
-pub fn discrete_bounded_square(
-  x: usize,
-  y: usize,
-  n: usize,
-  width: usize,
-  height: usize,
-) -> (usize, usize, usize, usize) {
-  let nh = n / 2;
-
-  let xupper = (x + nh).min(width - 1);
-  let yupper = (y + nh).min(height - 1);
-
-  let (x, y) = if n % 2 == 0 { (x + 1, y + 1) } else { (x, y) };
-
-  let xlower = x.checked_sub(nh).unwrap_or(0);
-  let ylower = y.checked_sub(nh).unwrap_or(0);
-
-  (xlower, ylower, xupper, yupper)
-}
-
 pub fn min_max(v: &[f64]) -> (f64, f64) {
   let mut max = &0.;
   let mut min = &f64::MAX;
@@ -835,29 +862,6 @@ pub fn min_max(v: &[f64]) -> (f64, f64) {
   (*min, *max)
 }
 
-pub fn summed_area_table(grid: &[f64], width: usize) -> Vec<f64> {
-  let mut sat = grid.to_vec();
-
-  for i in 1..sat.len() {
-    let x = i % width;
-    let y = i / width;
-
-    if x > 0 {
-      sat[i] += sat[i - 1];
-    }
-
-    if y > 0 {
-      sat[i] += sat[(y - 1) * width + x];
-    }
-
-    if x > 0 && y > 0 {
-      sat[i] -= sat[(y - 1) * width + x - 1];
-    }
-  }
-
-  sat
-}
-
 pub fn print_progress(i: u64, n: u64, interval: u64) {
   if i % interval == interval - 1 || i == n - 1 {
     let p = i as f64 / n as f64 * 100.;
@@ -867,10 +871,7 @@ pub fn print_progress(i: u64, n: u64, interval: u64) {
 
 #[cfg(test)]
 mod tests {
-  use super::{
-    discrete_bounded_square, summed_area_table, Gradient, Strided,
-    CLAHE,
-  };
+  use super::{Gradient, Smoothing, Strided, CLAHE};
 
   #[test]
   fn tile_indexing() {
@@ -935,28 +936,34 @@ mod tests {
 
   #[test]
   fn dbs() {
-    let res = discrete_bounded_square(0, 0, 3, 4, 4);
+    let nlm = Smoothing::NonLocalMeans {
+      n: 3,
+      window_size: 4,
+      h: 3.,
+    };
+
+    let res = nlm.discrete_bounded_square(0, 0, 3, 4, 4);
     assert_eq!(res, (0, 0, 1, 1));
 
-    let res = discrete_bounded_square(1, 1, 3, 4, 4);
+    let res = nlm.discrete_bounded_square(1, 1, 3, 4, 4);
     assert_eq!(res, (0, 0, 2, 2));
 
-    let res = discrete_bounded_square(2, 2, 3, 4, 4);
+    let res = nlm.discrete_bounded_square(2, 2, 3, 4, 4);
     assert_eq!(res, (1, 1, 3, 3));
 
-    let res = discrete_bounded_square(3, 3, 3, 4, 4);
+    let res = nlm.discrete_bounded_square(3, 3, 3, 4, 4);
     assert_eq!(res, (2, 2, 3, 3));
 
-    let res = discrete_bounded_square(0, 0, 2, 4, 4);
+    let res = nlm.discrete_bounded_square(0, 0, 2, 4, 4);
     assert_eq!(res, (0, 0, 1, 1));
 
-    let res = discrete_bounded_square(1, 1, 2, 4, 4);
+    let res = nlm.discrete_bounded_square(1, 1, 2, 4, 4);
     assert_eq!(res, (1, 1, 2, 2));
 
-    let res = discrete_bounded_square(2, 2, 2, 4, 4);
+    let res = nlm.discrete_bounded_square(2, 2, 2, 4, 4);
     assert_eq!(res, (2, 2, 3, 3));
 
-    let res = discrete_bounded_square(3, 3, 2, 4, 4);
+    let res = nlm.discrete_bounded_square(3, 3, 2, 4, 4);
     assert_eq!(res, (3, 3, 3, 3));
   }
 
@@ -965,7 +972,13 @@ mod tests {
     let image = [1.; 16];
     let width = 4;
 
-    let sat = summed_area_table(&image, width);
+    let nlm = Smoothing::NonLocalMeans {
+      n: 3,
+      window_size: 4,
+      h: 3.,
+    };
+
+    let sat = nlm.summed_area_table(&image, width);
 
     assert_eq!(
       sat,
@@ -983,7 +996,7 @@ mod tests {
     let image: Vec<f64> = (1..=16).map(|x| x as f64).collect();
     let width = 4;
 
-    let sat = summed_area_table(&image, width);
+    let sat = nlm.summed_area_table(&image, width);
 
     assert_eq!(
       sat,
@@ -992,6 +1005,34 @@ mod tests {
         [6., 14., 24., 36.],
         [15., 33., 54., 78.],
         [28., 60., 96., 136.]
+      ]
+      .into_iter()
+      .flatten()
+      .collect::<Vec<f64>>(),
+    );
+  }
+
+  #[test]
+  fn non_local_means() {
+    let mut image: Vec<f64> = (1..=16).map(|x| x as f64).collect();
+    let width = 4;
+    let height = 4;
+
+    let nlm = Smoothing::NonLocalMeans {
+      n: 3,
+      window_size: 4,
+      h: 3.,
+    };
+
+    nlm.smooth(&mut image, width, height);
+
+    assert_eq!(
+      image,
+      vec![
+        [3., 3., 4., 4.],
+        [6., 6., 7., 7.],
+        [10., 10., 11., 11.],
+        [13., 13., 14., 14.],
       ]
       .into_iter()
       .flatten()
