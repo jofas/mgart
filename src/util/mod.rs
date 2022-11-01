@@ -429,10 +429,8 @@ impl SummedAreaTable {
     let x0 = x0.max(0);
     let y0 = y0.max(0);
 
-    if cx == 2 && cy == 1 {
-      dbg!(x0, y0, x1, y1);
-      dbg!((x1 - x0 + 1) * (y1 - y0 + 1));
-    }
+    let x1 = x1.min((self.width - 1) as isize);
+    let y1 = y1.min((self.height - 1) as isize);
 
     c / ((x1 - x0 + 1) * (y1 - y0 + 1)) as f64
   }
