@@ -64,7 +64,7 @@
 
 * [x] weighted KDE vs KDE
 
-* [ ] fix non-local means (not smoothing enough)
+* [x] fix non-local means 
 
 * [ ] weighted KDE: smarter sampling (less iterations - 
   stratified sampling)

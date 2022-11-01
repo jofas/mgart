@@ -267,13 +267,13 @@ impl NonLocalMeans {
     width: usize,
     height: usize,
   ) {
-    let wm = self.window_mean(&buffer, width, height);
+    let m = self.window_mean(&buffer, width, height);
 
     let num_pixel = buffer.len();
 
     let processed_pixels = AtomicU64::new(0);
 
-    buffer.par_iter_mut().enumerate().for_each(|(i, pixel)| {
+    for i in 0..buffer.len() {
       let x = i % width;
       let y = i / width;
 
@@ -289,8 +289,6 @@ impl NonLocalMeans {
       let wx1 = wx1.min(width as isize - 1) as usize;
       let wy1 = wy1.min(height as isize - 1) as usize;
 
-      let bp = wm[i];
-
       let mut s = 0.;
       let mut cp = 0.;
 
@@ -298,22 +296,22 @@ impl NonLocalMeans {
         for y in wy0..=wy1 {
           let j = y * width + x;
 
-          let bq = wm[j];
+          let fpq = self.weight_function(m[i], m[j]);
 
-          let fpq = (-(bq - bp).powi(2) / self.h.powi(2)).exp();
-
-          s += *pixel * fpq;
+          s += buffer[j] * fpq;
           cp += fpq;
         }
       }
 
-      dbg!(&pixel, s / cp, s, cp, bp);
-
-      *pixel = s / cp;
+      buffer[i] = s / cp;
 
       let pc = processed_pixels.fetch_add(1, Ordering::SeqCst);
       print_progress(pc, num_pixel as u64, 100);
-    });
+    }
+  }
+
+  fn weight_function(&self, bp: f64, bq: f64) -> f64 {
+    (-(bq - bp).powi(2) / self.h.powi(2)).exp()
   }
 
   fn window_mean(
@@ -326,7 +324,7 @@ impl NonLocalMeans {
 
     let mut res = vec![0.; width * height];
 
-    res.iter_mut().enumerate().for_each(|(i, p)| {
+    res.par_iter_mut().enumerate().for_each(|(i, p)| {
       let x = i % width;
       let y = i / width;
 
@@ -1147,9 +1145,41 @@ mod tests {
     );
   }
 
-  /*
   #[test]
-  fn non_local_means() {
+  fn nlm_window_mean() {
+    let image: Vec<f64> = (1..=16).map(|x| x as f64).collect();
+    let width = 4;
+    let height = 4;
+
+    let nlm = NonLocalMeans::new(3, 4, 3.);
+
+    let res = nlm.window_mean(&image, width, height);
+
+    assert_eq!(
+      res,
+      vec![
+        [3.5, 4., 5., 5.5],
+        [5.5, 6., 7., 7.5],
+        [9.5, 10., 11., 11.5],
+        [11.5, 12., 13., 13.5]
+      ]
+      .into_iter()
+      .flatten()
+      .collect::<Vec<f64>>(),
+    );
+  }
+
+  #[test]
+  fn nlm_weight_function() {
+    let nlm = NonLocalMeans::new(3, 4, 3.);
+
+    for x in [0., 0.25, 0.33, 0.5, 0.66, 0.75, 0.99, 1.] {
+      assert_eq!(nlm.weight_function(x, x), 1.);
+    }
+  }
+
+  #[test]
+  fn nlm() {
     let mut image: Vec<f64> = (1..=16).map(|x| x as f64).collect();
     let width = 4;
     let height = 4;
@@ -1159,19 +1189,18 @@ mod tests {
     nlm.smooth(&mut image, width, height);
 
     assert_eq!(
-      image,
+      image.into_iter().map(|x| x as u8).collect::<Vec<u8>>(),
       vec![
-        [3., 3., 4., 4.],
-        [6., 6., 7., 7.],
-        [10., 10., 11., 11.],
-        [13., 13., 14., 14.],
+        [3, 4, 5, 5],
+        [5, 6, 6, 7],
+        [10, 11, 12, 13],
+        [12, 13, 13, 14],
       ]
       .into_iter()
       .flatten()
-      .collect::<Vec<f64>>(),
+      .collect::<Vec<u8>>(),
     );
   }
-  */
 
   #[test]
   fn linear_gradient() {
