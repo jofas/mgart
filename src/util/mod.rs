@@ -261,12 +261,12 @@ impl Smoothing {
             x,
             y,
             *window_size,
-            width - 1,
-            height - 1,
+            width,
+            height,
           );
 
           let (x0, y0, x1, y1) =
-            discrete_bounded_square(x, y, *n, width - 1, height - 1);
+            discrete_bounded_square(x, y, *n, width, height);
 
           let c00 = sat[y0 * width + x0];
           let c01 = sat[y0 * width + x1];
@@ -274,28 +274,25 @@ impl Smoothing {
           let c11 = sat[y1 * width + x1];
 
           let bp = c00 + c11 - c01 - c10;
-          let bp = bp / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
+          let bp = bp / ((x1 - x0 + 1) * (y1 - y0 + 1)) as f64;
 
           let mut s = 0.;
           let mut cp = 0.;
 
           for x in wx0..=wx1 {
             for y in wy0..=wy1 {
-              let (x0, y0, x1, y1) = discrete_bounded_square(
-                x,
-                y,
-                *n,
-                width - 1,
-                height - 1,
-              );
+              let (x0, y0, x1, y1) =
+                discrete_bounded_square(x, y, *n, width, height);
 
-              let bq = sat[y1 * width + x1] + sat[y0 * width + x0]
-                - sat[y1 * width + x0]
-                - sat[y0 * width + x1];
-              let bq =
-                bq / (x1 - x0 + 1) as f64 / (y1 - y0 + 1) as f64;
+              let c00 = sat[y0 * width + x0];
+              let c01 = sat[y0 * width + x1];
+              let c10 = sat[y1 * width + x0];
+              let c11 = sat[y1 * width + x1];
 
-              let fpq = (-((bq - bp).powi(2) / h.powi(2))).exp();
+              let bq = c00 + c11 - c01 - c10;
+              let bq = bq / ((x1 - x0 + 1) * (y1 - y0 + 1)) as f64;
+
+              let fpq = (-(bq - bp).powi(2) / h.powi(2)).exp();
 
               s += *pixel * fpq;
               cp += fpq;
@@ -805,18 +802,18 @@ pub fn discrete_bounded_square(
   x: usize,
   y: usize,
   n: usize,
-  ubx: usize,
-  uby: usize,
+  width: usize,
+  height: usize,
 ) -> (usize, usize, usize, usize) {
   let nh = n / 2;
 
-  let xupper = (x + nh).min(ubx);
-  let yupper = (y + nh).min(uby);
+  let xupper = (x + nh).min(width - 1);
+  let yupper = (y + nh).min(height - 1);
 
   let (x, y) = if n % 2 == 0 { (x + 1, y + 1) } else { (x, y) };
 
-  let xlower = if nh > x + 1 { 0 } else { x + 1 - nh };
-  let ylower = if nh > y + 1 { 0 } else { y + 1 - nh };
+  let xlower = x.checked_sub(nh).unwrap_or(0);
+  let ylower = y.checked_sub(nh).unwrap_or(0);
 
   (xlower, ylower, xupper, yupper)
 }
@@ -870,7 +867,10 @@ pub fn print_progress(i: u64, n: u64, interval: u64) {
 
 #[cfg(test)]
 mod tests {
-  use super::{summed_area_table, Gradient, Strided, CLAHE};
+  use super::{
+    discrete_bounded_square, summed_area_table, Gradient, Strided,
+    CLAHE,
+  };
 
   #[test]
   fn tile_indexing() {
@@ -934,6 +934,33 @@ mod tests {
   }
 
   #[test]
+  fn dbs() {
+    let res = discrete_bounded_square(0, 0, 3, 4, 4);
+    assert_eq!(res, (0, 0, 1, 1));
+
+    let res = discrete_bounded_square(1, 1, 3, 4, 4);
+    assert_eq!(res, (0, 0, 2, 2));
+
+    let res = discrete_bounded_square(2, 2, 3, 4, 4);
+    assert_eq!(res, (1, 1, 3, 3));
+
+    let res = discrete_bounded_square(3, 3, 3, 4, 4);
+    assert_eq!(res, (2, 2, 3, 3));
+
+    let res = discrete_bounded_square(0, 0, 2, 4, 4);
+    assert_eq!(res, (0, 0, 1, 1));
+
+    let res = discrete_bounded_square(1, 1, 2, 4, 4);
+    assert_eq!(res, (1, 1, 2, 2));
+
+    let res = discrete_bounded_square(2, 2, 2, 4, 4);
+    assert_eq!(res, (2, 2, 3, 3));
+
+    let res = discrete_bounded_square(3, 3, 2, 4, 4);
+    assert_eq!(res, (3, 3, 3, 3));
+  }
+
+  #[test]
   fn sat() {
     let image = [1.; 16];
     let width = 4;
@@ -943,9 +970,32 @@ mod tests {
     assert_eq!(
       sat,
       vec![
-        1., 2., 3., 4., 2., 4., 6., 8., 3., 6., 9., 12., 4., 8., 12.,
-        16.,
-      ],
+        [1., 2., 3., 4.],
+        [2., 4., 6., 8.],
+        [3., 6., 9., 12.],
+        [4., 8., 12., 16.]
+      ]
+      .into_iter()
+      .flatten()
+      .collect::<Vec<f64>>(),
+    );
+
+    let image: Vec<f64> = (1..=16).map(|x| x as f64).collect();
+    let width = 4;
+
+    let sat = summed_area_table(&image, width);
+
+    assert_eq!(
+      sat,
+      vec![
+        [1., 3., 6., 10.],
+        [6., 14., 24., 36.],
+        [15., 33., 54., 78.],
+        [28., 60., 96., 136.]
+      ]
+      .into_iter()
+      .flatten()
+      .collect::<Vec<f64>>(),
     );
   }
 
