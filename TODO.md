@@ -66,9 +66,9 @@
 
 * [x] fix non-local means 
 
-* [ ] `post_processing` module
+* [x] CLAHE fixed north and west borders
 
-* [ ] CLAHE does some weird stuff at the left and upper borders (NaN?)
+* [ ] `post_processing` module
 
 * [ ] weighted KDE: smarter sampling (less iterations - 
   stratified sampling)

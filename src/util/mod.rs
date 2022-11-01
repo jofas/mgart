@@ -677,8 +677,8 @@ impl CLAHE {
       // borders
       (Some(_), Some(_), None, None) => (1., 0., dw, de),
       (Some(_), None, None, Some(_)) => (dn, ds, 1., 0.),
-      (None, Some(_), Some(_), None) => (dn, ds, 1., 0.),
-      (None, None, Some(_), Some(_)) => (1., 0., dw, de),
+      (None, Some(_), Some(_), None) => (dn, ds, 0., 1.),
+      (None, None, Some(_), Some(_)) => (0., 1., dw, de),
       // center
       (Some(_), Some(_), Some(_), Some(_)) => (dn, ds, dw, de),
       _ => panic!("impossible state"),
