@@ -17,3 +17,9 @@ and this project adheres to
 ### Changed
 
 * crate structure
+
+### Fixed
+
+* multi-buddhabrot rendering
+
+* non-local means
