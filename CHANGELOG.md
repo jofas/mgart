@@ -18,6 +18,8 @@ and this project adheres to
 
 * crate structure
 
+* `Uniform -> UniformPolar`
+
 ### Fixed
 
 * multi-buddhabrot rendering

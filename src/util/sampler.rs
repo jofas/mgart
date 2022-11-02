@@ -11,19 +11,21 @@ pub trait Sampler {
   fn sample(&self) -> Self::Output;
 }
 
-pub struct Uniform<T> {
+pub struct UniformPolar<T> {
+  r: f64,
   phantom: PhantomData<T>,
 }
 
-impl<T> Uniform<T> {
-  pub fn new() -> Self {
+impl<T> UniformPolar<T> {
+  pub fn new(r: f64) -> Self {
     Self {
+      r,
       phantom: PhantomData,
     }
   }
 }
 
-impl Sampler for Uniform<Complex64> {
+impl Sampler for UniformPolar<Complex64> {
   type Output = Complex64;
 
   /// Generates a uniformly random complex number with a radius between
@@ -31,7 +33,7 @@ impl Sampler for Uniform<Complex64> {
   ///
   fn sample(&self) -> Self::Output {
     Complex64::from_polar(
-      2. * random::<f64>(),
+      self.r * random::<f64>(),
       2. * PI * random::<f64>(),
     )
   }

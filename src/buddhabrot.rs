@@ -12,7 +12,7 @@ use map_macro::vec_no_clone;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::util::sampler::{Sampler, Uniform, WeightedKDE, KDE};
+use crate::util::sampler::{Sampler, UniformPolar, WeightedKDE, KDE};
 use crate::util::viewport::Viewport;
 use crate::util::{print_progress, ColorMap1d, PostProcessing};
 
@@ -42,7 +42,7 @@ pub enum SamplerArgs {
   ///
   /// See [Uniform].
   ///
-  Uniform,
+  UniformPolar { r: f64 },
   /// [KDE] with a uniform kernel.
   ///
   Kde { p_min: f64, h: f64, population: u64 },
@@ -59,7 +59,9 @@ impl SamplerArgs {
     viewport: &Viewport,
   ) -> Box<dyn Sampler<Output = Complex64> + Sync + Send> {
     match self {
-      Self::Uniform => Box::new(Uniform::<Complex64>::new()),
+      Self::UniformPolar { r } => {
+        Box::new(UniformPolar::<Complex64>::new(r))
+      }
       Self::Kde {
         p_min,
         h,
@@ -239,7 +241,7 @@ fn samples(
   exponent: f64,
   viewport: &Viewport,
 ) -> Vec<(Complex64, f64)> {
-  let sampler = Uniform::<Complex64>::new();
+  let sampler = UniformPolar::<Complex64>::new(2.);
 
   let processed_samples = AtomicU64::new(0);
 
