@@ -72,18 +72,34 @@
 
 * [ ] `post_processing` module
 
+* [ ] rotation parameter
+
+* [ ] anti flag
+
+* [ ] libsonnet files
+
+* [ ] build action
+
+* [ ] publish action
+
+* [ ] badges
+
+* [ ] publish `0.0.2`
+
+* [ ] examples 
+
+* [ ] api integration test
+
+* [ ] documentation
+
+* [ ] benchmark suite
+
+* [ ] escape function parameter (try Rhai)
+
 * [ ] weighted KDE: smarter sampling (less iterations - 
   stratified sampling)
 
 * [ ] sampling visualization
-
-* [ ] restructure util mod
-
-* [ ] restructure crate root
-
-* [ ] examples 
-
-* [ ] documentation
 
 * [ ] time estimates
 
@@ -107,8 +123,6 @@
 
       else:
       - [ ] PickoverStalks
-
-* [ ] rotation parameter
 
 * [ ] color algorithms: ColorMap1D, LCH, RGB, Nebula
 
