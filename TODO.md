@@ -80,28 +80,30 @@
 
 * [ ] build action
 
-* [ ] publish action
-
 * [ ] badges
-
-* [ ] publish `0.0.2`
 
 * [ ] examples 
 
-* [ ] api integration test
+* [ ] api integration test (using example files)
 
-* [ ] documentation
+* [ ] top-level basic documentation (example, install, 
+  supported algorithms, goals, roadmap, contributing, 
+  license)
 
 * [ ] benchmark suite
+
+* [ ] publish action
+
+* [ ] publish `0.0.2`
+
+* [ ] color algorithms: ColorMap1D, LCH, RGB, Nebula
 
 * [ ] escape function parameter (try Rhai)
 
 * [ ] weighted KDE: smarter sampling (less iterations - 
   stratified sampling)
 
-* [ ] sampling visualization
-
-* [ ] time estimates
+* [ ] clean-up julia-set implementation
 
 * [ ] API for describing drawing algorithms
 
@@ -124,18 +126,19 @@
       else:
       - [ ] PickoverStalks
 
-* [ ] color algorithms: ColorMap1D, LCH, RGB, Nebula
+* [ ] multibrot
+
+* [ ] sampling visualization
+
+* [ ] time estimates
 
 * [ ] color smoothing optional
 
-* [ ] gradients for distance instead of [0, 1]
+* [ ] publish `0.1.0`
 
 * [ ] wasm based editor
 
-* [ ] find cool points and colormaps where I can see the effect of
-  the following visualization methods
-
-* [ ] statistical methods (mean, avg, etc.)
+* [ ] drawing algorithms: statistical methods (mean, avg, etc.)
 
 * [ ] `julia set`: field lines
 
@@ -143,9 +146,10 @@
 
 * [ ] newton fractals
 
-* [ ] multibrot
-
 * [ ] fractal flame
+
+
+### MAYBEDO
 
 * [ ] more gradients
 
