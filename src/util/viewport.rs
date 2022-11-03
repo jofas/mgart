@@ -214,9 +214,8 @@ mod tests {
     let center = Complex64::new(0., 0.);
     let width = 1.;
     let height = 2.;
-    let grid_delta_x = 0.2;
-    let grid_delta_y = 0.2;
-    let rotation = 90;
+    let grid_delta_x = 0.1;
+    let grid_delta_y = 0.1;
 
     let vp = Viewport::from_center(
       center,
@@ -224,12 +223,54 @@ mod tests {
       height,
       grid_delta_x,
       grid_delta_y,
-      rotation,
+      0,
     );
 
-    let (x, y) = vp.grid_pos(&Complex64::new(0.1, 0.)).unwrap();
+    let (x, y) = vp.grid_pos(&Complex64::new(0.15, 0.)).unwrap();
 
-    assert_eq!(x, 2);
-    assert_eq!(y, 5);
+    assert_eq!(x, 6);
+    assert_eq!(y, 10);
+
+    let vp = Viewport::from_center(
+      center,
+      width,
+      height,
+      grid_delta_x,
+      grid_delta_y,
+      90,
+    );
+
+    let (x, y) = vp.grid_pos(&Complex64::new(0.15, 0.)).unwrap();
+
+    assert_eq!(x, 5);
+    assert_eq!(y, 11);
+
+    let vp = Viewport::from_center(
+      center,
+      width,
+      height,
+      grid_delta_x,
+      grid_delta_y,
+      180,
+    );
+
+    let (x, y) = vp.grid_pos(&Complex64::new(0.15, 0.)).unwrap();
+
+    assert_eq!(x, 3);
+    assert_eq!(y, 10);
+
+    let vp = Viewport::from_center(
+      center,
+      width,
+      height,
+      grid_delta_x,
+      grid_delta_y,
+      270,
+    );
+
+    let (x, y) = vp.grid_pos(&Complex64::new(0.15, 0.)).unwrap();
+
+    assert_eq!(x, 5);
+    assert_eq!(y, 8);
   }
 }
