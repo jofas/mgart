@@ -76,9 +76,7 @@
 
 * [x] `gradient` module
 
-* [ ] rotation parameter (rotate viewport, not space)
-
-* [ ] anti flag
+* [x] rotation parameter (rotate viewport, not space)
 
 * [ ] libsonnet files
 
@@ -100,6 +98,9 @@
   with libsonnet files)
 
 * [ ] publish `0.0.2`
+
+* [ ] anti-buddhabrot (escape cycles using `period` and 
+  `finite_attractor`, see interior distance rendering of julia set)
 
 * [ ] color algorithms: ColorMap1D, LCH, RGB, Nebula
 

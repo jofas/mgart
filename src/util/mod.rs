@@ -39,6 +39,37 @@ impl Into<Complex64> for &ComplexNumber {
   }
 }
 
+// TODO: dz is derivative of z in the iteration sequence ... if I were
+//       to look for finite attractors for different functions, I'd
+//       need to generalize this
+pub fn finite_attractor(
+  z0: Complex64,
+  c: Complex64,
+  p: usize,
+) -> Option<(Complex64, Complex64)> {
+  let mut zz = z0;
+
+  for _ in 0..64 {
+    let mut z = zz;
+    let mut dz = Complex64::new(1., 0.);
+
+    for _ in 0..p {
+      dz = 2. * z * dz;
+      z = z.powi(2) + c;
+    }
+
+    let zz_new = zz - (z - zz) / (dz - 1.);
+
+    if (zz_new - zz).norm_sqr() <= 1e-20 {
+      return Some((z, dz));
+    }
+
+    zz = zz_new;
+  }
+
+  None
+}
+
 pub fn print_progress(i: u64, n: u64, interval: u64) {
   if i % interval == interval - 1 || i == n - 1 {
     let p = i as f64 / n as f64 * 100.;

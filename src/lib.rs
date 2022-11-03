@@ -16,34 +16,7 @@ pub mod util;
 use args::{ColorMap1dArgs, JuliaSetArgs};
 
 use util::coloring::colors::RGB;
-
-fn attractor(
-  z0: Complex64,
-  c: Complex64,
-  p: usize,
-) -> Option<(Complex64, Complex64)> {
-  let mut zz = z0;
-
-  for _ in 0..64 {
-    let mut z = zz;
-    let mut dz = Complex64::new(1., 0.);
-
-    for _ in 0..p {
-      dz = 2. * z * dz;
-      z = z.powi(2) + c;
-    }
-
-    let zz_new = zz - (z - zz) / (dz - 1.);
-
-    if (zz_new - zz).norm_sqr() <= 1e-20 {
-      return Some((z, dz));
-    }
-
-    zz = zz_new;
-  }
-
-  None
-}
+use util::finite_attractor;
 
 /*
 fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
@@ -105,7 +78,7 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
         if z_sqr < m {
           m = z_sqr;
 
-          if let Some((_z0, dz0)) = attractor(z, c, p) {
+          if let Some((_z0, dz0)) = finite_attractor(z, c, p) {
             if dz0.norm_sqr() <= 1. {
               id = Some(dz0.norm_sqr());
               // dz0 = inner coordinate
