@@ -14,18 +14,18 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::util::coloring::ColorMap1d;
 use crate::util::post_processing::PostProcessing;
-use crate::util::print_progress;
 use crate::util::sampler::{Sampler, UniformPolar, WeightedKDE, KDE};
 use crate::util::viewport::Viewport;
+use crate::util::{print_progress, ComplexNumber};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct Args {
   pub width: usize,
   pub height: usize,
+  pub center: ComplexNumber,
   pub zoom: f64,
-  pub zpx: f64,
-  pub zpy: f64,
   pub iter: u64,
+  pub rotation: Option<usize>,
   pub filename: String,
   pub color_map: ColorMap1d,
   pub exponent: f64,
@@ -113,30 +113,22 @@ impl SamplerArgs {
 }
 
 pub fn buddhabrot(args: Args) {
-  let num_pixel = args.width * args.height;
+  let aspect_ratio = args.width as f64 / args.height as f64;
 
-  let buffer = vec_no_clone![AtomicU64::new(0); num_pixel];
-
-  let (w, h) = (args.width as f64, args.height as f64);
-
-  let aspect_ratio = w / h;
-
+  let vp_width = aspect_ratio / args.zoom;
   let vp_height = 1. / args.zoom;
-  let vp_width = vp_height * aspect_ratio;
 
-  let vp_height_half = vp_height * 0.5;
-  let vp_width_half = vp_width * 0.5;
+  let grid_delta_x = vp_width / args.width as f64;
+  let grid_delta_y = vp_height / args.height as f64;
 
-  let x_min = args.zpx - vp_width_half;
-  let x_max = vp_width - vp_width_half + args.zpx;
-
-  let y_min = args.zpy - vp_height_half;
-  let y_max = vp_height - vp_height_half + args.zpy;
-
-  let viewport = Viewport::new(x_min, y_min, x_max, y_max);
-
-  let delta_x = vp_width / w;
-  let delta_y = vp_height / h;
+  let viewport = Viewport::from_center(
+    args.center.into(),
+    vp_width,
+    vp_height,
+    grid_delta_x,
+    grid_delta_y,
+    args.rotation.unwrap_or(0),
+  );
 
   let sampler =
     args
@@ -145,7 +137,12 @@ pub fn buddhabrot(args: Args) {
 
   println!("starting buddhabrot generation");
 
+  let num_pixel = args.width * args.height;
+
+  let buffer = vec_no_clone![AtomicU64::new(0); num_pixel];
+
   let processed_samples = AtomicU64::new(0);
+
   (0..args.sample_count).into_par_iter().for_each(|_| {
     let c = sampler.sample();
 
@@ -156,7 +153,7 @@ pub fn buddhabrot(args: Args) {
       let mut z = c;
 
       for _ in 0..=j {
-        let idx = viewport.grid_pos(z.re, z.im, delta_x, delta_y);
+        let idx = viewport.grid_pos(&z);
 
         if let Some((x, y)) = idx {
           buffer[y * args.width + x].fetch_add(1, Ordering::Relaxed);
@@ -220,13 +217,13 @@ fn iter_mandel_check_vp(
   let mut z_sqr = z.norm_sqr();
 
   let mut j = 0;
-  let mut passed_viewport = viewport.contains_point(z.re, z.im);
+  let mut passed_viewport = viewport.contains_point(&z);
 
   while j < iter && z_sqr <= 4.0 {
     z = z.powf(exponent) + c;
     z_sqr = z.norm_sqr();
 
-    if viewport.contains_point(z.re, z.im) {
+    if viewport.contains_point(&z) {
       passed_viewport = true;
     }
 

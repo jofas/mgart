@@ -15,21 +15,27 @@ pub mod viewport;
 /// So [ComplexNumber] does not implement any math operations,
 /// but supports the conversion to [Complex64].
 ///
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Copy)]
 #[serde(untagged)]
 pub enum ComplexNumber {
   Cartesian { re: f64, im: f64 },
   Polar { r: f64, theta: f64 },
 }
 
-impl Into<Complex64> for &ComplexNumber {
+impl Into<Complex64> for ComplexNumber {
   fn into(self) -> Complex64 {
     match self {
-      ComplexNumber::Cartesian { re, im } => Complex64::new(*re, *im),
+      ComplexNumber::Cartesian { re, im } => Complex64::new(re, im),
       ComplexNumber::Polar { r, theta } => {
-        Complex64::from_polar(*r, *theta)
+        Complex64::from_polar(r, theta)
       }
     }
+  }
+}
+
+impl Into<Complex64> for &ComplexNumber {
+  fn into(self) -> Complex64 {
+    (*self).into()
   }
 }
 

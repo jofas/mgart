@@ -10,13 +10,13 @@ and this project adheres to
 
 ### Added
 
-* `BuddhaBrotArgs.exponent`
-
-* `util::sampler::WeightedKDE`
+* `WeightedKDE`
 
 ### Changed
 
 * crate structure
+
+* `BuddhaBrotArgs`
 
 * `Uniform -> UniformPolar`
 
