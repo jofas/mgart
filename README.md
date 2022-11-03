@@ -10,3 +10,8 @@ your images for you.
 While currently far, far away, the goal for `mgart` is to develop an 
 easy-to-use yet powerful declarative DSL you can use to create
 beautiful images in WYSIWYW (What You See Is What You Want) fashion.
+
+
+## Goals
+
+* API-first + readability > performance
