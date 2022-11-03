@@ -3,7 +3,7 @@ use rayon::iter::{
   ParallelIterator,
 };
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
@@ -221,8 +221,7 @@ fn discrete_rectangle_from_center(
 #[cfg(test)]
 mod tests {
   use super::{
-    discrete_rectangle_from_center, NonLocalMeans,
-    SummedAreaTable,
+    discrete_rectangle_from_center, NonLocalMeans, SummedAreaTable,
   };
 
   #[test]

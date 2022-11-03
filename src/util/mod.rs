@@ -3,10 +3,10 @@ use serde::{Deserialize, Serialize};
 use num_complex::Complex64;
 
 pub mod coloring;
+pub mod gradient;
+pub mod post_processing;
 pub mod sampler;
 pub mod viewport;
-pub mod post_processing;
-pub mod gradient;
 
 /// Representation of a complex number.
 ///

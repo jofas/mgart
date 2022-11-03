@@ -12,11 +12,11 @@ use map_macro::vec_no_clone;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use crate::util::coloring::ColorMap1d;
+use crate::util::post_processing::PostProcessing;
+use crate::util::print_progress;
 use crate::util::sampler::{Sampler, UniformPolar, WeightedKDE, KDE};
 use crate::util::viewport::Viewport;
-use crate::util::post_processing::PostProcessing;
-use crate::util::coloring::ColorMap1d;
-use crate::util::print_progress;
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct Args {

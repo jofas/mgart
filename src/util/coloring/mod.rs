@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
@@ -73,4 +73,3 @@ impl From<ColorMap1dDeserializer> for ColorMap1d {
     Self::new(cm.map, cm.gradient)
   }
 }
-

@@ -1,12 +1,12 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-mod tile;
-mod strided;
 mod pos;
+mod strided;
+mod tile;
 
 use pos::Pos;
-use tile::{Tile, HistogramEqualization};
 use strided::Strided;
+use tile::{HistogramEqualization, Tile};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct CLAHE {

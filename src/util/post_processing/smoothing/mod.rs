@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
@@ -27,4 +27,3 @@ impl Smoothing {
     }
   }
 }
-

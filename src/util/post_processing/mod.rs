@@ -1,12 +1,12 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::util::gradient::Gradient;
 
-pub mod smoothing;
 pub mod clahe;
+pub mod smoothing;
 
-use smoothing::Smoothing;
 use clahe::CLAHE;
+use smoothing::Smoothing;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "snake_case")]
