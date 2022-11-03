@@ -208,4 +208,28 @@ mod tests {
     assert_eq!(x, 199);
     assert_eq!(y, 399);
   }
+
+  #[test]
+  fn grid_pos7() {
+    let center = Complex64::new(0., 0.);
+    let width = 1.;
+    let height = 2.;
+    let grid_delta_x = 0.2;
+    let grid_delta_y = 0.2;
+    let rotation = 90;
+
+    let vp = Viewport::from_center(
+      center,
+      width,
+      height,
+      grid_delta_x,
+      grid_delta_y,
+      rotation,
+    );
+
+    let (x, y) = vp.grid_pos(&Complex64::new(0.1, 0.)).unwrap();
+
+    assert_eq!(x, 2);
+    assert_eq!(y, 5);
+  }
 }
