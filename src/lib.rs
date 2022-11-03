@@ -15,7 +15,7 @@ pub mod util;
 
 use args::{ColorMap1dArgs, JuliaSetArgs};
 
-use util::colors::RGB;
+use util::coloring::colors::RGB;
 
 fn attractor(
   z0: Complex64,

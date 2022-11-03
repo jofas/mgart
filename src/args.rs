@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJsonPretty;
 
-use crate::util::{ColorMap1d, ComplexNumber};
+use crate::util::coloring::ColorMap1d;
+use crate::util::{ComplexNumber};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSetArgs {

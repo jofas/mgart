@@ -70,7 +70,11 @@
 
 * [x] `Uniform` sampler: `r` parameter
 
-* [ ] `post_processing` module
+* [x] `post_processing` module (with submodules)
+
+* [x] `coloring` module (colors as submodule)
+
+* [x] `gradient` module
 
 * [ ] rotation parameter
 
@@ -150,6 +154,10 @@
 
 
 ### MAYBEDO
+
+* [ ] support for alpha channel
+
+* [ ] greyscale images
 
 * [ ] more gradients
 

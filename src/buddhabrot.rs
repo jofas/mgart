@@ -14,7 +14,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::util::sampler::{Sampler, UniformPolar, WeightedKDE, KDE};
 use crate::util::viewport::Viewport;
-use crate::util::{print_progress, ColorMap1d, PostProcessing};
+use crate::util::post_processing::PostProcessing;
+use crate::util::coloring::ColorMap1d;
+use crate::util::print_progress;
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct Args {
