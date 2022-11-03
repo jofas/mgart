@@ -76,7 +76,7 @@
 
 * [x] `gradient` module
 
-* [ ] rotation parameter
+* [ ] rotation parameter (rotate viewport, not space)
 
 * [ ] anti flag
 
@@ -86,7 +86,7 @@
 
 * [ ] badges
 
-* [ ] examples 
+* [ ] examples (images in git-lfs)
 
 * [ ] api integration test (using example files)
 
@@ -96,7 +96,8 @@
 
 * [ ] benchmark suite
 
-* [ ] publish action
+* [ ] publish action (publish on crates.io + create zip 
+  with libsonnet files)
 
 * [ ] publish `0.0.2`
 
