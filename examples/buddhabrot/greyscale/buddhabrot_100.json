@@ -1,0 +1,60 @@
+[
+  {
+      "center": {
+         "im": -0.35,
+         "re": 0
+      },
+      "color_map": {
+         "gradient": {
+            "factor": 1,
+            "type": "linear"
+         },
+         "map": [
+            {
+               "b": 0,
+               "g": 0,
+               "r": 0,
+               "type": "rgb"
+            },
+            {
+               "b": 255,
+               "g": 255,
+               "r": 255,
+               "type": "rgb"
+            }
+         ]
+      },
+      "command": "buddhabrot",
+      "exponent": 2,
+      "filename": "buddhabrot_100.png",
+      "height": 2000,
+      "iter": 100,
+      "post_processing": [
+         {
+            "process": "normalize"
+         },
+         {
+            "bin_count": 256,
+            "contrast_limit": 500,
+            "process": "clahe",
+            "tile_size_x": 380,
+            "tile_size_y": 200
+         },
+         {
+            "h": 0.0005,
+            "n": 7,
+            "process": "smoothing",
+            "type": "non_local_means",
+            "window_size": 21
+         }
+      ],
+      "rotation": 90,
+      "sample_count": 5000000000,
+      "sampler": {
+         "r": 3,
+         "type": "uniform_polar"
+      },
+      "width": 3800,
+      "zoom": 0.45
+   }
+]
