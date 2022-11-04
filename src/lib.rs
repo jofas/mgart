@@ -4,6 +4,8 @@ use rayon::iter::{
 };
 use rayon::slice::ParallelSliceMut;
 
+use serde::Deserialize;
+
 use num_complex::Complex64;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -13,10 +15,52 @@ pub mod args;
 pub mod buddhabrot;
 pub mod util;
 
-use args::{ColorMap1dArgs, JuliaSetArgs};
+use crate::args::{ColorMap1dArgs, JuliaSetArgs};
 
-use util::coloring::colors::RGB;
-use util::finite_attractor;
+use crate::util::coloring::colors::RGB;
+use crate::util::finite_attractor;
+
+use crate::buddhabrot::{buddhabrot, Args as BuddhabrotArgs};
+
+#[derive(Deserialize)]
+#[serde(tag = "command")]
+#[serde(rename_all = "snake_case")]
+pub enum Command {
+  JuliaSet(JuliaSetArgs),
+  Buddhabrot(BuddhabrotArgs),
+  #[serde(rename = "color_map_1d")]
+  ColorMap1d(ColorMap1dArgs),
+}
+
+impl Command {
+  pub fn execute(self) {
+    match self {
+      Self::JuliaSet(args) => {
+        println!("generating julia set with arguments:\n{}", args);
+        julia_set_interior_distance(args);
+      }
+      Self::Buddhabrot(args) => {
+        println!("generating buddhabrot with arguments: \n{}", args);
+        buddhabrot(args);
+      }
+      Self::ColorMap1d(args) => {
+        println!("generating 1d color map with arguments:\n{}", args);
+        color_map_1d(args);
+      }
+    }
+  }
+}
+
+#[derive(Deserialize)]
+pub struct Commands(Vec<Command>);
+
+impl Commands {
+  pub fn execute(self) {
+    for cmd in self.0 {
+      cmd.execute()
+    }
+  }
+}
 
 /*
 fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
