@@ -78,15 +78,18 @@
 
 * [x] rotation parameter (rotate viewport, not space)
 
+* [x] api integration test (using example files)
+
 * [ ] libsonnet files
+
+* [ ] api integration test for jsonnet files 
+  (using example files - `jsonnet-rs v0.17.0` as dev dependency)
 
 * [ ] build action
 
 * [ ] badges
 
 * [ ] examples 
-
-* [ ] api integration test (using example files)
 
 * [ ] top-level basic documentation (example, install, 
   supported algorithms, goals, roadmap, contributing, 
