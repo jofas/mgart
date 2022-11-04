@@ -84,7 +84,7 @@
 
 * [ ] badges
 
-* [ ] examples (images in git-lfs)
+* [ ] examples 
 
 * [ ] api integration test (using example files)
 
