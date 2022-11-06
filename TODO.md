@@ -82,7 +82,7 @@
 
 * [x] cli input file as positional argument
 
-* [ ] libsonnet files
+* [ ] libsonnet files (commands, types, constants)
 
 * [ ] api integration test for jsonnet files 
   (using example files - `jsonnet-rs v0.17.0` as dev dependency)
