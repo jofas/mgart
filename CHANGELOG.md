@@ -14,6 +14,8 @@ and this project adheres to
 
 ### Changed
 
+* cli input file now positional instead of named argument
+
 * crate structure
 
 * `BuddhaBrotArgs`

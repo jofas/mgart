@@ -80,6 +80,8 @@
 
 * [x] api integration test (using example files)
 
+* [x] cli input file as positional argument
+
 * [ ] libsonnet files
 
 * [ ] api integration test for jsonnet files 
@@ -92,7 +94,7 @@
 * [ ] examples 
 
 * [ ] top-level basic documentation (example, install, 
-  supported algorithms, goals, roadmap, contributing, 
+  supported algorithms/roadmap, goals, contributing, 
   license)
 
 * [ ] benchmark suite

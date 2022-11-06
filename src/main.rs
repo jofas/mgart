@@ -8,17 +8,16 @@ use mgart::Commands;
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 struct Cli {
-  #[clap(long)]
-  config: String,
+  file: String,
 }
 
 fn main() {
   let cli = Cli::parse();
 
-  let cmds: Commands = if cli.config == "." {
+  let cmds: Commands = if cli.file == "." {
     serde_json::from_reader(stdin()).unwrap()
   } else {
-    serde_json::from_reader(File::open(cli.config).unwrap()).unwrap()
+    serde_json::from_reader(File::open(cli.file).unwrap()).unwrap()
   };
 
   cmds.execute();
