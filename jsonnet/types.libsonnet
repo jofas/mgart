@@ -28,6 +28,12 @@
       type: 'uniform_polar',
       r: r,
     },
+    kde(population, h, p_min): {
+      type: 'kde',
+      population: population,
+      h: h,
+      p_min: p_min,
+    },
   },
   gradient: {
     linear(factor=1): {

@@ -3,6 +3,9 @@ local types = import "types.libsonnet";
 local colors = {
   black: types.color.rgb(0, 0, 0),
   white: types.color.rgb(255, 255, 255),
+  red: types.color.rgb(255, 0, 0),
+  green: types.color.rgb(0, 255, 0),
+  blue: types.color.rgb(0, 0, 255),
 };
 
 {
