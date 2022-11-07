@@ -91,7 +91,7 @@
 
 * [ ] badges
 
-* [ ] examples 
+* [ ] examples (jsonnet, zoom, samplers, colored)
 
 * [ ] top-level basic documentation (example, install, 
   supported algorithms/roadmap, goals, contributing, 

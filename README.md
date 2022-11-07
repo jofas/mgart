@@ -37,6 +37,11 @@ beautiful images in WYSIWYW (What You See Is What You Want) fashion.
 
 * [ ] L-Systems
 
+### AI Art
+
+* [ ] DeepDream-like filter
+
+* [ ] Text-to-image
 
 ## Goals
 
