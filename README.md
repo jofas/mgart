@@ -11,6 +11,32 @@ While currently far, far away, the goal for `mgart` is to develop an
 easy-to-use yet powerful declarative DSL you can use to create
 beautiful images in WYSIWYW (What You See Is What You Want) fashion.
 
+## Install
+
+## Supported Algorithms
+
+### Fractals
+
+#### Mandelbrot and Julia Sets
+
+#### Buddhabrot
+
+* [x] Buddhabrot
+
+* [ ] Anti-Buddhabrot
+
+* [ ] Nebulabrot
+
+#### Other
+
+* [ ] Fractal Flames
+
+* [ ] Newton Fractals
+
+* [ ] Strange Attractors
+
+* [ ] L-Systems
+
 
 ## Goals
 
