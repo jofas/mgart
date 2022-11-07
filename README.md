@@ -42,4 +42,4 @@ beautiful images in WYSIWYW (What You See Is What You Want) fashion.
 
 * API-first + readability > performance
 
-* aesthetic over correctness
+* aesthetic value over correctness
