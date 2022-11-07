@@ -84,8 +84,18 @@
 
 * [x] libsonnet files (commands, types, constants)
 
+* [ ] SamplerArgs into sampler module
+
+* [ ] KDE -> KernelDensityEstimation (also in api)
+
+* [ ] weighted KDE: smarter sampling (less iterations - 
+  stratified sampling)
+
 * [ ] api integration test for jsonnet files 
-  (using example files - `jsonnet-rs v0.17.0` as dev dependency)
+  (using example files - `jsonnet-rs v0.17.0`)
+
+* [ ] cli: add jsonnet file support to input (instead of having to
+  stream jsonnet via stdin)
 
 * [ ] build action
 
@@ -110,9 +120,6 @@
 * [ ] color algorithms: ColorMap1D, LCH, RGB, Nebula
 
 * [ ] escape function parameter (try Rhai)
-
-* [ ] weighted KDE: smarter sampling (less iterations - 
-  stratified sampling)
 
 * [ ] clean-up julia-set implementation
 
