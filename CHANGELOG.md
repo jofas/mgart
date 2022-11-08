@@ -10,17 +10,15 @@ and this project adheres to
 
 ### Added
 
-* `WeightedKDE`
+* jsonnet api
 
 ### Changed
 
-* cli input file now positional instead of named argument
+* buddhabrot api
+
+* sampling api
 
 * crate structure
-
-* `BuddhaBrotArgs`
-
-* `Uniform -> UniformPolar`
 
 ### Fixed
 
