@@ -122,7 +122,6 @@ impl Sampler {
   ) -> (Vec<T>, Vec<f64>)
   where
     Distribution<T>: Sampling<Space = T>,
-    Vec<T>: Extend<T>,
   {
     println!("initializing kde population");
 
