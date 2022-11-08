@@ -24,15 +24,39 @@
     },
   },
   sampler: {
-    uniform_polar(r): {
+    uniform(h=1): {
+      type: 'uniform',
+      h: h,
+    },
+    uniform_polar(r=1): {
       type: 'uniform_polar',
       r: r,
     },
-    kde(population, h, p_min): {
-      type: 'kde',
+    kernel_density_estimation(
+      kernel,
+      population,
+      p_min,
+      pre_sampler,
+    ): {
+      type: 'kernel_density_estimation',
+      kernel: kernel,
       population: population,
-      h: h,
       p_min: p_min,
+      pre_sampler: pre_sampler,
+    },
+    weighted_kernel_density_estimation(
+      kernel,
+      population,
+      p_min,
+      bin_count,
+      pre_sampler,
+    ): {
+      type: 'weighted_kernel_density_estimation',
+      kernel: kernel,
+      population: population,
+      p_min: p_min,
+      bin_count: bin_count,
+      pre_sampler: pre_sampler,
     },
   },
   gradient: {
