@@ -95,6 +95,11 @@
 * [ ] cli: add jsonnet file support to input (instead of having to
   stream jsonnet via stdin)
 
+* [ ] nicer progress abstraction (struct)
+
+* [ ] buddhabrot: flag for disabling `iter_mande_check_vp` (makes more
+  restrictive samplers faster)
+
 * [ ] build action
 
 * [ ] badges
