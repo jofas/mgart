@@ -32,16 +32,10 @@ pub enum Sampler {
   /// [Self::Uniform] or [Self::UniformPolar].
   ///
   KernelDensityEstimation {
+    weighted: bool,
     kernel: Box<Sampler>,
     population: u64,
     p_min: f64,
-    pre_sampler: Box<Sampler>,
-  },
-  WeightedKernelDensityEstimation {
-    kernel: Box<Sampler>,
-    population: u64,
-    p_min: f64,
-    bin_count: u64,
     pre_sampler: Box<Sampler>,
   },
 }
@@ -54,7 +48,7 @@ impl Sampler {
   /// true probability function.
   ///
   pub fn distribution<
-    T: Sync + Send,
+    T: Sync + Send + Copy,
     P: Fn(&T) -> f64 + Sync + Send,
   >(
     self,
@@ -71,12 +65,13 @@ impl Sampler {
         Distribution::UniformPolar(UniformPolar::<T>::new(r))
       }
       Self::KernelDensityEstimation {
+        weighted,
         kernel,
         population,
         p_min,
         pre_sampler,
       } => {
-        let (elems, _) = Self::pre_sample(
+        let elems = Self::pre_sample(
           pre_sampler.distribution(true_probability),
           true_probability,
           population,
@@ -84,32 +79,11 @@ impl Sampler {
         );
 
         Distribution::KernelDensityEstimation(KDE::<T>::new(
-          elems,
+          weighted,
           Box::new(kernel.distribution(true_probability)),
-        ))
-      }
-      Self::WeightedKernelDensityEstimation {
-        kernel,
-        population,
-        p_min,
-        bin_count,
-        pre_sampler,
-      } => {
-        let (elems, probabilities) = Self::pre_sample(
-          pre_sampler.distribution(true_probability),
-          true_probability,
           population,
-          p_min,
-        );
-
-        Distribution::WeightedKernelDensityEstimation(
-          WeightedKDE::<T>::new(
-            elems,
-            probabilities,
-            bin_count,
-            Box::new(kernel.distribution(true_probability)),
-          ),
-        )
+          elems,
+        ))
       }
     }
   }
@@ -119,7 +93,7 @@ impl Sampler {
     true_probability: &P,
     population: u64,
     p_min: f64,
-  ) -> (Vec<T>, Vec<f64>)
+  ) -> Vec<(T, f64)>
   where
     Distribution<T>: Sampling<Space = T>,
   {
@@ -143,7 +117,7 @@ impl Sampler {
           None
         }
       })
-      .unzip();
+      .collect();
 
     println!("\ninitializing kde population done");
 
@@ -162,7 +136,6 @@ pub enum Distribution<T> {
   Uniform(Uniform<T>),
   UniformPolar(UniformPolar<T>),
   KernelDensityEstimation(KDE<T>),
-  WeightedKernelDensityEstimation(WeightedKDE<T>),
 }
 
 impl Sampling for Distribution<Complex64> {
@@ -173,7 +146,6 @@ impl Sampling for Distribution<Complex64> {
       Self::Uniform(u) => u.sample(),
       Self::UniformPolar(up) => up.sample(),
       Self::KernelDensityEstimation(kde) => kde.sample(),
-      Self::WeightedKernelDensityEstimation(wkde) => wkde.sample(),
     }
   }
 
@@ -182,9 +154,6 @@ impl Sampling for Distribution<Complex64> {
       Self::Uniform(u) => u.kernel_sample(center),
       Self::UniformPolar(up) => up.kernel_sample(center),
       Self::KernelDensityEstimation(kde) => kde.kernel_sample(center),
-      Self::WeightedKernelDensityEstimation(wkde) => {
-        wkde.kernel_sample(center)
-      }
     }
   }
 }
@@ -207,20 +176,37 @@ impl Sampling for Uniform<Complex64> {
   type Space = Complex64;
 
   /// Generates a uniformly random complex number with real and
-  /// imaginary parts ranging from `[0, h]`.
+  /// imaginary parts in the `[0, h]` range.
   ///
   fn sample(&self) -> Self::Space {
     Complex64::new(random::<f64>() * self.h, random::<f64>() * self.h)
   }
 
   /// Generates a uniformly random complex number with real and
-  /// imaginary parts ranging from `[center - h/2, center + h/2]`.
+  /// imaginary parts in the `[center - h/2, center + h/2]` range.
   ///
   fn kernel_sample(&self, center: &Self::Space) -> Self::Space {
     let re = (random::<f64>() - 0.5) * self.h;
     let im = (random::<f64>() - 0.5) * self.h;
 
     Complex64::new(center.re + re, center.im + im)
+  }
+}
+
+impl Sampling for Uniform<f64> {
+  type Space = f64;
+
+  /// Generates a uniformly random real number in the `[0, h]` range.
+  ///
+  fn sample(&self) -> Self::Space {
+    random::<f64>() * self.h
+  }
+
+  /// Generates a uniformly random real number in the
+  /// `[center - h/2, center + h/2]` range.
+  ///
+  fn kernel_sample(&self, center: &Self::Space) -> Self::Space {
+    center + (random::<f64>() - 0.5) * self.h
   }
 }
 
@@ -263,9 +249,36 @@ pub struct KDE<T> {
   kernel: Box<Distribution<T>>,
 }
 
-impl<T> KDE<T> {
-  pub fn new(elems: Vec<T>, kernel: Box<Distribution<T>>) -> Self {
-    Self { elems, kernel }
+impl<T: Copy> KDE<T> {
+  pub fn new(
+    weighted: bool,
+    kernel: Box<Distribution<T>>,
+    population: u64,
+    elems: Vec<(T, f64)>,
+  ) -> Self {
+    let elems = if weighted {
+      let p_sum: f64 = elems.iter().map(|x| x.1).sum();
+
+      let mut res = Vec::new();
+
+      for (e, p) in elems {
+        let count = (p * population as f64 / p_sum) as usize;
+
+        for _ in 0..count {
+          res.push(e);
+        }
+      }
+
+      res
+    } else {
+      let (elems, _): (Vec<T>, Vec<f64>) = elems.into_iter().unzip();
+      elems
+    };
+
+    Self {
+      elems: elems,
+      kernel,
+    }
   }
 }
 
@@ -274,7 +287,7 @@ impl Sampling for KDE<Complex64> {
 
   fn sample(&self) -> Self::Space {
     let idx = (random::<f64>() * self.elems.len() as f64) as usize;
-    return self.kernel.kernel_sample(&self.elems[idx]);
+    self.kernel.kernel_sample(&self.elems[idx])
   }
 
   fn kernel_sample(&self, center: &Self::Space) -> Self::Space {
@@ -282,48 +295,19 @@ impl Sampling for KDE<Complex64> {
   }
 }
 
-/// Weighted Kernel Density Estimation.
-///
-pub struct WeightedKDE<T> {
-  elems: Vec<T>,
-  probabilities: Vec<f64>,
-  kernel: Box<Distribution<T>>,
-}
+#[cfg(test)]
+mod tests {
+  use super::{Distribution, Uniform, KDE};
 
-impl<T> WeightedKDE<T> {
-  pub fn new(
-    elems: Vec<T>,
-    probabilities: Vec<f64>,
-    bin_count: u64,
-    kernel: Box<Distribution<T>>,
-  ) -> Self {
-    // TODO: create bins
-    //       for each bin derive its probability
-    //       create list where we sample from each bin according to
-    //       its probability
-    //       then sample from weighted kde like from kde
-    Self {
-      elems,
-      probabilities,
-      kernel,
-    }
-  }
-}
+  #[test]
+  fn weighted_kde_population() {
+    let kde = KDE::new(
+      true,
+      Box::new(Distribution::Uniform(Uniform::new(1.))),
+      10,
+      vec![(0, 0.), (1, 0.25), (2, 0.25), (3, 0.5)],
+    );
 
-impl Sampling for WeightedKDE<Complex64> {
-  type Space = Complex64;
-
-  fn sample(&self) -> Self::Space {
-    loop {
-      let idx = (random::<f64>() * self.elems.len() as f64) as usize;
-
-      if random::<f64>() <= self.probabilities[idx] {
-        return self.kernel.kernel_sample(&self.elems[idx]);
-      }
-    }
-  }
-
-  fn kernel_sample(&self, center: &Self::Space) -> Self::Space {
-    center + self.sample()
+    assert_eq!(kde.elems, vec![1, 1, 2, 2, 3, 3, 3, 3, 3],);
   }
 }

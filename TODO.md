@@ -86,8 +86,7 @@
 
 * [x] SamplerArgs into sampler module
 
-* [ ] weighted KDE: smarter sampling (less iterations - 
-  stratified sampling)
+* [x] weighted KDE: stratified sampling
 
 * [ ] api integration test for jsonnet files 
   (using example files - `jsonnet-rs v0.17.0`)
