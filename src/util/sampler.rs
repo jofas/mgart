@@ -1,11 +1,16 @@
 use serde::{Deserialize, Serialize};
 
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+
 use num_complex::Complex64;
 
 use rand::random;
 
 use std::f64::consts::PI;
 use std::marker::PhantomData;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+use crate::util::print_progress;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -32,11 +37,11 @@ pub enum Sampler {
     p_min: f64,
     pre_sampler: Box<Sampler>,
   },
-  // TODO: bin count
   WeightedKernelDensityEstimation {
     kernel: Box<Sampler>,
     population: u64,
     p_min: f64,
+    bin_count: u64,
     pre_sampler: Box<Sampler>,
   },
 }
@@ -48,7 +53,10 @@ impl Sampler {
   /// [Self::KernelDensityEstimation] to create samples from the
   /// true probability function.
   ///
-  pub fn distribution<T: Sync + Send, P: Fn(&T) -> f64>(
+  pub fn distribution<
+    T: Sync + Send,
+    P: Fn(&T) -> f64 + Sync + Send,
+  >(
     self,
     true_probability: &P,
   ) -> Distribution<T>
@@ -75,17 +83,16 @@ impl Sampler {
           p_min,
         );
 
-        let kernel = kernel.distribution(true_probability);
-
         Distribution::KernelDensityEstimation(KDE::<T>::new(
           elems,
-          Box::new(kernel),
+          Box::new(kernel.distribution(true_probability)),
         ))
       }
       Self::WeightedKernelDensityEstimation {
         kernel,
         population,
         p_min,
+        bin_count,
         pre_sampler,
       } => {
         let (elems, probabilities) = Self::pre_sample(
@@ -95,20 +102,19 @@ impl Sampler {
           p_min,
         );
 
-        let kernel = kernel.distribution(true_probability);
-
         Distribution::WeightedKernelDensityEstimation(
           WeightedKDE::<T>::new(
             elems,
             probabilities,
-            Box::new(kernel),
+            bin_count,
+            Box::new(kernel.distribution(true_probability)),
           ),
         )
       }
     }
   }
 
-  fn pre_sample<T: Sync + Send, P: Fn(&T) -> f64>(
+  fn pre_sample<T: Sync + Send, P: Fn(&T) -> f64 + Sync + Send>(
     pre_sampler: Distribution<T>,
     true_probability: &P,
     population: u64,
@@ -118,11 +124,19 @@ impl Sampler {
     Distribution<T>: Sampling<Space = T>,
     Vec<T>: Extend<T>,
   {
-    (0..population)
+    println!("initializing kde population");
+
+    let processed_samples = AtomicU64::new(0);
+
+    let res = (0..population)
+      .into_par_iter()
       .filter_map(|_| {
         let sample = pre_sampler.sample();
 
         let p = true_probability(&sample);
+
+        let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
+        print_progress(ps, population, 2500);
 
         if p >= p_min {
           Some((sample, p))
@@ -130,7 +144,11 @@ impl Sampler {
           None
         }
       })
-      .unzip()
+      .unzip();
+
+    println!("\ninitializing kde population done");
+
+    res
   }
 }
 
@@ -277,8 +295,14 @@ impl<T> WeightedKDE<T> {
   pub fn new(
     elems: Vec<T>,
     probabilities: Vec<f64>,
+    bin_count: u64,
     kernel: Box<Distribution<T>>,
   ) -> Self {
+    // TODO: create bins
+    //       for each bin derive its probability
+    //       create list where we sample from each bin according to
+    //       its probability
+    //       then sample from weighted kde like from kde
     Self {
       elems,
       probabilities,
