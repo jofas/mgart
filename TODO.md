@@ -84,9 +84,7 @@
 
 * [x] libsonnet files (commands, types, constants)
 
-* [ ] SamplerArgs into sampler module
-
-* [ ] KDE -> KernelDensityEstimation (also in api)
+* [x] SamplerArgs into sampler module
 
 * [ ] weighted KDE: smarter sampling (less iterations - 
   stratified sampling)
@@ -174,5 +172,7 @@
 * [ ] greyscale images
 
 * [ ] more gradients
+
+* [ ] color map: stops for colors
 
 * [ ] arbitrary precision types for higher zoom levels

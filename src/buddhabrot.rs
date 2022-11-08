@@ -6,15 +6,13 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use num_complex::Complex64;
 
-use rand::random;
-
 use map_macro::vec_no_clone;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::util::coloring::ColorMap1d;
 use crate::util::post_processing::PostProcessing;
-use crate::util::sampler::{Sampler, UniformPolar, WeightedKDE, KDE};
+use crate::util::sampler::{Sampler, Sampling};
 use crate::util::viewport::Viewport;
 use crate::util::{print_progress, ComplexNumber};
 
@@ -30,86 +28,9 @@ pub struct Args {
   pub color_map: ColorMap1d,
   pub exponent: f64,
   pub sample_count: u64,
-  pub sampler: SamplerArgs,
+  pub sampler: Sampler,
   #[serde(default)]
   pub post_processing: Vec<PostProcessing>,
-}
-
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-#[serde(rename_all = "snake_case")]
-#[serde(tag = "type")]
-pub enum SamplerArgs {
-  /// Uniformly randomly sample a complex number with a radius in
-  /// `[0, 2]` from the origin.
-  ///
-  /// See [Uniform].
-  ///
-  UniformPolar { r: f64 },
-  /// [KDE] with a uniform kernel.
-  ///
-  Kde { p_min: f64, h: f64, population: u64 },
-  /// [WeightedKDE] with a uniform kernel.
-  ///
-  WeightedKde { p_min: f64, h: f64, population: u64 },
-}
-
-impl SamplerArgs {
-  pub fn create_executor(
-    self,
-    iter: u64,
-    exponent: f64,
-    viewport: &Viewport,
-  ) -> Box<dyn Sampler<Output = Complex64> + Sync + Send> {
-    match self {
-      Self::UniformPolar { r } => {
-        Box::new(UniformPolar::<Complex64>::new(r))
-      }
-      Self::Kde {
-        p_min,
-        h,
-        population,
-      } => {
-        println!("initializing sampler population");
-
-        let (samples, _): (Vec<Complex64>, Vec<f64>) =
-          samples(population, p_min, iter, exponent, viewport)
-            .into_iter()
-            .unzip();
-
-        println!("\ninitializing sampler population done");
-
-        let uniform_kde = move |c: &Complex64| {
-          let re = (random::<f64>() - 0.5) * h;
-          let im = (random::<f64>() - 0.5) * h;
-
-          Complex64::new(c.re + re, c.im + im)
-        };
-
-        Box::new(KDE::new(samples, uniform_kde))
-      }
-      Self::WeightedKde {
-        p_min,
-        h,
-        population,
-      } => {
-        println!("initializing sampler population");
-
-        let samples =
-          samples(population, p_min, iter, exponent, viewport);
-
-        println!("\ninitializing sampler population done");
-
-        let uniform_kde = move |c: &Complex64| {
-          let re = (random::<f64>() - 0.5) * h;
-          let im = (random::<f64>() - 0.5) * h;
-
-          Complex64::new(c.re + re, c.im + im)
-        };
-
-        Box::new(WeightedKDE::new(samples, uniform_kde))
-      }
-    }
-  }
 }
 
 pub fn buddhabrot(args: Args) {
@@ -130,10 +51,16 @@ pub fn buddhabrot(args: Args) {
     args.rotation.unwrap_or(0),
   );
 
-  let sampler =
-    args
-      .sampler
-      .create_executor(args.iter, args.exponent, &viewport);
+  let sampler = args.sampler.distribution(&|c| {
+    let (iter, passed_viewport) =
+      iter_mandel_check_vp(*c, args.iter, args.exponent, &viewport);
+
+    if iter != args.iter && passed_viewport {
+      iter as f64 / args.iter as f64
+    } else {
+      0.
+    }
+  });
 
   println!("starting buddhabrot generation");
 
@@ -231,48 +158,4 @@ fn iter_mandel_check_vp(
   }
 
   (j, passed_viewport)
-}
-
-fn samples(
-  sample_count: u64,
-  p_min: f64,
-  iter: u64,
-  exponent: f64,
-  viewport: &Viewport,
-) -> Vec<(Complex64, f64)> {
-  let sampler = UniformPolar::<Complex64>::new(2.);
-
-  let processed_samples = AtomicU64::new(0);
-
-  (0..sample_count)
-    .into_par_iter()
-    .fold(
-      || Vec::new(),
-      |mut acc, _| {
-        let c = sampler.sample();
-
-        let (j, passed_viewport) =
-          iter_mandel_check_vp(c, iter, exponent, viewport);
-
-        if j != iter && passed_viewport {
-          let p = j as f64 / iter as f64;
-
-          if p > p_min {
-            acc.push((c, p));
-          }
-        }
-
-        let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
-        print_progress(ps, sample_count, 2500);
-
-        acc
-      },
-    )
-    .reduce(
-      || Vec::new(),
-      |mut acc, mut v| {
-        acc.append(&mut v);
-        acc
-      },
-    )
 }
