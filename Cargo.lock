@@ -62,6 +62,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
+name = "cc"
+version = "1.0.76"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "76a284da2e6fe2092f2353e51713435363112dfd60030e22add80be333fb928f"
+
+[[package]]
 name = "cfg-if"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -361,6 +367,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonnet-rs"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "82b396bdfc3ae94965555c9ec3efa2214e5f3921545a943ef9fc9873ff5e4723"
+dependencies = [
+ "jsonnet-sys",
+ "libc",
+]
+
+[[package]]
+name = "jsonnet-sys"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02347cbdf34234f30f0d92f0f8f678a15883bd5e1e4b3def4ed4a14f691d9add"
+dependencies = [
+ "cc",
+ "libc",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -425,6 +451,7 @@ dependencies = [
  "clap",
  "display_json",
  "image",
+ "jsonnet-rs",
  "map-macro",
  "num-complex",
  "rand",

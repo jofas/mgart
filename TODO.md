@@ -88,13 +88,19 @@
 
 * [x] weighted KDE: stratified sampling
 
+* [x] cli: add jsonnet file support to input file 
+
+* [ ] kde sampling: make sure sampling points are evenly distributed
+  in space
+
+* [ ] collect stats (hits, avg. iterations, etc.)
+
 * [ ] api integration test for jsonnet files 
   (using example files - `jsonnet-rs v0.17.0`)
 
-* [ ] cli: add jsonnet file support to input (instead of having to
-  stream jsonnet via stdin)
-
 * [ ] nicer progress abstraction (struct)
+
+* [ ] command => algorithm
 
 * [ ] buddhabrot: flag for disabling `iter_mande_check_vp` (makes more
   restrictive samplers faster)
