@@ -45,6 +45,8 @@ beautiful images in WYSIWYW (What You See Is What You Want) fashion.
 
 ## Goals
 
-* API-first + readability > performance
+* API-first + readability over performance
 
 * aesthetic value over correctness
+
+* fast algorithms over fast hardware
