@@ -12,9 +12,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          path: master
+          path: mgart
       - name: Enter repository
-        run: cd master
+        run: cd mgart
       - name: Debug
         run: |
           ls -a
