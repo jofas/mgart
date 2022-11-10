@@ -52,7 +52,7 @@ impl<'a, T: Copy> Iterator for Strided<'a, T> {
       self.block += 1;
     }
 
-    self.buffer.get(i).map(|x| *x)
+    self.buffer.get(i).copied()
   }
 }
 
@@ -65,34 +65,34 @@ mod tests {
     let buf: Vec<f64> = (0..16).map(|x| x as f64).collect();
 
     let s = Strided::new(4, 2, 0, None, None, &buf);
-    let v: Vec<f64> = s.map(|x| x).collect();
+    let v: Vec<f64> = s.collect();
     assert_eq!(v, vec![0., 1., 4., 5., 8., 9., 12., 13.]);
 
     let s = Strided::new(4, 2, 2, None, None, &buf);
-    let v: Vec<f64> = s.map(|x| x).collect();
+    let v: Vec<f64> = s.collect();
     assert_eq!(v, vec![2., 3., 6., 7., 10., 11., 14., 15.]);
 
     let s = Strided::new(4, 3, 1, None, None, &buf);
-    let v: Vec<f64> = s.map(|x| x).collect();
+    let v: Vec<f64> = s.collect();
     assert_eq!(
       v,
       vec![1., 2., 3., 5., 6., 7., 9., 10., 11., 13., 14., 15.]
     );
 
     let s = Strided::new(4, 2, 0, Some(2), None, &buf);
-    let v: Vec<f64> = s.map(|x| x).collect();
+    let v: Vec<f64> = s.collect();
     assert_eq!(v, vec![0., 1., 4., 5.]);
 
     let s = Strided::new(4, 2, 2, Some(2), None, &buf);
-    let v: Vec<f64> = s.map(|x| x).collect();
+    let v: Vec<f64> = s.collect();
     assert_eq!(v, vec![2., 3., 6., 7.]);
 
     let s = Strided::new(4, 2, 0, Some(2), Some(2), &buf);
-    let v: Vec<f64> = s.map(|x| x).collect();
+    let v: Vec<f64> = s.collect();
     assert_eq!(v, vec![8., 9., 12., 13.]);
 
     let s = Strided::new(4, 2, 2, Some(2), Some(2), &buf);
-    let v: Vec<f64> = s.map(|x| x).collect();
+    let v: Vec<f64> = s.collect();
     assert_eq!(v, vec![10., 11., 14., 15.]);
   }
 }

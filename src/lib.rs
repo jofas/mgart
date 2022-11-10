@@ -83,7 +83,9 @@ fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
 */
 
 pub fn julia_set_interior_distance(args: JuliaSetArgs) {
-  let num_pixel = args.width * args.height;
+  let (width, height) = (args.width as usize, args.height as usize);
+
+  let num_pixel = width * height;
 
   let mut distance_buf = vec![0.; num_pixel];
 
@@ -103,10 +105,10 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
     .par_iter_mut()
     .enumerate()
     .for_each(|(i, pixel)| {
-      let x = (i % args.width) as f64 / w;
+      let x = (i % width) as f64 / w;
       let x = x * vp_width - vp_width_half + args.zpx;
 
-      let y = (i / args.width) as f64 / h;
+      let y = (i / width) as f64 / h;
       let y = y * vp_height - vp_height_half + args.zpy;
 
       let mut z = Complex64::new(x, y);
@@ -187,7 +189,9 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
 }
 
 pub fn julia_set(args: JuliaSetArgs) {
-  let num_pixel = args.width * args.height;
+  let (width, height) = (args.width as usize, args.height as usize);
+
+  let num_pixel = width * height;
 
   let mut buf = vec![0_u8; num_pixel * 3];
 
@@ -207,10 +211,10 @@ pub fn julia_set(args: JuliaSetArgs) {
     .par_chunks_exact_mut(3)
     .enumerate()
     .for_each(|(i, pixel)| {
-      let x = (i % args.width) as f64 / w;
+      let x = (i % width) as f64 / w;
       let x = x * vp_width - vp_width_half + args.zpx;
 
-      let y = (i / args.width) as f64 / h;
+      let y = (i / width) as f64 / h;
       let y = y * vp_height - vp_height_half + args.zpy;
 
       let mut z = Complex64::new(x, y);
@@ -231,7 +235,7 @@ pub fn julia_set(args: JuliaSetArgs) {
         z = z.powi(2) + c;
         z_sqr = z.norm_sqr();
 
-        j = j + 1;
+        j += 1;
       }
 
       let color = if j == args.iter {
@@ -294,8 +298,8 @@ pub fn julia_set(args: JuliaSetArgs) {
   image::save_buffer(
     &args.filename,
     &buf,
-    args.width as u32,
-    args.height as u32,
+    args.width,
+    args.height,
     image::ColorType::Rgb8,
   )
   .unwrap();
@@ -304,7 +308,9 @@ pub fn julia_set(args: JuliaSetArgs) {
 }
 
 pub fn color_map_1d(args: ColorMap1dArgs) {
-  let num_pixel = args.width * args.height;
+  let (w, h) = (args.width as usize, args.height as usize);
+
+  let num_pixel = w * h;
 
   let mut buf = vec![0_u8; num_pixel * 3];
 
@@ -314,9 +320,9 @@ pub fn color_map_1d(args: ColorMap1dArgs) {
     .par_chunks_exact_mut(3)
     .enumerate()
     .for_each(|(i, pixel)| {
-      let x = (i % args.width) as f64;
+      let x = (i % w) as f64;
 
-      let rgb = args.color_map.color(x / args.width as f64);
+      let rgb = args.color_map.color(x / w as f64);
 
       pixel[0] = rgb.r();
       pixel[1] = rgb.g();
@@ -335,8 +341,8 @@ pub fn color_map_1d(args: ColorMap1dArgs) {
   image::save_buffer(
     &args.filename,
     &buf,
-    args.width as u32,
-    args.height as u32,
+    args.width,
+    args.height,
     image::ColorType::Rgb8,
   )
   .unwrap();

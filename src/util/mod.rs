@@ -22,20 +22,20 @@ pub enum ComplexNumber {
   Polar { r: f64, theta: f64 },
 }
 
-impl Into<Complex64> for ComplexNumber {
-  fn into(self) -> Complex64 {
-    match self {
-      ComplexNumber::Cartesian { re, im } => Complex64::new(re, im),
+impl From<&ComplexNumber> for Complex64 {
+  fn from(cn: &ComplexNumber) -> Self {
+    match cn {
+      ComplexNumber::Cartesian { re, im } => Self::new(*re, *im),
       ComplexNumber::Polar { r, theta } => {
-        Complex64::from_polar(r, theta)
+        Self::from_polar(*r, *theta)
       }
     }
   }
 }
 
-impl Into<Complex64> for &ComplexNumber {
-  fn into(self) -> Complex64 {
-    (*self).into()
+impl From<ComplexNumber> for Complex64 {
+  fn from(cn: ComplexNumber) -> Self {
+    Self::from(&cn)
   }
 }
 

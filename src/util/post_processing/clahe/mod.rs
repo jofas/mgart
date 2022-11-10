@@ -8,7 +8,7 @@ use pos::Pos;
 use strided::Strided;
 use tile::{HistogramEqualization, Tile};
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct CLAHE {
   contrast_limit: usize,
   bin_count: usize,
@@ -102,7 +102,7 @@ impl CLAHE {
           offset * self.tile_size_x,
           Some(self.tile_size_y),
           Some(start_block * self.tile_size_y),
-          &buffer,
+          buffer,
         );
 
         tiles.push(Tile::new(
@@ -186,6 +186,7 @@ impl CLAHE {
     }
   }
 
+  #[allow(clippy::too_many_arguments)]
   fn handle_corners_and_borders(
     &self,
     nw: &Option<&Tile>,

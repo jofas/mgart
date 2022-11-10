@@ -52,7 +52,7 @@ impl ColorMap1d {
     let c1 = &self.map[interval as usize];
     let c2 = &self.map[interval as usize + 1];
 
-    c1.interpolate(&c2, pos).rgb()
+    c1.interpolate(c2, pos).rgb()
   }
 }
 

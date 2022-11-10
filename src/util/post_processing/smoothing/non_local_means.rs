@@ -31,7 +31,7 @@ impl NonLocalMeans {
     width: usize,
     height: usize,
   ) {
-    let m = self.window_mean(&buffer, width, height);
+    let m = self.window_mean(buffer, width, height);
 
     let num_pixel = buffer.len();
 
@@ -84,7 +84,7 @@ impl NonLocalMeans {
     width: usize,
     height: usize,
   ) -> Vec<f64> {
-    let sat = SummedAreaTable::new(&buffer, width, height);
+    let sat = SummedAreaTable::new(buffer, width, height);
 
     let mut res = vec![0.; width * height];
 
@@ -294,7 +294,7 @@ mod tests {
 
   #[test]
   fn sat_sum_rectangle_from_center() {
-    let image: Vec<f64> = (1..=16).map(|x| x as f64).collect();
+    let image: Vec<f64> = (1..=16).map(f64::from).collect();
     let width = 4;
     let height = 4;
 
@@ -325,7 +325,7 @@ mod tests {
 
   #[test]
   fn sat_mean_rectangle_from_center() {
-    let image: Vec<f64> = (1..=16).map(|x| x as f64).collect();
+    let image: Vec<f64> = (1..=16).map(f64::from).collect();
     let width = 4;
     let height = 4;
 
@@ -356,7 +356,7 @@ mod tests {
 
   #[test]
   fn nlm_window_mean() {
-    let image: Vec<f64> = (1..=16).map(|x| x as f64).collect();
+    let image: Vec<f64> = (1..=16).map(f64::from).collect();
     let width = 4;
     let height = 4;
 
@@ -389,7 +389,7 @@ mod tests {
 
   #[test]
   fn nlm() {
-    let mut image: Vec<f64> = (1..=16).map(|x| x as f64).collect();
+    let mut image: Vec<f64> = (1..=16).map(f64::from).collect();
     let width = 4;
     let height = 4;
 

@@ -154,7 +154,7 @@ fn iter_mandel_check_vp(
       passed_viewport = true;
     }
 
-    j = j + 1;
+    j += 1;
   }
 
   (j, passed_viewport)

@@ -8,9 +8,9 @@ use crate::util::ComplexNumber;
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSetArgs {
   #[serde(default = "default_width")]
-  pub width: usize,
+  pub width: u32,
   #[serde(default = "default_height")]
-  pub height: usize,
+  pub height: u32,
   #[serde(default = "default_zoom")]
   pub zoom: f64,
   #[serde(default = "default_zpx")]
@@ -30,20 +30,20 @@ pub struct JuliaSetArgs {
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct ColorMap1dArgs {
   #[serde(default = "default_width")]
-  pub width: usize,
+  pub width: u32,
   #[serde(default = "default_height")]
-  pub height: usize,
+  pub height: u32,
   #[serde(default = "default_color_map_filename")]
   pub filename: String,
   #[serde(default)]
   pub color_map: ColorMap1d,
 }
 
-fn default_width() -> usize {
+fn default_width() -> u32 {
   1920
 }
 
-fn default_height() -> usize {
+fn default_height() -> u32 {
   1080
 }
 

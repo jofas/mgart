@@ -7,7 +7,7 @@ use mgart::Algorithms;
 fn parse_examples() {
   let mut files = Vec::new();
 
-  find_json_files_recursively(&Path::new("examples"), &mut files);
+  find_json_files_recursively(Path::new("examples"), &mut files);
 
   for file in files {
     let _: Algorithms =
@@ -23,7 +23,7 @@ fn find_json_files_recursively(d: &Path, res: &mut Vec<Box<Path>>) {
       if entry.file_type().unwrap().is_file() {
         let extension = entry.file_name().into_string().unwrap();
 
-        let extension = extension.split(".").last().unwrap();
+        let extension = extension.split('.').last().unwrap();
 
         if extension == "json" {
           res.push(entry.path().into_boxed_path());

@@ -275,10 +275,7 @@ impl<T: Copy> KDE<T> {
       elems
     };
 
-    Self {
-      elems: elems,
-      kernel,
-    }
+    Self { elems, kernel }
   }
 }
 

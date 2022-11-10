@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 #[derive(Debug)]
 pub enum Pos {
   NW,
@@ -41,12 +43,10 @@ impl PosH {
         Self::E
       }
     } else {
-      if x < x_max / 2 {
-        Self::W
-      } else if x > x_max / 2 {
-        Self::E
-      } else {
-        Self::Center
+      match x.cmp(&(x_max / 2)) {
+        Ordering::Less => Self::W,
+        Ordering::Equal => Self::Center,
+        Ordering::Greater => Self::E,
       }
     }
   }
@@ -67,12 +67,10 @@ impl PosV {
         Self::S
       }
     } else {
-      if y < y_max / 2 {
-        Self::N
-      } else if y > y_max / 2 {
-        Self::S
-      } else {
-        Self::Center
+      match y.cmp(&(y_max / 2)) {
+        Ordering::Less => Self::N,
+        Ordering::Equal => Self::Center,
+        Ordering::Greater => Self::S,
       }
     }
   }

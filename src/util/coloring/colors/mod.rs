@@ -80,11 +80,7 @@ impl LCH {
     let h = if self.h().is_nan() { 0_f64 } else { self.h() };
     let h = h * PI / 180.;
 
-    return LAB::new(
-      self.l(),
-      h.cos() * self.c(),
-      h.sin() * self.c(),
-    );
+    LAB::new(self.l(), h.cos() * self.c(), h.sin() * self.c())
   }
 
   pub fn interpolate(&self, other: &LCH, f: f64) -> LCH {
@@ -161,7 +157,9 @@ impl PartialEq for LCH {
   }
 }
 
-#[derive(Clone, Copy, Serialize, Deserialize, PartialEq, Debug)]
+#[derive(
+  Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Debug,
+)]
 pub struct RGB {
   r: u8,
   g: u8,
@@ -234,6 +232,7 @@ impl RGB {
   }
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, PartialEq)]
 struct LAB {
   l: f64,

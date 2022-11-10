@@ -19,7 +19,7 @@ fn main() {
 
   let cmds: Algorithms = if cli.file == "." {
     serde_json::from_reader(stdin()).unwrap()
-  } else if let Some(extension) = cli.file.split(".").last() {
+  } else if let Some(extension) = cli.file.split('.').last() {
     match extension {
       "json" => serde_json::from_reader(File::open(cli.file).unwrap()).unwrap(),
       "jsonnet" => {
