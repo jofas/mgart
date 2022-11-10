@@ -272,7 +272,7 @@ mod tests {
       .collect::<Vec<f64>>(),
     );
 
-    let image: Vec<f64> = (1..=16).map(|x| x as f64).collect();
+    let image: Vec<f64> = (1..=16).map(f64::from).collect();
     let width = 4;
     let height = 4;
 

@@ -1,3 +1,5 @@
+#![allow(clippy::must_use_candidate)]
+
 use rayon::iter::{
   IndexedParallelIterator, IntoParallelRefMutIterator,
   ParallelIterator,
@@ -57,7 +59,7 @@ pub struct Algorithms(Vec<Algorithm>);
 impl Algorithms {
   pub fn execute(self) {
     for cmd in self.0 {
-      cmd.execute()
+      cmd.execute();
     }
   }
 }
@@ -197,7 +199,7 @@ pub fn julia_set(args: JuliaSetArgs) {
 
   let pixel_created = Arc::new(AtomicUsize::new(0));
 
-  let (w, h) = (args.width as f64, args.height as f64);
+  let (w, h) = (f64::from(args.width), f64::from(args.height));
 
   let aspect_ratio = w / h;
 

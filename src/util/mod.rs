@@ -12,7 +12,7 @@ pub mod viewport;
 ///
 /// This is intended to be used as means for parsing user input,
 /// not for doing calculations.
-/// So [ComplexNumber] does not implement any math operations,
+/// So [`ComplexNumber`] does not implement any math operations,
 /// but supports the conversion to [Complex64].
 ///
 #[derive(Serialize, Deserialize, Clone, Copy)]

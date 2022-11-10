@@ -72,9 +72,8 @@ impl CLAHE {
 
       let (dn, ds, dw, de) = self.interpolation_distances(x, y, &pos);
 
-      let (dn, ds, dw, de) = self.handle_corners_and_borders(
-        &nw, &ne, &se, &sw, dn, ds, dw, de,
-      );
+      let (dn, ds, dw, de) = self
+        .handle_corners_and_borders(nw, ne, se, sw, dn, ds, dw, de);
 
       let q_nw = nw.transform(*v) * dn * dw;
       let q_ne = ne.transform(*v) * dn * de;
@@ -189,10 +188,10 @@ impl CLAHE {
   #[allow(clippy::too_many_arguments)]
   fn handle_corners_and_borders(
     &self,
-    nw: &Option<&Tile>,
-    ne: &Option<&Tile>,
-    se: &Option<&Tile>,
-    sw: &Option<&Tile>,
+    nw: Option<&Tile>,
+    ne: Option<&Tile>,
+    se: Option<&Tile>,
+    sw: Option<&Tile>,
     dn: f64,
     ds: f64,
     dw: f64,

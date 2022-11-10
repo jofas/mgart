@@ -44,7 +44,7 @@ impl Sampler {
   /// Creates a [Distribution] from this instance of [Sampler].
   ///
   /// The `true_probability` function is needed for the
-  /// [Self::KernelDensityEstimation] to create samples from the
+  /// [`Self::KernelDensityEstimation`] to create samples from the
   /// true probability function.
   ///
   pub fn distribution<

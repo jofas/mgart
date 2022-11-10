@@ -62,7 +62,7 @@ mod tests {
 
   #[test]
   fn strided() {
-    let buf: Vec<f64> = (0..16).map(|x| x as f64).collect();
+    let buf: Vec<f64> = (0..16).map(f64::from).collect();
 
     let s = Strided::new(4, 2, 0, None, None, &buf);
     let v: Vec<f64> = s.collect();
