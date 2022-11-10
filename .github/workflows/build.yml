@@ -11,8 +11,6 @@ jobs:
         run: rustup component add rustfmt clippy
       - name: Checkout repository
         uses: actions/checkout@v3
-      - name: Enter repository
-        run: cd mgart
       - name: Debug
         run: |
           ls -a
