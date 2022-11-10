@@ -92,8 +92,17 @@
 
 * [x] command => algorithm
 
+* [ ] build action
+
+* [ ] badges
+
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible
+
+* [ ] increase coverage
+
+* [ ] `Algorithms` object-oriented (Args + execution into same
+  struct)
 
 * [ ] kde sampling: make sure sampling points are evenly distributed
   in space
@@ -107,10 +116,6 @@
 
 * [ ] buddhabrot: flag for disabling `iter_mande_check_vp` (makes more
   restrictive samplers faster)
-
-* [ ] build action
-
-* [ ] badges
 
 * [ ] examples (jsonnet, zoom, samplers, colored)
 
