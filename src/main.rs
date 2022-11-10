@@ -33,5 +33,5 @@ fn main() {
     panic!("unrecognizable file type. Only .json and .jsonnet files are supported");
   };
 
-  cmds.execute();
+  cmds.execute().unwrap();
 }

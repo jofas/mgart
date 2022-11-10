@@ -8,6 +8,8 @@ use num_complex::Complex64;
 
 use map_macro::vec_no_clone;
 
+use anyhow::Result;
+
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::util::coloring::ColorMap1d;
@@ -33,7 +35,7 @@ pub struct Args {
   pub post_processing: Vec<PostProcessing>,
 }
 
-pub fn buddhabrot(args: Args) {
+pub fn buddhabrot(args: Args) -> Result<()> {
   let aspect_ratio = args.width as f64 / args.height as f64;
 
   let vp_width = aspect_ratio / args.zoom;
@@ -128,10 +130,11 @@ pub fn buddhabrot(args: Args) {
     args.width as u32,
     args.height as u32,
     image::ColorType::Rgb8,
-  )
-  .unwrap();
+  )?;
 
   println!("successfully written: {}", args.filename);
+
+  Ok(())
 }
 
 fn iter_mandel_check_vp(

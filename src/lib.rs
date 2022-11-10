@@ -1,4 +1,8 @@
 #![allow(clippy::must_use_candidate)]
+#![allow(clippy::cast_sign_loss)]
+#![allow(clippy::cast_possible_truncation)]
+#![allow(clippy::cast_precision_loss)]
+#![allow(clippy::float_cmp)]
 
 use rayon::iter::{
   IndexedParallelIterator, IntoParallelRefMutIterator,
@@ -9,6 +13,8 @@ use rayon::slice::ParallelSliceMut;
 use serde::Deserialize;
 
 use num_complex::Complex64;
+
+use anyhow::Result;
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -35,19 +41,27 @@ pub enum Algorithm {
 }
 
 impl Algorithm {
-  pub fn execute(self) {
+  /// Executes the rendering process for the given [`Algorithm`].
+  ///
+  /// # Errors
+  ///
+  /// Returns an error if the rendering process fails.
+  /// Rendering processes fail, because saving the generated image to
+  /// disk was unsuccessful.
+  ///
+  pub fn execute(self) -> Result<()> {
     match self {
       Self::JuliaSet(args) => {
         println!("generating julia set with arguments:\n{}", args);
-        julia_set_interior_distance(args);
+        julia_set_interior_distance(&args)
       }
       Self::Buddhabrot(args) => {
         println!("generating buddhabrot with arguments: \n{}", args);
-        buddhabrot(args);
+        buddhabrot(args)
       }
       Self::ColorMap1d(args) => {
         println!("generating 1d color map with arguments:\n{}", args);
-        color_map_1d(args);
+        color_map_1d(&args)
       }
     }
   }
@@ -57,10 +71,22 @@ impl Algorithm {
 pub struct Algorithms(Vec<Algorithm>);
 
 impl Algorithms {
-  pub fn execute(self) {
+  /// Executes each [`Algorithm`] successively.
+  ///
+  /// Multi-threading is implemented inside the rendering process of
+  /// each [`Algorithm`].
+  ///
+  /// # Errors
+  ///
+  /// If one of the provided algorithms fails, execution is stopped
+  /// and the error of the failing alogrithm is returned.
+  ///
+  pub fn execute(self) -> Result<()> {
     for cmd in self.0 {
-      cmd.execute();
+      cmd.execute()?;
     }
+
+    Ok(())
   }
 }
 
@@ -84,7 +110,17 @@ fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
 }
 */
 
-pub fn julia_set_interior_distance(args: JuliaSetArgs) {
+/// Creates a rendering of a julia set as a `PNG` image.
+///
+/// # Errors
+///
+/// Returns an error, if the generated `PNG` image could not be saved
+/// to disk.
+///
+#[allow(clippy::missing_panics_doc)]
+pub fn julia_set_interior_distance(
+  args: &JuliaSetArgs,
+) -> Result<()> {
   let (width, height) = (args.width as usize, args.height as usize);
 
   let num_pixel = width * height;
@@ -93,7 +129,7 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
 
   let d_max = Arc::new(Mutex::new(f64::MIN));
 
-  let (w, h) = (args.width as f64, args.height as f64);
+  let (w, h) = (f64::from(args.width), f64::from(args.height));
 
   let aspect_ratio = w / h;
 
@@ -150,10 +186,10 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
 
         *pixel = id;
 
-        let mut d_max = d_max.lock().unwrap();
-
-        if id > *d_max {
-          *d_max = id;
+        if let Ok(mut d_max) = d_max.lock() {
+          if id > *d_max {
+            *d_max = id;
+          }
         }
       } else {
         *pixel = 0.;
@@ -162,7 +198,9 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
 
   let mut buf = vec![0_u8; num_pixel * 3];
 
-  let d_max = Arc::try_unwrap(d_max).unwrap().into_inner().unwrap();
+  // Arc safely unwrappable, because this is the last strong
+  // reference to it
+  let d_max = Arc::try_unwrap(d_max).unwrap().into_inner()?;
 
   buf
     .par_chunks_exact_mut(3)
@@ -184,13 +222,21 @@ pub fn julia_set_interior_distance(args: JuliaSetArgs) {
     args.width as u32,
     args.height as u32,
     image::ColorType::Rgb8,
-  )
-  .unwrap();
+  )?;
 
   println!("\nsuccessfully written: {}", args.filename);
+
+  Ok(())
 }
 
-pub fn julia_set(args: JuliaSetArgs) {
+/// Creates a rendering of a julia set as a `PNG` image.
+///
+/// # Errors
+///
+/// Returns an error, if the generated `PNG` image could not be saved
+/// to disk.
+///
+pub fn julia_set(args: &JuliaSetArgs) -> Result<()> {
   let (width, height) = (args.width as usize, args.height as usize);
 
   let num_pixel = width * height;
@@ -303,13 +349,21 @@ pub fn julia_set(args: JuliaSetArgs) {
     args.width,
     args.height,
     image::ColorType::Rgb8,
-  )
-  .unwrap();
+  )?;
 
   println!("\nsuccessfully written: {}", args.filename);
+
+  Ok(())
 }
 
-pub fn color_map_1d(args: ColorMap1dArgs) {
+/// Creates a visualization of a color map as a `PNG` image.
+///
+/// # Errors
+///
+/// Returns an error, if the generated `PNG` image could not be saved
+/// to disk.
+///
+pub fn color_map_1d(args: &ColorMap1dArgs) -> Result<()> {
   let (w, h) = (args.width as usize, args.height as usize);
 
   let num_pixel = w * h;
@@ -346,8 +400,9 @@ pub fn color_map_1d(args: ColorMap1dArgs) {
     args.width,
     args.height,
     image::ColorType::Rgb8,
-  )
-  .unwrap();
+  )?;
 
   println!("\nsuccessfully written: {}", args.filename);
+
+  Ok(())
 }
