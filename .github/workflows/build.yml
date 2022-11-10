@@ -15,6 +15,10 @@ jobs:
           path: master
       - name: Enter repository
         run: cd master
+      - name: Debug
+        run: |
+          ls -a
+          pwd
       - name: Fmt
         run: cargo fmt
       - name: Clippy fix
