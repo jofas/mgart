@@ -9,6 +9,16 @@ algorithmic art.
 ## Table of contents
 
 <!--ts-->
+   * [Install](#install)
+      * [Cargo](#cargo)
+   * [Example](#example)
+   * [Supported Algorithms](#supported-algorithms)
+      * [Fractals](#fractals)
+         * [Mandelbrot and Julia Sets](#mandelbrot-and-julia-sets)
+         * [Buddhabrot](#buddhabrot)
+         * [Other](#other)
+      * [AI Art](#ai-art)
+   * [Goals](#goals)
 <!--te-->
 
 ## Install
