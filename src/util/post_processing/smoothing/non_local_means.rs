@@ -204,14 +204,11 @@ fn discrete_rectangle_from_center(
   size_x: isize,
   size_y: isize,
 ) -> (isize, isize, isize, isize) {
-  let size_x_half = size_x / 2;
-  let size_y_half = size_y / 2;
-
   (
-    cx - size_x_half + isize::from(size_x % 2 == 0),
-    cy - size_y_half + isize::from(size_y % 2 == 0),
-    cx + size_x_half,
-    cy + size_y_half,
+    cx - size_x / 2 + isize::from(size_x % 2 == 0),
+    cy - size_y / 2 + isize::from(size_y % 2 == 0),
+    cx + size_x / 2,
+    cy + size_y / 2,
   )
 }
 
