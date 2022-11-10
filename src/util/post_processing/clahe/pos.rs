@@ -15,14 +15,10 @@ impl Pos {
     let pos_y = PosV::new(y, y_max);
 
     match (pos_y, pos_x) {
-      (PosV::N, PosH::W) => Self::NW,
-      (PosV::N, PosH::E) => Self::NE,
-      (PosV::N, PosH::Center) => Self::NW,
-      (PosV::S, PosH::E) => Self::SE,
-      (PosV::S, PosH::W) => Self::SW,
-      (PosV::S, PosH::Center) => Self::SE,
-      (PosV::Center, PosH::E) => Self::NE,
-      (PosV::Center, PosH::W) => Self::SW,
+      (PosV::N, PosH::W | PosH::Center) => Self::NW,
+      (PosV::N | PosV::Center, PosH::E) => Self::NE,
+      (PosV::S, PosH::E | PosH::Center) => Self::SE,
+      (PosV::S | PosV::Center, PosH::W) => Self::SW,
       (PosV::Center, PosH::Center) => Self::Center,
     }
   }

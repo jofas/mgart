@@ -31,16 +31,33 @@ impl CLAHE {
     }
   }
 
+  pub fn tile_size_x(&self) -> usize {
+    self.tile_size_x
+  }
+
+  pub fn tile_size_y(&self) -> usize {
+    self.tile_size_y
+  }
+
+  /// Applies `self` to the provided `buffer`.
+  ///
+  /// `buffer` has a width of `width` and height of `height`.
+  ///
+  /// # Panics
+  ///
+  /// Panics, if `width` isn't divisible by [`tile_size_x`] or
+  /// `height` isn't divisible by [`tile_size_y`].
+  ///
   pub fn apply(
     &self,
     buffer: &mut [f64],
     width: usize,
     height: usize,
   ) {
-    if width % self.tile_size_x != 0 || height % self.tile_size_y != 0
-    {
-      panic!("width and height must be divisible by tile_size_x and tile_size_y, respectively");
-    }
+    assert!(
+      width % self.tile_size_x == 0 && height % self.tile_size_y == 0,
+      "width and height must be divisible by tile_size_x and tile_size_y, respectively",
+    );
 
     let tiles_w = width / self.tile_size_x;
     let tiles_h = height / self.tile_size_y;
@@ -66,14 +83,15 @@ impl CLAHE {
         continue;
       }
 
-      let (nw, ne, se, sw) = self.interpolation_tiles(
+      let (nw, ne, se, sw) = Self::interpolation_tiles(
         &pos, x_tile, y_tile, &tiles, tiles_w, tiles_h,
       );
 
       let (dn, ds, dw, de) = self.interpolation_distances(x, y, &pos);
 
-      let (dn, ds, dw, de) = self
-        .handle_corners_and_borders(nw, ne, se, sw, dn, ds, dw, de);
+      let (dn, ds, dw, de) = Self::handle_corners_and_borders(
+        nw, ne, se, sw, dn, ds, dw, de,
+      );
 
       let q_nw = nw.transform(*v) * dn * dw;
       let q_ne = ne.transform(*v) * dn * de;
@@ -116,7 +134,6 @@ impl CLAHE {
   }
 
   fn interpolation_tiles<'a>(
-    &self,
     pos: &Pos,
     x_tile: isize,
     y_tile: isize,
@@ -187,7 +204,6 @@ impl CLAHE {
 
   #[allow(clippy::too_many_arguments)]
   fn handle_corners_and_borders(
-    &self,
     nw: Option<&Tile>,
     ne: Option<&Tile>,
     se: Option<&Tile>,

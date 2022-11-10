@@ -3,6 +3,7 @@ use serde::ser::Serializer;
 
 use std::fmt;
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
 pub(super) fn serialize<S>(f: &f64, s: S) -> Result<S::Ok, S::Error>
 where
   S: Serializer,

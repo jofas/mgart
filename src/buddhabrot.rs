@@ -35,6 +35,15 @@ pub struct Args {
   pub post_processing: Vec<PostProcessing>,
 }
 
+/// Creates a rendering of a
+/// [buddhabrot](https://en.wikipedia.org/wiki/Buddhabrot) as a `PNG`
+/// image.
+///
+/// # Errors
+///
+/// Returns an error, if the generated `PNG` image could not be saved
+/// to disk.
+///
 pub fn buddhabrot(args: Args) -> Result<()> {
   let aspect_ratio = args.width as f64 / args.height as f64;
 

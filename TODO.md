@@ -96,13 +96,15 @@
 
 * [x] badges
 
+* [ ] propagate all panics to errors
+
+* [ ] `Algorithms` object-oriented (Args + execution into same
+  struct)
+
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible
 
 * [ ] increase coverage
-
-* [ ] `Algorithms` object-oriented (Args + execution into same
-  struct)
 
 * [ ] kde sampling: make sure sampling points are evenly distributed
   in space

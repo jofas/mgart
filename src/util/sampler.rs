@@ -72,7 +72,7 @@ impl Sampler {
         pre_sampler,
       } => {
         let elems = Self::pre_sample(
-          pre_sampler.distribution(true_probability),
+          &pre_sampler.distribution(true_probability),
           true_probability,
           population,
           p_min,
@@ -89,7 +89,7 @@ impl Sampler {
   }
 
   fn pre_sample<T: Sync + Send, P: Fn(&T) -> f64 + Sync + Send>(
-    pre_sampler: Distribution<T>,
+    pre_sampler: &Distribution<T>,
     true_probability: &P,
     population: u64,
     p_min: f64,

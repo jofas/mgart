@@ -34,6 +34,7 @@ impl ColorMap1d {
     &self.gradient
   }
 
+  #[must_use]
   pub fn with_gradient(mut self, g: Gradient) -> Self {
     self.gradient = g;
     self

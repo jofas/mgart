@@ -10,7 +10,7 @@ fn parse_examples() {
   find_json_files_recursively(Path::new("examples"), &mut files);
 
   for file in files {
-    let _: Algorithms =
+    let _algorithms: Algorithms =
       serde_json::from_reader(File::open(file).unwrap()).unwrap();
   }
 }

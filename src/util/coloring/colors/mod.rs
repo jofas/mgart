@@ -83,6 +83,7 @@ impl LCH {
     LAB::new(self.l(), h.cos() * self.c(), h.sin() * self.c())
   }
 
+  #[must_use]
   pub fn interpolate(&self, other: &LCH, f: f64) -> LCH {
     let f = f.clamp(0., 1.);
 
@@ -149,10 +150,10 @@ impl PartialEq for LCH {
   fn eq(&self, other: &Self) -> bool {
     let lc_eq = self.l() == other.l() && self.c() == other.c();
 
-    if self.h() != other.h() {
-      self.h().is_nan() && other.h().is_nan() && lc_eq
-    } else {
+    if self.h() == other.h() {
       lc_eq
+    } else {
+      self.h().is_nan() && other.h().is_nan() && lc_eq
     }
   }
 }
@@ -185,15 +186,15 @@ impl RGB {
     self.b
   }
 
-  pub fn lch(&self) -> LCH {
+  pub fn lch(self) -> LCH {
     self.lab().lch()
   }
 
-  pub fn as_vec(&self) -> [u8; 3] {
+  pub fn as_vec(self) -> [u8; 3] {
     [self.r, self.g, self.b]
   }
 
-  fn lab(&self) -> LAB {
+  fn lab(self) -> LAB {
     let r = Self::rgb_xyz(self.r());
     let g = Self::rgb_xyz(self.g());
     let b = Self::rgb_xyz(self.b());
