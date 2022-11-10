@@ -24,7 +24,7 @@
             }
          ]
       },
-      "command": "buddhabrot",
+      "algorithm": "buddhabrot",
       "exponent": 2,
       "filename": "buddhabrot_20.png",
       "height": 2000,

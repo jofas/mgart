@@ -90,6 +90,8 @@
 
 * [x] cli: add jsonnet file support to input file 
 
+* [x] command => algorithm
+
 * [ ] kde sampling: make sure sampling points are evenly distributed
   in space
 
@@ -99,8 +101,6 @@
   (using example files - `jsonnet-rs v0.17.0`)
 
 * [ ] nicer progress abstraction (struct)
-
-* [ ] command => algorithm
 
 * [ ] buddhabrot: flag for disabling `iter_mande_check_vp` (makes more
   restrictive samplers faster)

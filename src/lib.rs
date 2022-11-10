@@ -23,16 +23,16 @@ use crate::util::finite_attractor;
 use crate::buddhabrot::{buddhabrot, Args as BuddhabrotArgs};
 
 #[derive(Deserialize)]
-#[serde(tag = "command")]
+#[serde(tag = "algorithm")]
 #[serde(rename_all = "snake_case")]
-pub enum Command {
+pub enum Algorithm {
   JuliaSet(JuliaSetArgs),
   Buddhabrot(BuddhabrotArgs),
   #[serde(rename = "color_map_1d")]
   ColorMap1d(ColorMap1dArgs),
 }
 
-impl Command {
+impl Algorithm {
   pub fn execute(self) {
     match self {
       Self::JuliaSet(args) => {
@@ -52,9 +52,9 @@ impl Command {
 }
 
 #[derive(Deserialize)]
-pub struct Commands(Vec<Command>);
+pub struct Algorithms(Vec<Algorithm>);
 
-impl Commands {
+impl Algorithms {
   pub fn execute(self) {
     for cmd in self.0 {
       cmd.execute()

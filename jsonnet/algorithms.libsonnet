@@ -18,7 +18,7 @@ local types = import "types.libsonnet";
   ): {
     width: width,
     height: height,
-    command: 'buddhabrot',
+    algorithm: 'buddhabrot',
     center: center,
     zoom: zoom,
     rotation: rotation,

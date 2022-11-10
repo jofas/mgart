@@ -5,7 +5,7 @@ use jsonnet::JsonnetVm;
 use std::fs::File;
 use std::io::stdin;
 
-use mgart::Commands;
+use mgart::Algorithms;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
@@ -17,7 +17,7 @@ struct Cli {
 fn main() {
   let cli = Cli::parse();
 
-  let cmds: Commands = if cli.file == "." {
+  let cmds: Algorithms = if cli.file == "." {
     serde_json::from_reader(stdin()).unwrap()
   } else if let Some(extension) = cli.file.split(".").last() {
     match extension {

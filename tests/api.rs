@@ -1,7 +1,7 @@
 use std::fs::{self, File};
 use std::path::Path;
 
-use mgart::Commands;
+use mgart::Algorithms;
 
 #[test]
 fn parse_examples() {
@@ -10,7 +10,7 @@ fn parse_examples() {
   find_json_files_recursively(&Path::new("examples"), &mut files);
 
   for file in files {
-    let _: Commands =
+    let _: Algorithms =
       serde_json::from_reader(File::open(file).unwrap()).unwrap();
   }
 }
