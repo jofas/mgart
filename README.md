@@ -38,7 +38,12 @@ cargo install --force mgart
 
 ## Supported Algorithms
 
+Below you will find a list of algorithms either already supported by
+Mgart or planned to be supported by a future release.
+
 ### Fractals
+
+Algorithms for creating various types of fractal art.
 
 #### Mandelbrot and Julia Sets
 
