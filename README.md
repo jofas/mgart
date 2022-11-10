@@ -6,6 +6,11 @@
 "em-gart" is a rust crate and CLI application for generating 
 algorithmic art.
 
+## Table of contents
+
+<!--ts-->
+<!--te-->
+
 ## Install
 
 ### Cargo
