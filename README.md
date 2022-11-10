@@ -6,7 +6,7 @@
 [![Codecov](https://codecov.io/gh/jofas/mgart/branch/master/graph/badge.svg?token=69YKZ1JIBK)](https://codecov.io/gh/jofas/mgart)
 [![Latest Version](https://img.shields.io/crates/v/mgart.svg)](https://crates.io/crates/mgart)
 [![Downloads](https://img.shields.io/crates/d/mgart?label=downloads)](https://crates.io/crates/mgart)
-[![Docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://docs.rs/mgart/latest/mgart)
+[![Library Docs](https://img.shields.io/badge/library_docs-latest-blue.svg)](https://docs.rs/mgart/latest/mgart)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 
