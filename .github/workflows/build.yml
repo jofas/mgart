@@ -1,0 +1,29 @@
+name: Build
+on: [push]
+jobs:
+  CleanupAndTest:
+    runs-on: ubuntu-latest
+    container:
+      image: xd009642/tarpaulin:latest
+      options: --security-opt seccomp=unconfined
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Add cargo features
+        run: rustup component add rustfmt clippy
+      - name: Clippy fix
+        run: cargo clippy --all-features --all-targets --fix
+      - name: Fmt
+        run: cargo fmt
+      - name: Apply cleanup
+        uses: EndBug/add-and-commit@v9
+        with:
+          message: 'applying code formatting, lint fixes and toc creation'
+      - name: Fail build if clippy finds any error or warning
+        run: cargo clippy --all-features --all-targets -- -D warnings
+      - name: Generate code coverage
+        run: cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
