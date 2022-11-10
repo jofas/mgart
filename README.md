@@ -128,7 +128,7 @@ You can find more example artworks and their configuration in the
 ## Supported Algorithms
 
 Below you will find a list of algorithms either already supported by
-Mgart or planned to be supported by a future release.
+Mgart or planned to be supported in a future release.
 
 ### Fractals
 
