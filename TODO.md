@@ -92,6 +92,9 @@
 
 * [x] command => algorithm
 
+* [ ] get code to pass pedantic clippy with as little allows as 
+  possible
+
 * [ ] kde sampling: make sure sampling points are evenly distributed
   in space
 
