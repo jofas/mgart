@@ -36,6 +36,8 @@ cargo install --force mgart
 
 ## Example
 
+![Buddhabrot](examples/buddhabrot/greyscale/buddhabrot_20000.png)
+
 ## Supported Algorithms
 
 Below you will find a list of algorithms either already supported by
