@@ -1,17 +1,40 @@
 ![mgart](static/icon.svg)
 
-# mgart
+# Mgart
 
-Machine Generated Art. `mgart` (pronounced "em-gart") is a rust crate and
-CLI application for generating art from a set of input parameters.
-Rather than you having to create your artwork by hand in a complex
-WYSIWYG (What You See Is What You Get) editor, you let algorithms draw
-your images for you.
-While currently far, far away, the goal for `mgart` is to develop an 
-easy-to-use yet powerful declarative DSL you can use to create
-beautiful images in WYSIWYW (What You See Is What You Want) fashion.
+**M**achine **G**enerated **Art**, short Mgart and pronounced 
+"em-gart" is a rust crate and CLI application for generating 
+algorithmic art.
 
 ## Install
+
+### Cargo
+
+Note that you need to have the rust toolchain installed on your
+computer if you want to install Mgart using `cargo`.
+
+Mgart is distributed via [crates.io](https://crates.io) and can be 
+installed with:
+
+```bash
+cargo install mgart
+```
+
+If you'd like to install a specific version of Mgart, use the
+`--version` flag:
+
+```bash
+cargo install --version $VERSION
+```
+
+If you have an old version of Mgart already installed and wish to 
+update it to the newest version, use the `--force` flag:
+
+```bash
+cargo install --force mgart
+```
+
+## Example
 
 ## Supported Algorithms
 
