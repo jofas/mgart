@@ -14,7 +14,7 @@ use serde::Deserialize;
 
 use num_complex::Complex64;
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -117,7 +117,6 @@ fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
 /// Returns an error, if the generated `PNG` image could not be saved
 /// to disk.
 ///
-#[allow(clippy::missing_panics_doc)]
 pub fn julia_set_interior_distance(
   args: &JuliaSetArgs,
 ) -> Result<()> {
@@ -198,9 +197,9 @@ pub fn julia_set_interior_distance(
 
   let mut buf = vec![0_u8; num_pixel * 3];
 
-  // Arc safely unwrappable, because this is the last strong
-  // reference to it
-  let d_max = Arc::try_unwrap(d_max).unwrap().into_inner()?;
+  let d_max = Arc::try_unwrap(d_max)
+    .map_err(|_| anyhow!("impossible"))?
+    .into_inner()?;
 
   buf
     .par_chunks_exact_mut(3)
