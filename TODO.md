@@ -92,9 +92,9 @@
 
 * [x] command => algorithm
 
-* [ ] build action
+* [x] build action
 
-* [ ] badges
+* [x] badges
 
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible
