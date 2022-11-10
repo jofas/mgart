@@ -116,7 +116,8 @@ rendering of a [buddhabrot](https://en.wikipedia.org/wiki/Buddhabrot):
 ]
 ```
 
-You simply run `mgart $FILE` and the resulting image looks like:
+You simply run `mgart $FILE` and Mgart does the rest for you.
+The resulting image looks like:
 
 ![Buddhabrot](examples/buddhabrot/greyscale/buddhabrot_20000.png)
 
