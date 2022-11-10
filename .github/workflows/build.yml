@@ -12,13 +12,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          path: mgart
+          path: master
       - name: Enter repository
-        run: cd mgart
-      - name: Clippy fix
-        run: cargo clippy --all-features --all-targets --fix
+        run: cd master
       - name: Fmt
         run: cargo fmt
+      - name: Clippy fix
+        run: cargo clippy --all-features --all-targets --fix
       - name: Apply cleanup
         uses: EndBug/add-and-commit@v9
         with:
