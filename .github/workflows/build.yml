@@ -13,11 +13,17 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: repo
-      - name: Fmt and clippy
+      - name: Fmt + clippy
         run: |
           cd repo
           cargo fmt
           cargo clippy --all-features --all-targets --fix
+      - name: Toc
+        run: |
+          curl https://raw.githubusercontent.com/ekalinin/github-markdown-toc/master/gh-md-toc -o gh-md-toc
+          chmod a+x gh-md-toc
+          ./gh-md-toc --insert --no-backup --hide-footer --skip-header README.md
+          rm gh-md-toc
       - name: Apply cleanup
         uses: EndBug/add-and-commit@v9
         with:
