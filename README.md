@@ -8,6 +8,7 @@
 [![Downloads](https://img.shields.io/crates/d/mgart?label=downloads)](https://crates.io/crates/mgart)
 [![Library Docs](https://img.shields.io/badge/library_docs-latest-blue.svg)](https://docs.rs/mgart/latest/mgart)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Contributor Covenant](https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg)](CODE_OF_CONDUCT.md) 
 
 
 **M**achine **G**enerated **Art**, short Mgart and pronounced 
