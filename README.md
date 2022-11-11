@@ -19,6 +19,7 @@ algorithmic art.
 <!--ts-->
    * [Install](#install)
       * [Cargo](#cargo)
+      * [From source](#from-source)
    * [Example](#example)
    * [Supported Algorithms](#supported-algorithms)
       * [Fractals](#fractals)
@@ -27,6 +28,8 @@ algorithmic art.
          * [Other](#other)
       * [AI Art](#ai-art)
    * [Goals](#goals)
+   * [Contributing](#contributing)
+   * [License](#license)
 <!--te-->
 
 ## Install
