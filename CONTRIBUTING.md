@@ -9,12 +9,13 @@ bug reports, bug fixes, or even implementations of new algorithms.
 ## Development Guidelines
 
 There are many great tools to generate digital art with.
-No software has been able to deliver an all encumbering experience
+No software has been able to deliver an all-encumbering experience
 when it comes to the generation and exploration of algorithmic 
-beauty, algorithm and hardware support, or speed.
+beauty, algorithm and hardware support, and speed.
 Mgart definetly does not aim to be the tool that changes that.
-The goal of Mgart is more modest, to be a tool to generate beautiful 
-digital imagery with, using a simple, declarative 
+The goal of Mgart is more modest.
+Mgart aims to be a tool to generate beautiful digital imagery using a 
+simple, declarative 
 [DSL](https://en.wikipedia.org/wiki/Domain-specific_language).
 When you want to contribue source code, please follow these 
 development guidelines:
