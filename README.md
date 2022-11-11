@@ -90,7 +90,7 @@ cargo run --release -- $FILE
 `$FILE` being the path to the file containing your algorithms (see the
 [Example](#example) section).
 Note that adding the `--release` flag to the command significantly
-enhances the speed of the program.
+enhances the execution speed.
 
 You can also install Mgart from source, rather than just working from
 the source directory.
