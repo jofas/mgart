@@ -230,15 +230,6 @@ Algorithms for creating various types of fractal art.
 * [ ] Text-to-image
 
 
-## Goals
-
-* API-first + readability over performance
-
-* aesthetic value over correctness
-
-* fast algorithms over fast hardware
-
-
 ## Contributing
 
 Contributions are very welcome! See [CONTRIBUTING](CONTRIBUTING.md)
