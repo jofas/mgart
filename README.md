@@ -235,7 +235,7 @@ Algorithms for creating various types of fractal art.
 
 ## Contributing
 
-Contributions are very welcome! See [CONTRIBUTING](CONTRIBUTING.md)
+Contributions are very welcome! See [CONTRIBUTING.md](CONTRIBUTING.md)
 for details.
 When you contribute, make sure to follow the 
 [Contributor Covenant v2.1](CODE_OF_CONDUCT.md).
