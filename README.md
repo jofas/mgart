@@ -57,6 +57,57 @@ update it to the newest version, use the `--force` flag:
 cargo install --force mgart
 ```
 
+Check that Mgart is successfully installed by running:
+
+```bash
+mgart -V
+```
+
+This should print `mgart`, followed by the version you have installed.
+
+
+### Source
+
+For development or if you would like to work with the latest, unstable
+version, you can install Mgart from source. 
+Note that you need to have the rust toolchain installed on your 
+computer, if you want to build Mgart from source.
+
+First, clone the Mgart repository and enter it:
+
+```bash
+git clone https://github.com/jofas/mgart && cd mgart
+```
+
+If you want to work inside this directory, potentially because you
+wish to contribute to Mgart, you can execute the CLI application
+like this:
+
+```bash
+cargo run --release -- $FILE
+```
+
+`$FILE` being the path to the file containing your algorithms (see the
+[Example](#example) section).
+Note that adding the `--release` flag to the command significantly
+enhances the speed of the program.
+
+You can also install Mgart from source, rather than just working from
+the source directory.
+Do so by running the following command in the Mgart source directory:
+
+```bash
+cargo install --path .
+```
+
+This will compile Mgart and make the program available for your user 
+to execute.
+Check installation by running:
+
+```
+mgart -V
+```
+
 
 ## Example
 
