@@ -66,7 +66,7 @@ mgart -V
 This should print `mgart`, followed by the version you have installed.
 
 
-### Source
+### From source
 
 For development or if you would like to work with the latest, unstable
 version, you can install Mgart from source. 
@@ -229,6 +229,7 @@ Algorithms for creating various types of fractal art.
 
 * [ ] Text-to-image
 
+
 ## Goals
 
 * API-first + readability over performance
@@ -236,3 +237,17 @@ Algorithms for creating various types of fractal art.
 * aesthetic value over correctness
 
 * fast algorithms over fast hardware
+
+
+## Contributing
+
+Contributions are very welcome! See [CONTRIBUTING](CONTRIBUTING.md)
+for details.
+When you contribute, make sure to follow the 
+[Contributor Covenant v2.1](CODE_OF_CONDUCT.md).
+
+
+## License
+
+Mgart is licensed under the MIT license.
+See [LICENSE](LICENSE) for details.

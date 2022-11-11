@@ -96,6 +96,8 @@
 
 * [x] badges
 
+* [x] top-level basic documentation 
+
 * [ ] propagate all panics to errors
 
 * [ ] `Algorithms` object-oriented (Args + execution into same
@@ -120,10 +122,6 @@
   restrictive samplers faster)
 
 * [ ] examples (jsonnet, zoom, samplers, colored)
-
-* [ ] top-level basic documentation (example, install, 
-  supported algorithms/roadmap, goals, contributing, 
-  license)
 
 * [ ] benchmark suite
 
