@@ -27,7 +27,6 @@ algorithmic art.
          * [Buddhabrot](#buddhabrot)
          * [Other](#other)
       * [AI Art](#ai-art)
-   * [Goals](#goals)
    * [Contributing](#contributing)
    * [License](#license)
 <!--te-->
