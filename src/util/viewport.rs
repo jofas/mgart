@@ -14,6 +14,7 @@ pub struct Viewport {
 }
 
 impl Viewport {
+  #[must_use]
   pub fn from_center(
     center: Complex64,
     width: f64,
@@ -44,6 +45,7 @@ impl Viewport {
     }
   }
 
+  #[must_use]
   pub fn contains_point(&self, p: &Complex64) -> bool {
     let p = p * self.rotation;
 
@@ -53,6 +55,7 @@ impl Viewport {
       && p.im < self.y_max
   }
 
+  #[must_use]
   pub fn grid_pos(&self, p: &Complex64) -> Option<(usize, usize)> {
     if self.contains_point(p) {
       let p = p * self.rotation;

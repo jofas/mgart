@@ -164,6 +164,7 @@ pub struct Uniform<T> {
 }
 
 impl<T> Uniform<T> {
+  #[must_use]
   pub fn new(h: f64) -> Self {
     Self {
       h,
@@ -216,6 +217,7 @@ pub struct UniformPolar<T> {
 }
 
 impl<T> UniformPolar<T> {
+  #[must_use]
   pub fn new(r: f64) -> Self {
     Self {
       r,
@@ -250,6 +252,7 @@ pub struct KDE<T> {
 }
 
 impl<T: Copy> KDE<T> {
+  #[must_use]
   pub fn new(
     weighted: bool,
     kernel: Box<Distribution<T>>,

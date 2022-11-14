@@ -16,6 +16,7 @@ pub struct ColorMap1d {
 }
 
 impl ColorMap1d {
+  #[must_use]
   pub fn new(map: Vec<Color>, gradient: Gradient) -> Self {
     let map = if map.len() >= 2 {
       map
@@ -30,6 +31,7 @@ impl ColorMap1d {
     Self { map, gradient }
   }
 
+  #[must_use]
   pub fn gradient(&self) -> &Gradient {
     &self.gradient
   }
@@ -40,6 +42,7 @@ impl ColorMap1d {
     self
   }
 
+  #[must_use]
   pub fn color(&self, f: f64) -> RGB {
     let f = self.gradient.apply(f);
 

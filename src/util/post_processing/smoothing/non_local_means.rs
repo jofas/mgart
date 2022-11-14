@@ -21,6 +21,7 @@ pub struct NonLocalMeans {
 }
 
 impl NonLocalMeans {
+  #[must_use]
   pub fn new(n: usize, window_size: usize, h: f64) -> Self {
     Self { n, window_size, h }
   }

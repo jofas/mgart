@@ -1,4 +1,3 @@
-#![allow(clippy::must_use_candidate)]
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_lossless)]
 #![allow(clippy::cast_precision_loss)]

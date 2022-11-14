@@ -21,6 +21,7 @@ pub enum Gradient {
 }
 
 impl Gradient {
+  #[must_use]
   pub fn apply(&self, f: f64) -> f64 {
     match self {
       Self::Linear { factor } => {

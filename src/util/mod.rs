@@ -42,6 +42,7 @@ impl From<ComplexNumber> for Complex64 {
 // TODO: dz is derivative of z in the iteration sequence ... if I were
 //       to look for finite attractors for different functions, I'd
 //       need to generalize this
+#[must_use]
 pub fn finite_attractor(
   z0: Complex64,
   c: Complex64,

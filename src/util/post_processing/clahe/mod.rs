@@ -17,6 +17,7 @@ pub struct CLAHE {
 }
 
 impl CLAHE {
+  #[must_use]
   pub fn new(
     contrast_limit: usize,
     bin_count: usize,
@@ -31,10 +32,12 @@ impl CLAHE {
     }
   }
 
+  #[must_use]
   pub fn tile_size_x(&self) -> usize {
     self.tile_size_x
   }
 
+  #[must_use]
   pub fn tile_size_y(&self) -> usize {
     self.tile_size_y
   }

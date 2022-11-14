@@ -16,6 +16,7 @@ impl Color {
   pub const BLACK: Self = Self::LCH(LCH::BLACK);
   pub const WHITE: Self = Self::LCH(LCH::WHITE);
 
+  #[must_use]
   pub fn lch(&self) -> LCH {
     match self {
       Self::LCH(lch) => *lch,
@@ -23,6 +24,7 @@ impl Color {
     }
   }
 
+  #[must_use]
   pub fn rgb(&self) -> RGB {
     match self {
       Self::LCH(lch) => lch.rgb(),
@@ -45,24 +47,28 @@ impl LCH {
   pub const BLACK: LCH = Self::new(0., 0., f64::NAN);
   pub const WHITE: LCH = Self::new(100., 0., f64::NAN);
 
+  #[must_use]
   pub const fn new(l: f64, c: f64, h: f64) -> Self {
     Self { l, c, h }
   }
 
   /// The lightness of the color.
   ///
+  #[must_use]
   pub fn l(&self) -> f64 {
     self.l
   }
 
   /// The chroma of the color.
   ///
+  #[must_use]
   pub fn c(&self) -> f64 {
     self.c
   }
 
   /// The hue of the color.
   ///
+  #[must_use]
   pub fn h(&self) -> f64 {
     self.h
   }
@@ -70,6 +76,7 @@ impl LCH {
   /// Returns the [RGB] representation of the color defined by
   /// `self`.
   ///
+  #[must_use]
   pub fn rgb(&self) -> RGB {
     self.lab().rgb()
   }
@@ -170,26 +177,32 @@ pub struct RGB {
 impl RGB {
   /// Creates a new [RGB] color.
   ///
+  #[must_use]
   pub const fn new(r: u8, g: u8, b: u8) -> Self {
     Self { r, g, b }
   }
 
+  #[must_use]
   pub fn r(&self) -> u8 {
     self.r
   }
 
+  #[must_use]
   pub fn g(&self) -> u8 {
     self.g
   }
 
+  #[must_use]
   pub fn b(&self) -> u8 {
     self.b
   }
 
+  #[must_use]
   pub fn lch(self) -> LCH {
     self.lab().lch()
   }
 
+  #[must_use]
   pub fn as_vec(self) -> [u8; 3] {
     [self.r, self.g, self.b]
   }
