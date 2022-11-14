@@ -7,7 +7,6 @@
 #![allow(clippy::many_single_char_names)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::similar_names)]
-#![allow(clippy::unreadable_literal)]
 
 use rayon::iter::{
   IndexedParallelIterator, IntoParallelRefMutIterator,

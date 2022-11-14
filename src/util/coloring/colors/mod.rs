@@ -213,13 +213,13 @@ impl RGB {
     let b = Self::rgb_xyz(self.b());
 
     let x = Self::xyz_lab(
-      (0.4124564 * r + 0.3575761 * g + 0.1804375 * b) / LAB::XN,
+      (0.412_456_4 * r + 0.357_576_1 * g + 0.180_437_5 * b) / LAB::XN,
     );
     let y = Self::xyz_lab(
-      (0.2126729 * r + 0.7151522 * g + 0.0721750 * b) / LAB::YN,
+      (0.212_672_9 * r + 0.715_152_2 * g + 0.072_175_0 * b) / LAB::YN,
     );
     let z = Self::xyz_lab(
-      (0.0193339 * r + 0.1191920 * g + 0.9503041 * b) / LAB::ZN,
+      (0.019_333_9 * r + 0.119_192_0 * g + 0.950_304_1 * b) / LAB::ZN,
     );
 
     let l = (116. * y - 16.).max(0.);
@@ -255,14 +255,14 @@ struct LAB {
 }
 
 impl LAB {
-  const XN: f64 = 0.950470;
+  const XN: f64 = 0.950_470;
   const YN: f64 = 1.;
-  const ZN: f64 = 1.088830;
+  const ZN: f64 = 1.088_830;
 
-  const T0: f64 = 0.137931034;
-  const T1: f64 = 0.206896552;
-  const T2: f64 = 0.12841855;
-  const T3: f64 = 0.008856452;
+  const T0: f64 = 0.137_931_034;
+  const T1: f64 = 0.206_896_552;
+  const T2: f64 = 0.128_418_55;
+  const T3: f64 = 0.008_856_452;
 
   const fn new(l: f64, a: f64, b: f64) -> Self {
     Self { l, a, b }
@@ -337,12 +337,15 @@ impl LAB {
     let x = Self::XN * Self::lab_xyz(x);
     let z = Self::ZN * Self::lab_xyz(z);
 
-    let r =
-      Self::xyz_rgb(3.2404542 * x - 1.5371385 * y - 0.4985314 * z);
-    let g =
-      Self::xyz_rgb(-0.9692660 * x + 1.8760108 * y + 0.0415560 * z);
-    let b =
-      Self::xyz_rgb(0.0556434 * x - 0.2040259 * y + 1.0572252 * z);
+    let r = Self::xyz_rgb(
+      3.240_454_2 * x - 1.537_138_5 * y - 0.498_531_4 * z,
+    );
+    let g = Self::xyz_rgb(
+      -0.969_266_0 * x + 1.876_010_8 * y + 0.041_556_0 * z,
+    );
+    let b = Self::xyz_rgb(
+      0.055_643_4 * x - 0.204_025_9 * y + 1.057_225_2 * z,
+    );
 
     RGB::new(r, g, b)
   }
