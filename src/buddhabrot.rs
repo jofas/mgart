@@ -31,7 +31,6 @@ pub struct Buddhabrot {
   pub exponent: f64,
   pub sample_count: u64,
   pub sampler: Sampler,
-  #[serde(default)]
   pub post_processing: Vec<PostProcessing>,
 }
 

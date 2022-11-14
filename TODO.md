@@ -98,10 +98,9 @@
 
 * [x] top-level basic documentation 
 
-* [ ] propagate all panics to errors
+* [x] `Algorithms` object-oriented 
 
-* [ ] `Algorithms` object-oriented (Args + execution into same
-  struct)
+* [ ] propagate all panics to errors
 
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible
