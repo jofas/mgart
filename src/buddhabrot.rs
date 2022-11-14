@@ -19,7 +19,7 @@ use crate::util::viewport::Viewport;
 use crate::util::{print_progress, ComplexNumber};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
-pub struct Args {
+pub struct Buddhabrot {
   pub width: usize,
   pub height: usize,
   pub center: ComplexNumber,
@@ -35,139 +35,151 @@ pub struct Args {
   pub post_processing: Vec<PostProcessing>,
 }
 
-/// Creates a rendering of a
-/// [buddhabrot](https://en.wikipedia.org/wiki/Buddhabrot) as a `PNG`
-/// image.
-///
-/// # Errors
-///
-/// Returns an error, if the generated `PNG` image could not be saved
-/// to disk.
-///
-pub fn buddhabrot(args: Args) -> Result<()> {
-  let aspect_ratio = args.width as f64 / args.height as f64;
+impl Buddhabrot {
+  /// Creates a rendering of a [buddhabrot][buddhabrot] as a `PNG`
+  /// image.
+  ///
+  /// # Errors
+  ///
+  /// Returns an error, if the generated `PNG` image could not be saved
+  /// to disk.
+  ///
+  /// [buddhabrot]: https://en.wikipedia.org/wiki/Buddhabrot
+  ///
+  pub fn create(self) -> Result<()> {
+    let aspect_ratio = self.width as f64 / self.height as f64;
 
-  let vp_width = aspect_ratio / args.zoom;
-  let vp_height = 1. / args.zoom;
+    let vp_width = aspect_ratio / self.zoom;
+    let vp_height = 1. / self.zoom;
 
-  let grid_delta_x = vp_width / args.width as f64;
-  let grid_delta_y = vp_height / args.height as f64;
+    let grid_delta_x = vp_width / self.width as f64;
+    let grid_delta_y = vp_height / self.height as f64;
 
-  let viewport = Viewport::from_center(
-    args.center.into(),
-    vp_width,
-    vp_height,
-    grid_delta_x,
-    grid_delta_y,
-    args.rotation.unwrap_or(0),
-  );
+    let viewport = Viewport::from_center(
+      self.center.into(),
+      vp_width,
+      vp_height,
+      grid_delta_x,
+      grid_delta_y,
+      self.rotation.unwrap_or(0),
+    );
 
-  let sampler = args.sampler.distribution(&|c| {
-    let (iter, passed_viewport) =
-      iter_mandel_check_vp(*c, args.iter, args.exponent, &viewport);
+    let sampler = self.sampler.distribution(&|c| {
+      let (iter, passed_viewport) = Self::iter_mandel_check_vp(
+        *c,
+        self.iter,
+        self.exponent,
+        &viewport,
+      );
 
-    if iter != args.iter && passed_viewport {
-      iter as f64 / args.iter as f64
-    } else {
-      0.
-    }
-  });
-
-  println!("starting buddhabrot generation");
-
-  let num_pixel = args.width * args.height;
-
-  let buffer = vec_no_clone![AtomicU64::new(0); num_pixel];
-
-  let processed_samples = AtomicU64::new(0);
-
-  (0..args.sample_count).into_par_iter().for_each(|_| {
-    let c = sampler.sample();
-
-    let (j, passed_viewport) =
-      iter_mandel_check_vp(c, args.iter, args.exponent, &viewport);
-
-    if j != args.iter && passed_viewport {
-      let mut z = c;
-
-      for _ in 0..=j {
-        let idx = viewport.grid_pos(&z);
-
-        if let Some((x, y)) = idx {
-          buffer[y * args.width + x].fetch_add(1, Ordering::Relaxed);
-        }
-
-        z = z.powf(args.exponent) + c;
+      if iter != self.iter && passed_viewport {
+        iter as f64 / self.iter as f64
+      } else {
+        0.
       }
-    }
-
-    let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
-    print_progress(ps, args.sample_count, 2500);
-  });
-
-  println!("\nbuddhabrot generation finished");
-
-  println!("starting post processing");
-
-  let mut buffer: Vec<f64> =
-    buffer.into_iter().map(|x| x.into_inner() as f64).collect();
-
-  for process in args.post_processing {
-    process.apply(&mut buffer, args.width, args.height);
-  }
-
-  println!("post processing done");
-
-  println!("generating final color values");
-
-  let mut pixels = vec![0_u8; num_pixel * 3];
-
-  pixels
-    .chunks_exact_mut(3)
-    .enumerate()
-    .for_each(|(i, pixel)| {
-      let rgb = args.color_map.color(buffer[i]);
-
-      pixel[0] = rgb.r();
-      pixel[1] = rgb.g();
-      pixel[2] = rgb.b();
     });
 
-  image::save_buffer(
-    &args.filename,
-    &pixels,
-    args.width as u32,
-    args.height as u32,
-    image::ColorType::Rgb8,
-  )?;
+    println!("starting buddhabrot generation");
 
-  println!("successfully written: {}", args.filename);
+    let num_pixel = self.width * self.height;
 
-  Ok(())
-}
+    let buffer = vec_no_clone![AtomicU64::new(0); num_pixel];
 
-fn iter_mandel_check_vp(
-  c: Complex64,
-  iter: u64,
-  exponent: f64,
-  viewport: &Viewport,
-) -> (u64, bool) {
-  let mut z = c;
-  let mut z_sqr = z.norm_sqr();
+    let processed_samples = AtomicU64::new(0);
 
-  let mut j = 0;
-  let mut passed_viewport = viewport.contains_point(&z);
+    (0..self.sample_count).into_par_iter().for_each(|_| {
+      let c = sampler.sample();
 
-  while j < iter && z_sqr <= 4.0 {
-    z = z.powf(exponent) + c;
-    z_sqr = z.norm_sqr();
+      let (j, passed_viewport) = Self::iter_mandel_check_vp(
+        c,
+        self.iter,
+        self.exponent,
+        &viewport,
+      );
 
-    if viewport.contains_point(&z) {
-      passed_viewport = true;
+      if j != self.iter && passed_viewport {
+        let mut z = c;
+
+        for _ in 0..=j {
+          let idx = viewport.grid_pos(&z);
+
+          if let Some((x, y)) = idx {
+            buffer[y * self.width + x]
+              .fetch_add(1, Ordering::Relaxed);
+          }
+
+          z = z.powf(self.exponent) + c;
+        }
+      }
+
+      let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
+      print_progress(ps, self.sample_count, 2500);
+    });
+
+    println!("\nbuddhabrot generation finished");
+
+    println!("starting post processing");
+
+    let mut buffer: Vec<f64> =
+      buffer.into_iter().map(|x| x.into_inner() as f64).collect();
+
+    for process in self.post_processing {
+      process.apply(&mut buffer, self.width, self.height);
     }
 
-    j += 1;
+    println!("post processing done");
+
+    println!("generating final color values");
+
+    let mut pixels = vec![0_u8; num_pixel * 3];
+
+    pixels
+      .chunks_exact_mut(3)
+      .enumerate()
+      .for_each(|(i, pixel)| {
+        let rgb = self.color_map.color(buffer[i]);
+
+        pixel[0] = rgb.r();
+        pixel[1] = rgb.g();
+        pixel[2] = rgb.b();
+      });
+
+    image::save_buffer(
+      &self.filename,
+      &pixels,
+      self.width as u32,
+      self.height as u32,
+      image::ColorType::Rgb8,
+    )?;
+
+    println!("successfully written: {}", self.filename);
+
+    Ok(())
   }
 
-  (j, passed_viewport)
+  fn iter_mandel_check_vp(
+    c: Complex64,
+    iter: u64,
+    exponent: f64,
+    viewport: &Viewport,
+  ) -> (u64, bool) {
+    let mut z = c;
+    let mut z_sqr = z.norm_sqr();
+
+    let mut j = 0;
+    let mut passed_viewport = viewport.contains_point(&z);
+
+    while j < iter && z_sqr <= 4.0 {
+      z = z.powf(exponent) + c;
+      z_sqr = z.norm_sqr();
+
+      if viewport.contains_point(&z) {
+        passed_viewport = true;
+      }
+
+      j += 1;
+    }
+
+    (j, passed_viewport)
+  }
 }

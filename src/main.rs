@@ -17,7 +17,7 @@ struct Cli {
 fn main() {
   let cli = Cli::parse();
 
-  let cmds: Algorithms = if cli.file == "." {
+  let a: Algorithms = if cli.file == "." {
     serde_json::from_reader(stdin()).unwrap()
   } else if let Some(extension) = cli.file.split('.').last() {
     match extension {
@@ -33,5 +33,5 @@ fn main() {
     panic!("unrecognizable file type. Only .json and .jsonnet files are supported");
   };
 
-  cmds.execute().unwrap();
+  a.create().unwrap();
 }

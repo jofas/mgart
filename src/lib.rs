@@ -32,20 +32,21 @@ use crate::args::{ColorMap1dArgs, JuliaSetArgs};
 use crate::util::coloring::colors::RGB;
 use crate::util::finite_attractor;
 
-use crate::buddhabrot::{buddhabrot, Args as BuddhabrotArgs};
+use crate::buddhabrot::Buddhabrot;
 
 #[derive(Deserialize)]
 #[serde(tag = "algorithm")]
 #[serde(rename_all = "snake_case")]
 pub enum Algorithm {
   JuliaSet(JuliaSetArgs),
-  Buddhabrot(BuddhabrotArgs),
+  Buddhabrot(Buddhabrot),
   #[serde(rename = "color_map_1d")]
   ColorMap1d(ColorMap1dArgs),
 }
 
 impl Algorithm {
-  /// Executes the rendering process for the given [`Algorithm`].
+  /// Executes the rendering process for the given [`Algorithm`],
+  /// creating a media file containing the generated artwork.
   ///
   /// # Errors
   ///
@@ -53,15 +54,15 @@ impl Algorithm {
   /// Rendering processes fail, because saving the generated image to
   /// disk was unsuccessful.
   ///
-  pub fn execute(self) -> Result<()> {
+  pub fn create(self) -> Result<()> {
     match self {
       Self::JuliaSet(args) => {
         println!("generating julia set with arguments:\n{}", args);
         julia_set_interior_distance(&args)
       }
-      Self::Buddhabrot(args) => {
-        println!("generating buddhabrot with arguments: \n{}", args);
-        buddhabrot(args)
+      Self::Buddhabrot(b) => {
+        println!("generating buddhabrot: \n{}", b);
+        b.create()
       }
       Self::ColorMap1d(args) => {
         println!("generating 1d color map with arguments:\n{}", args);
@@ -85,9 +86,9 @@ impl Algorithms {
   /// If one of the provided algorithms fails, execution is stopped
   /// and the error of the failing alogrithm is returned.
   ///
-  pub fn execute(self) -> Result<()> {
+  pub fn create(self) -> Result<()> {
     for cmd in self.0 {
-      cmd.execute()?;
+      cmd.create()?;
     }
 
     Ok(())
