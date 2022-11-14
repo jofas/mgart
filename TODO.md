@@ -100,6 +100,8 @@
 
 * [x] `Algorithms` object-oriented 
 
+* [ ] Frame object (with indexing and iteration)
+
 * [ ] propagate all panics to errors
 
 * [ ] get code to pass pedantic clippy with as little allows as 
