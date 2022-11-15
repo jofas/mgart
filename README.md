@@ -104,7 +104,7 @@ cargo install --path .
 ```
 
 This will compile Mgart and make the program available for your user 
-to execute.
+to execute directly from the command line.
 Check installation by running:
 
 ```
