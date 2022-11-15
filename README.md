@@ -194,7 +194,7 @@ The resulting image looks like:
 ![Buddhabrot](examples/buddhabrot/greyscale/buddhabrot_20000.png)
 
 You can find more example artworks and their configuration in the 
-`examples/` folder.
+`examples/` folder [here](https://github.com/jofas/mgart).
 
 
 ## Supported Algorithms
