@@ -154,7 +154,8 @@ impl CLAHE {
       Pos::NE => (x_tile, x_tile + 1, y_tile - 1, y_tile),
       Pos::SE => (x_tile, x_tile + 1, y_tile, y_tile + 1),
       Pos::SW => (x_tile - 1, x_tile, y_tile, y_tile + 1),
-      Pos::Center => panic!("Cannot handle pixels at tile center"),
+      // center pixels are handled, before this method is called
+      Pos::Center => unreachable!(),
     };
 
     let mut nw = None;
@@ -201,7 +202,8 @@ impl CLAHE {
       Pos::NE => (dy, 1. - dy, 1. - dx, dx),
       Pos::SE => (1. - dy, dy, 1. - dx, dx),
       Pos::SW => (1. - dy, dy, dx, 1. - dx),
-      Pos::Center => panic!("Unable to handle pixels at tile center"),
+      // center pixels are handled, before this method is called
+      Pos::Center => unreachable!(),
     }
   }
 
@@ -229,7 +231,7 @@ impl CLAHE {
       (None, None, Some(_), Some(_)) => (0., 1., dw, de),
       // center
       (Some(_), Some(_), Some(_), Some(_)) => (dn, ds, dw, de),
-      _ => panic!("impossible state"),
+      _ => unreachable!(),
     }
   }
 

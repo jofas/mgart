@@ -100,7 +100,7 @@
 
 * [x] `Algorithms` object-oriented 
 
-* [ ] use `unreachable` macro
+* [x] use `unreachable` macro
 
 * [ ] Frame object (with indexing and iteration)
 
