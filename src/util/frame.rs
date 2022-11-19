@@ -15,6 +15,12 @@ pub struct Frame<T> {
 }
 
 impl<T> Frame<T> {
+  /// Creates an empty [`Frame`].
+  ///
+  /// The underlying data buffer is allocated in this method.
+  /// However, it will be empty and must be filled calling the
+  /// [`push`] method in order to create a valid [`Frame`].
+  ///
   pub fn empty(width: usize, height: usize) -> Self {
     Self {
       width,
@@ -61,8 +67,9 @@ impl<T> Frame<T> {
   ///
   /// A [`Frame`] has a capacity of [`width`] times [`height`] it can
   /// not outgrow.
-  /// If you try calling this method on a [`Frame`] that is already
-  /// fully allocated, [`OperationDisabled`] will be thrown.
+  /// If you try calling this method on a [`Frame`] where each cell is
+  /// already filled with data, an [`OperationDisabled`] error will be
+  /// thrown.
   ///
   pub fn push(&mut self, v: T) -> Result<(), OperationDisabled> {
     if self.buf.len() == self.buf.capacity() {
