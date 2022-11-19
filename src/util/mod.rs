@@ -3,6 +3,8 @@ use serde::{Deserialize, Serialize};
 use num_complex::Complex64;
 
 pub mod coloring;
+pub mod errors;
+pub mod frame;
 pub mod gradient;
 pub mod post_processing;
 pub mod sampler;
