@@ -67,6 +67,7 @@ impl CLAHE {
 
     let tiles = self.tiles(buffer, width, tiles_w, tiles_h);
 
+    // TODO: parallelize?
     for (i, v) in buffer.iter_mut().enumerate() {
       let x = i % width;
       let y = i / width;
@@ -85,6 +86,9 @@ impl CLAHE {
         *v = tiles[i].transform(*v);
         continue;
       }
+
+      // TODO: code below into InterpolationTiles struct
+      // TODO: better handling of usize and isize casting
 
       let (nw, ne, se, sw) = Self::interpolation_tiles(
         &pos, x_tile, y_tile, &tiles, tiles_w, tiles_h,
@@ -105,6 +109,7 @@ impl CLAHE {
     }
   }
 
+  // TODO: return Frame<Tile>
   fn tiles(
     &self,
     buffer: &[f64],
