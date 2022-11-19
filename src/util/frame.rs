@@ -23,18 +23,26 @@ impl<T> Frame<T> {
     }
   }
 
+  /// The width or amount of elements per row of `self`.
+  ///
   pub fn width(&self) -> usize {
     self.width
   }
 
+  /// The height or amount of rows of `self`.
+  ///
   pub fn height(&self) -> usize {
     self.height
   }
 
+  /// Returns a reference to the data buffer of `self`.
+  ///
   pub fn inner(&self) -> &[T] {
     &self.buf
   }
 
+  /// Returns a mutable reference to the data buffer of `self`.
+  ///
   pub fn inner_mut(&mut self) -> &mut [T] {
     &mut self.buf
   }
