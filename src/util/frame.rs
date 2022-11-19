@@ -21,6 +21,7 @@ impl<T> Frame<T> {
   /// However, it will be empty and must be filled calling the
   /// [`push`] method in order to create a valid [`Frame`].
   ///
+  #[must_use]
   pub fn empty(width: usize, height: usize) -> Self {
     Self {
       width,
@@ -31,18 +32,21 @@ impl<T> Frame<T> {
 
   /// The width or amount of elements per row of `self`.
   ///
+  #[must_use]
   pub fn width(&self) -> usize {
     self.width
   }
 
   /// The height or amount of rows of `self`.
   ///
+  #[must_use]
   pub fn height(&self) -> usize {
     self.height
   }
 
   /// Returns a reference to the data buffer of `self`.
   ///
+  #[must_use]
   pub fn inner(&self) -> &[T] {
     &self.buf
   }
@@ -53,6 +57,7 @@ impl<T> Frame<T> {
     &mut self.buf
   }
 
+  #[must_use]
   pub fn get(&self, x: usize, y: usize) -> Option<&T> {
     self.buf.get(y * self.width + x)
   }

@@ -173,20 +173,20 @@ impl CLAHE {
     let mut se = None;
     let mut sw = None;
 
-    if x1.is_some() && y1.is_some() {
-      nw = tiles.get(x1.unwrap(), y1.unwrap());
+    if let (Some(x1), Some(y1)) = (x1, y1) {
+      nw = tiles.get(x1, y1);
     }
 
-    if x2.is_some() && y1.is_some() {
-      ne = tiles.get(x2.unwrap(), y1.unwrap());
+    if let (Some(x2), Some(y1)) = (x2, y1) {
+      ne = tiles.get(x2, y1);
     }
 
-    if x2.is_some() && y2.is_some() {
-      se = tiles.get(x2.unwrap(), y2.unwrap());
+    if let (Some(x2), Some(y2)) = (x2, y2) {
+      se = tiles.get(x2, y2);
     }
 
-    if x1.is_some() && y2.is_some() {
-      sw = tiles.get(x1.unwrap(), y2.unwrap());
+    if let (Some(x1), Some(y2)) = (x1, y2) {
+      sw = tiles.get(x1, y2);
     }
 
     (nw, ne, se, sw)
