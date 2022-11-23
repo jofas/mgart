@@ -40,8 +40,8 @@ impl Buddhabrot {
   ///
   /// # Errors
   ///
-  /// Returns an error, if the generated `PNG` image could not be saved
-  /// to disk.
+  /// Returns an error, if the configuration is faulty or if the
+  /// generated `PNG` image could not be saved to disk.
   ///
   /// [buddhabrot]: https://en.wikipedia.org/wiki/Buddhabrot
   ///
