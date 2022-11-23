@@ -104,6 +104,8 @@
 
 * [ ] Frame object (with indexing and iteration)
 
+* [ ] make SAT nice (minimize casting)
+
 * [ ] propagate all panics to errors
 
 * [ ] get code to pass pedantic clippy with as little allows as 
