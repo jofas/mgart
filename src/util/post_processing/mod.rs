@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use anyhow::Result;
+
 use crate::util::gradient::Gradient;
 
 pub mod clahe;
@@ -21,12 +23,20 @@ pub enum PostProcessing {
 }
 
 impl PostProcessing {
+  /// Applies the [`PostProcessing`] algorithm to `buffer`.
+  ///
+  /// # Errors
+  ///
+  /// An algorithm may fail, if it's configuration is faulty.
+  /// Otherwise, an error running a [`PostProcessing`] algorithm is
+  /// a bug.
+  ///
   pub fn apply(
     &self,
     buffer: &mut [f64],
     width: usize,
     height: usize,
-  ) {
+  ) -> Result<()> {
     match self {
       Self::Normalize => {
         let (min, max) = min_max(buffer);
@@ -54,9 +64,11 @@ impl PostProcessing {
         s.smooth(buffer, width, height);
       }
       Self::Clahe(c) => {
-        c.apply(buffer, width, height);
+        c.apply(buffer, width, height)?;
       }
     }
+
+    Ok(())
   }
 }
 
