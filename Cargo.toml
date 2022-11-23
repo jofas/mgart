@@ -23,3 +23,10 @@ rand = "^0.8.5"
 rand_distr = "^0.4.3"
 map-macro = "^0.2.2"
 anyhow = "^1.0.66"
+
+[dev-dependencies]
+criterion = "^0.4.0"
+
+[[bench]]
+name = "post_processing"
+harness = false
