@@ -102,6 +102,10 @@
 
 * [x] use `unreachable` macro
 
+* [ ] split image generation from drawing algorithms
+
+* [ ] benchmark suite
+
 * [ ] Frame object (with indexing and iteration)
 
 * [ ] make SAT nice (minimize casting)
@@ -127,8 +131,6 @@
   restrictive samplers faster)
 
 * [ ] examples (jsonnet, zoom, samplers, colored)
-
-* [ ] benchmark suite
 
 * [ ] publish action (publish on crates.io + create zip 
   with libsonnet files)
