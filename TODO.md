@@ -146,22 +146,22 @@
 
 * [ ] drawing algorithms: 
   
-      outer: 
-      - [x] EscapeTime
-      - [ ] OuterDistance
-    
-      inner:
-      - [ ] FiniteAttractors (magnitude `dz0`)
-      - [x] InnerDistance
+  outer: 
+  - [x] EscapeTime
+  - [ ] OuterDistance
 
-      both:
-      - [ ] Constant
-      - [ ] EscapeAngle
-      - [ ] CurvatureEstimation
-      - [ ] Atoms
+  inner:
+  - [ ] FiniteAttractors (magnitude `dz0`)
+  - [x] InnerDistance
 
-      else:
-      - [ ] PickoverStalks
+  both:
+  - [ ] Constant
+  - [ ] EscapeAngle
+  - [ ] CurvatureEstimation
+  - [ ] Atoms
+
+  else:
+  - [ ] PickoverStalks
 
 * [ ] multibrot
 
