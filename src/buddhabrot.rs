@@ -124,7 +124,7 @@ impl Buddhabrot {
       buffer.into_iter().map(|x| x.into_inner() as f64).collect();
 
     for process in self.post_processing {
-      process.apply(&mut buffer, self.width, self.height);
+      process.apply(&mut buffer, self.width, self.height)?;
     }
 
     info!("post processing done");
