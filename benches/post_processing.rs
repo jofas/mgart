@@ -5,12 +5,13 @@ use rand::random;
 use map_macro::vec_no_clone;
 
 use mgart::util::post_processing::clahe::CLAHE;
+use mgart::util::post_processing::smoothing::non_local_means::NonLocalMeans;
 
 pub fn clahe(c: &mut Criterion) {
   let clahe = CLAHE::new(60, 256, 64, 64);
 
-  let width = 640;
-  let height = 640;
+  let width = 1024;
+  let height = 1024;
 
   let mut buffer = vec_no_clone![random::<f64>(); width * height];
 
@@ -19,5 +20,18 @@ pub fn clahe(c: &mut Criterion) {
   });
 }
 
-criterion_group!(benches, clahe);
+pub fn nlm(c: &mut Criterion) {
+  let nlm = NonLocalMeans::new(7, 21, 1e-4);
+
+  let width = 256;
+  let height = 256;
+
+  let mut buffer = vec_no_clone![random::<f64>(); width * height];
+
+  c.bench_function("nlm", |b| {
+    b.iter(|| nlm.smooth(&mut buffer, width, height));
+  });
+}
+
+criterion_group!(benches, clahe, nlm);
 criterion_main!(benches);
