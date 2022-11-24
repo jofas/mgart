@@ -102,9 +102,11 @@
 
 * [x] use `unreachable` macro
 
-* [ ] Frame object (with indexing and iteration)
+* [ ] nicer progress abstraction (struct + logging?)
 
-* [ ] propagate all panics to errors
+* [ ] benchmark suite
+
+* [ ] Frame object (with indexing and iteration)
 
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible
@@ -119,14 +121,10 @@
 * [ ] api integration test for jsonnet files 
   (using example files - `jsonnet-rs v0.17.0`)
 
-* [ ] nicer progress abstraction (struct)
-
 * [ ] buddhabrot: flag for disabling `iter_mande_check_vp` (makes more
   restrictive samplers faster)
 
 * [ ] examples (jsonnet, zoom, samplers, colored)
-
-* [ ] benchmark suite
 
 * [ ] publish action (publish on crates.io + create zip 
   with libsonnet files)
