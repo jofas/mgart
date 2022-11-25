@@ -36,13 +36,3 @@ jobs:
         run: |
           cd repo
           cargo test
-
-      - name: Generate code coverage
-        run: |
-          cd repo
-          cargo tarpaulin --verbose --all-features --workspace --timeout 120 --out Xml
-      - name: Upload to codecov.io
-        uses: codecov/codecov-action@v3
-        with:
-          fail_ci_if_error: true
-          directory: repo
