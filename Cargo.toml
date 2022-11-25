@@ -27,6 +27,14 @@ anyhow = "^1.0.66"
 [dev-dependencies]
 criterion = "^0.4.0"
 
+[lib]
+bench = false
+
+[[bin]]
+name = "mgart"
+path = "src/main.rs"
+bench = false
+
 [[bench]]
 name = "post_processing"
 harness = false
