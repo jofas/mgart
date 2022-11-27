@@ -102,6 +102,8 @@
 
 * [x] use `unreachable` macro
 
+* [x] CI benchmarking setup
+
 * [ ] nicer progress abstraction (struct + logging?)
 
 * [ ] benchmark suite
