@@ -106,7 +106,7 @@
 
 * [x] run actions with minimal permissions
 
-* [ ] codecov comment on PRs
+* [x] codecov comment on PRs
 
 * [ ] cache rust builds
 
