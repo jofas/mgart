@@ -104,9 +104,9 @@
 
 * [x] CI benchmarking setup
 
-* [ ] codecov comment on PRs
+* [x] run actions with minimal permissions
 
-* [ ] run actions with minimal permissions
+* [ ] codecov comment on PRs
 
 * [ ] cache rust builds
 
