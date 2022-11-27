@@ -104,11 +104,14 @@
 
 * [x] CI benchmarking setup
 
-* [ ] codecov action on PRs
+* [ ] codecov comment on PRs
 
-* [ ] nicer progress abstraction (struct + logging?)
+* [ ] run actions with minimal permissions
 
-* [ ] benchmark suite
+* [ ] cache rust builds
+
+* [ ] nicer progress abstraction (struct + logging?) -- check that 
+  this fixes output of benchmark action
 
 * [ ] Frame object (with indexing and iteration)
 
