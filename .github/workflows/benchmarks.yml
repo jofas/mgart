@@ -34,4 +34,3 @@ jobs:
           comment-on-alert: true
           fail-on-alert: true
           alert-threshold: '125%'
-          alert-comment-cc-users: '@jofas'
