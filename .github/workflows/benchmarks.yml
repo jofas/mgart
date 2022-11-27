@@ -29,6 +29,7 @@ jobs:
           output-file-path: bench.txt
           external-data-json-path: cache/benchmarks/benchmarks.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          save-data-file: ${{ github.event_name != 'pull_request' }}
           comment-always: true
           comment-on-alert: true
           fail-on-alert: true
