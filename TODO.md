@@ -1,4 +1,4 @@
-## TODO
+# TODO
 
 * [x] `julia set`: scale
 
@@ -101,6 +101,10 @@
 * [x] `Algorithms` object-oriented 
 
 * [x] use `unreachable` macro
+
+* [x] CI benchmarking setup
+
+* [ ] codecov action on PRs
 
 * [ ] nicer progress abstraction (struct + logging?)
 
