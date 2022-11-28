@@ -1,18 +1,17 @@
 use serde::{Deserialize, Serialize};
 
-use rayon::iter::{IndexedParallelIterator, ParallelIterator};
-use rayon::slice::ParallelSliceMut;
+use rayon::iter::{
+  IndexedParallelIterator, IntoParallelRefMutIterator,
+  ParallelIterator,
+};
 
 use display_json::DisplayAsJsonPretty;
 
 use num_complex::Complex64;
 
-use anyhow::Result;
-
-use log::info;
-
-use crate::util::coloring::colors::RGB;
+use crate::util::coloring::colors::{Color, RGB};
 use crate::util::coloring::ColorMap1d;
+use crate::util::frame::Frame;
 use crate::util::{ComplexNumber, ProgressPrinter};
 
 /*
@@ -157,15 +156,15 @@ pub fn julia_set_interior_distance(
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSet {
-  pub width: u32,
-  pub height: u32,
-  pub zoom: f64,
-  pub zpx: f64,
-  pub zpy: f64,
-  pub iter: u64,
-  pub filename: String,
-  pub color_map: ColorMap1d,
-  pub c: Option<ComplexNumber>,
+  width: u32,
+  height: u32,
+  zoom: f64,
+  zpx: f64,
+  zpy: f64,
+  iter: u64,
+  filename: String,
+  color_map: ColorMap1d,
+  c: Option<ComplexNumber>,
 }
 
 impl JuliaSet {
@@ -176,14 +175,13 @@ impl JuliaSet {
   /// Returns an error, if the generated `PNG` image could not be saved
   /// to disk.
   ///
-  pub fn create(&self) -> Result<()> {
+  pub fn create(&self) -> Frame<Color> {
     let (width, height) = (self.width as usize, self.height as usize);
 
-    let num_pixel = width * height;
+    let mut frame = Frame::filled_default(width, height);
 
-    let mut buf = vec![0_u8; num_pixel * 3];
-
-    let pp = ProgressPrinter::new(num_pixel as u64, 2500);
+    let pp = (self.width * self.height) as u64;
+    let pp = ProgressPrinter::new(pp, 2500);
 
     let (w, h) = (f64::from(self.width), f64::from(self.height));
 
@@ -195,10 +193,8 @@ impl JuliaSet {
     let vp_height_half = vp_height * 0.5;
     let vp_width_half = vp_width * 0.5;
 
-    buf
-      .par_chunks_exact_mut(3)
-      .enumerate()
-      .for_each(|(i, pixel)| {
+    frame.inner_mut().par_iter_mut().enumerate().for_each(
+      |(i, pixel)| {
         let x = (i % width) as f64 / w;
         let x = x * vp_width - vp_width_half + self.zpx;
 
@@ -261,29 +257,17 @@ impl JuliaSet {
         ).rgb();
         */
 
-        let rgb = RGB::new(
+        *pixel = RGB::new(
           (color * 255.) as u8,
           (color * 255.) as u8,
           (color * 255.) as u8,
-        );
-
-        pixel[0] = rgb.r();
-        pixel[1] = rgb.g();
-        pixel[2] = rgb.b();
+        )
+        .as_color();
 
         pp.increment();
-      });
+      },
+    );
 
-    image::save_buffer(
-      &self.filename,
-      &buf,
-      self.width,
-      self.height,
-      image::ColorType::Rgb8,
-    )?;
-
-    info!("successfully written: {}", self.filename);
-
-    Ok(())
+    frame
   }
 }

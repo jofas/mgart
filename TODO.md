@@ -112,7 +112,7 @@
 
 * [x] nicer progress printing abstraction
 
-* [ ] split image generation from drawing algorithms
+* [x] split image generation from drawing algorithms
 
 * [ ] Frame object (with indexing and iteration)
 

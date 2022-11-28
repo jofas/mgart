@@ -9,8 +9,6 @@
 
 use serde::Deserialize;
 
-use anyhow::Result;
-
 use log::debug;
 
 pub mod buddhabrot;
@@ -43,26 +41,26 @@ impl Algorithm {
   /// Executes the rendering process for the given [`Algorithm`],
   /// creating a media file containing the generated artwork.
   ///
-  /// # Errors
+  /// # Panics
   ///
-  /// Returns an error if the rendering process fails.
+  /// Panics if the rendering process fails.
   /// Rendering processes fail, because saving the generated image to
-  /// disk was unsuccessful.
+  /// disk was unsuccessful or because the provided
+  /// [`configuration`](Self) is faulty.
   ///
-  pub fn create(self) -> Result<()> {
+  pub fn create(self) {
     match self.algorithm {
       AlgorithmInner::JuliaSet(j) => {
         debug!("generating julia:\n{}", j);
-        j.create()
+        j.create().save_as_image(&self.filename);
       }
       AlgorithmInner::Buddhabrot(b) => {
         debug!("generating buddhabrot: \n{}", b);
         b.create().save_as_image(&self.filename);
-        Ok(())
       }
       AlgorithmInner::ColorMap1dRenderer(c) => {
         debug!("generating 1d color map:\n{}", c);
-        c.create()
+        c.create().save_as_image(&self.filename);
       }
     }
   }
@@ -77,16 +75,13 @@ impl Algorithms {
   /// Multi-threading is implemented inside the rendering process of
   /// each [`Algorithm`].
   ///
-  /// # Errors
+  /// # Panics
   ///
-  /// If one of the provided algorithms fails, execution is stopped
-  /// and the error of the failing alogrithm is returned.
+  /// If one of the provided algorithms fails.
   ///
-  pub fn create(self) -> Result<()> {
+  pub fn create(self) {
     for cmd in self.0 {
-      cmd.create()?;
+      cmd.create();
     }
-
-    Ok(())
   }
 }

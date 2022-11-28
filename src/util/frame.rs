@@ -6,11 +6,8 @@ use crate::util::coloring::colors::Color;
 
 /// A [`Frame`] is a two dimensional array.
 ///
-/// A [`Frame`] is contiguous in memory with a row-first layout.
-/// It is ungrowable, though it can be instantiated without all values
-/// present.
-/// Values can be added later using the [`push`] method, until the
-/// [`Frame`] has reached its full capacity.
+/// A [`Frame`] is contiguous in memory with a row-first layout and
+/// ungrowable.
 ///
 pub struct Frame<T> {
   width: usize,
@@ -88,6 +85,14 @@ impl<T> Frame<T> {
     } else {
       None
     }
+  }
+
+  pub fn inner(&self) -> &[T] {
+    &self.buf
+  }
+
+  pub fn inner_mut(&mut self) -> &mut [T] {
+    &mut self.buf
   }
 }
 

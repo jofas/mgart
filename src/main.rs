@@ -40,5 +40,5 @@ fn main() {
     panic!("unrecognizable file type. Only .json and .jsonnet files are supported");
   };
 
-  a.create().unwrap();
+  a.create();
 }
