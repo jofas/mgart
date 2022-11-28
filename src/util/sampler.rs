@@ -10,9 +10,8 @@ use log::info;
 
 use std::f64::consts::PI;
 use std::marker::PhantomData;
-use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::util::print_progress;
+use crate::util::ProgressPrinter;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -101,7 +100,7 @@ impl Sampler {
   {
     info!("initializing kde population");
 
-    let processed_samples = AtomicU64::new(0);
+    let pp = ProgressPrinter::new(population, 2500);
 
     let res = (0..population)
       .into_par_iter()
@@ -110,8 +109,7 @@ impl Sampler {
 
         let p = true_probability(&sample);
 
-        let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
-        print_progress(ps, population, 2500);
+        pp.increment();
 
         if p >= p_min {
           Some((sample, p))

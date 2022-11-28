@@ -7,9 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
-use std::sync::atomic::{AtomicU64, Ordering};
-
-use crate::util::print_progress;
+use crate::util::ProgressPrinter;
 
 #[derive(
   Serialize, Deserialize, DisplayAsJson, Clone, PartialEq, Debug,
@@ -36,7 +34,7 @@ impl NonLocalMeans {
 
     let num_pixel = buffer.len();
 
-    let processed_pixels = AtomicU64::new(0);
+    let pp = ProgressPrinter::new(num_pixel as u64, 100);
 
     for i in 0..buffer.len() {
       let x = i % width;
@@ -70,8 +68,7 @@ impl NonLocalMeans {
 
       buffer[i] = s / cp;
 
-      let pc = processed_pixels.fetch_add(1, Ordering::SeqCst);
-      print_progress(pc, num_pixel as u64, 100);
+      pp.increment();
     }
   }
 

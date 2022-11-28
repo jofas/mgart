@@ -9,11 +9,8 @@ use anyhow::Result;
 
 use log::info;
 
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
-
 use crate::util::coloring::ColorMap1d;
-use crate::util::print_progress;
+use crate::util::ProgressPrinter;
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct ColorMap1dRenderer {
@@ -38,7 +35,7 @@ impl ColorMap1dRenderer {
 
     let mut buf = vec![0_u8; num_pixel * 3];
 
-    let pixel_created = Arc::new(AtomicU64::new(0));
+    let pp = ProgressPrinter::new(num_pixel as u64, 2500);
 
     buf
       .par_chunks_exact_mut(3)
@@ -52,9 +49,7 @@ impl ColorMap1dRenderer {
         pixel[1] = rgb.g();
         pixel[2] = rgb.b();
 
-        let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
-
-        print_progress(pc, num_pixel as u64, 2500);
+        pp.increment();
       });
 
     image::save_buffer(

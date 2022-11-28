@@ -110,8 +110,7 @@
 
 * [x] cache rust builds 
 
-* [ ] nicer progress abstraction (struct + logging?) -- check that 
-  this fixes output of benchmark action
+* [x] nicer progress printing abstraction
 
 * [ ] Frame object (with indexing and iteration)
 

@@ -4,6 +4,8 @@ use num_complex::Complex64;
 
 use log::{log_enabled, Level};
 
+use std::sync::atomic::{AtomicU64, Ordering};
+
 pub mod coloring;
 pub mod gradient;
 pub mod post_processing;
@@ -73,11 +75,51 @@ pub fn finite_attractor(
   None
 }
 
-pub fn print_progress(i: u64, n: u64, interval: u64) {
-  if log_enabled!(Level::Info)
-    && (i % interval == interval - 1 || i == n - 1)
-  {
-    let p = i as f64 / n as f64 * 100.;
-    print!("{}/{} iterations done ({:.2}%)\r", i + 1, n, p);
+/// Thread-safe progress printer for printing the number of iterations
+/// done by a computationally expensive loop.
+///
+pub enum ProgressPrinter {
+  Info(InfoProgressPrinter),
+  Disabled,
+}
+
+impl ProgressPrinter {
+  pub fn new(n: u64, interval: u64) -> Self {
+    if log_enabled!(Level::Info) {
+      Self::Info(InfoProgressPrinter::new(n, interval))
+    } else {
+      Self::Disabled
+    }
+  }
+
+  pub fn increment(&self) {
+    if let Self::Info(info) = self {
+      info.increment();
+    }
+  }
+}
+
+pub struct InfoProgressPrinter {
+  counter: AtomicU64,
+  n: u64,
+  interval: u64,
+}
+
+impl InfoProgressPrinter {
+  pub fn new(n: u64, interval: u64) -> Self {
+    Self {
+      counter: AtomicU64::new(0),
+      n,
+      interval,
+    }
+  }
+
+  pub fn increment(&self) {
+    let i = self.counter.fetch_add(1, Ordering::SeqCst);
+
+    if i % self.interval == self.interval - 1 || i == self.n - 1 {
+      let p = i as f64 / self.n as f64 * 100.;
+      print!("{}/{} iterations done ({:.2}%)\r", i + 1, self.n, p);
+    }
   }
 }

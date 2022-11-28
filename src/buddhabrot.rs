@@ -18,7 +18,7 @@ use crate::util::coloring::ColorMap1d;
 use crate::util::post_processing::PostProcessing;
 use crate::util::sampler::{Sampler, Sampling};
 use crate::util::viewport::Viewport;
-use crate::util::{print_progress, ComplexNumber};
+use crate::util::{ComplexNumber, ProgressPrinter};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct Buddhabrot {
@@ -86,7 +86,7 @@ impl Buddhabrot {
 
     let buffer = vec_no_clone![AtomicU64::new(0); num_pixel];
 
-    let processed_samples = AtomicU64::new(0);
+    let pp = ProgressPrinter::new(num_pixel as u64, 2500);
 
     (0..self.sample_count).into_par_iter().for_each(|_| {
       let c = sampler.sample();
@@ -113,8 +113,7 @@ impl Buddhabrot {
         }
       }
 
-      let ps = processed_samples.fetch_add(1, Ordering::SeqCst);
-      print_progress(ps, self.sample_count, 2500);
+      pp.increment();
     });
 
     info!("buddhabrot generation finished");
