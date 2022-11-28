@@ -14,6 +14,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: repo
+      - name: Load cached dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: clippy
       - name: Fmt + clippy
         run: |
           cd repo
@@ -33,7 +37,7 @@ jobs:
       - name: Fail build if clippy finds any error or warning
         run: |
           cd repo
-          cargo clippy --all-features --all-targets -- -D warnings
+          cargo clippy --all-features --all-targets -- -D warnings -D clippy::pedantic
       - name: Run test suite
         run: |
           cd repo

@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+      - name: Load cached dependencies
+        uses: Swatinem/rust-cache@v2
       - name: Run benchmark
         run: cargo bench -- --output-format bencher > bench.txt
       - name: Load previous runs from cache

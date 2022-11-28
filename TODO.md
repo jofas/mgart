@@ -108,7 +108,7 @@
 
 * [x] codecov comment on PRs
 
-* [ ] cache rust builds
+* [ ] cache rust builds 
 
 * [ ] nicer progress abstraction (struct + logging?) -- check that 
   this fixes output of benchmark action
