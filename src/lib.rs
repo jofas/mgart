@@ -23,9 +23,16 @@ use crate::debug::ColorMap1dRenderer;
 use crate::julia_set::JuliaSet;
 
 #[derive(Deserialize)]
+pub struct Algorithm {
+  #[serde(flatten)]
+  algorithm: AlgorithmInner,
+  filename: String,
+}
+
+#[derive(Deserialize)]
 #[serde(tag = "algorithm")]
 #[serde(rename_all = "snake_case")]
-pub enum Algorithm {
+pub enum AlgorithmInner {
   JuliaSet(JuliaSet),
   Buddhabrot(Buddhabrot),
   #[serde(rename = "debug.color_map_1d")]
@@ -43,16 +50,17 @@ impl Algorithm {
   /// disk was unsuccessful.
   ///
   pub fn create(self) -> Result<()> {
-    match self {
-      Self::JuliaSet(j) => {
+    match self.algorithm {
+      AlgorithmInner::JuliaSet(j) => {
         debug!("generating julia:\n{}", j);
         j.create()
       }
-      Self::Buddhabrot(b) => {
+      AlgorithmInner::Buddhabrot(b) => {
         debug!("generating buddhabrot: \n{}", b);
-        b.create()
+        b.create().save_as_image(&self.filename);
+        Ok(())
       }
-      Self::ColorMap1dRenderer(c) => {
+      AlgorithmInner::ColorMap1dRenderer(c) => {
         debug!("generating 1d color map:\n{}", c);
         c.create()
       }

@@ -1,4 +1,8 @@
-use crate::util::errors::OperationDisabled;
+use map_macro::vec_no_clone;
+
+use std::ops::{Index, IndexMut};
+
+use crate::util::coloring::colors::Color;
 
 /// A [`Frame`] is a two dimensional array.
 ///
@@ -15,19 +19,23 @@ pub struct Frame<T> {
 }
 
 impl<T> Frame<T> {
-  /// Creates an empty [`Frame`].
+  /// Creates a new [`Frame`] from the provided `buf` with `width` and
+  /// `height`.
   ///
-  /// The underlying data buffer is allocated in this method.
-  /// However, it will be empty and must be filled calling the
-  /// [`push`] method in order to create a valid [`Frame`].
+  /// # Panics
+  ///
+  /// Panics, if `buf` does not contain exactly `width` times `height`
+  /// many elements.
   ///
   #[must_use]
-  pub fn empty(width: usize, height: usize) -> Self {
-    Self {
-      width,
-      height,
-      buf: Vec::with_capacity(width * height),
-    }
+  pub fn new(buf: Vec<T>, width: usize, height: usize) -> Self {
+    assert_eq!(
+      buf.len(),
+      width * height,
+      "the provided buffer must contain width * height many elements",
+    );
+
+    Self { width, height, buf }
   }
 
   /// The width or amount of elements per row of `self`.
@@ -44,17 +52,25 @@ impl<T> Frame<T> {
     self.height
   }
 
-  /// Returns a reference to the data buffer of `self`.
+  /// How many elements the [`Frame`] contains (`[width] * [height]`).
   ///
   #[must_use]
-  pub fn inner(&self) -> &[T] {
-    &self.buf
+  pub fn len(&self) -> usize {
+    self.buf.len()
   }
 
-  /// Returns a mutable reference to the data buffer of `self`.
+  /// Whether the [`Frame`] has a length of zero.
   ///
-  pub fn inner_mut(&mut self) -> &mut [T] {
-    &mut self.buf
+  /// ```
+  /// use mgart::util::frame::Frame;
+  ///
+  /// assert!(Frame::<i32>::new(vec![], 0, 0).is_empty());
+  /// assert!(!Frame::<i32>::new(vec![1], 1, 1).is_empty());
+  /// ```
+  ///
+  #[must_use]
+  pub fn is_empty(&self) -> bool {
+    self.buf.is_empty()
   }
 
   #[must_use]
@@ -65,23 +81,66 @@ impl<T> Frame<T> {
   pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
     self.buf.get_mut(y * self.width + x)
   }
+}
 
-  /// Appends a new value `v` to the end of `self`.
+impl<T: Default> Frame<T> {
+  /// Creates a new [`Frame`] with `width` and `height`, where each
+  /// element is the [Default] value of the given type.
   ///
-  /// # Errors
-  ///
-  /// A [`Frame`] has a capacity of [`width`] times [`height`] it can
-  /// not outgrow.
-  /// If you try calling this method on a [`Frame`] where each cell is
-  /// already filled with data, an [`OperationDisabled`] error will be
-  /// thrown.
-  ///
-  pub fn push(&mut self, v: T) -> Result<(), OperationDisabled> {
-    if self.buf.len() == self.buf.capacity() {
-      Err(OperationDisabled)
-    } else {
-      self.buf.push(v);
-      Ok(())
+  #[must_use]
+  pub fn filled_default(width: usize, height: usize) -> Self {
+    Self {
+      width,
+      height,
+      buf: vec_no_clone![T::default(); width * height],
     }
+  }
+}
+
+impl Frame<Color> {
+  /// Saves this [`Frame`] as an [`RGB`](RGB) image to the file with
+  /// `filename`.
+  ///
+  /// # Panics
+  ///
+  /// Panics if the image file could not be created.
+  ///
+  /// [RGB]: crates::util::coloring::colors::RGB
+  ///
+  pub fn save_as_image(&self, filename: &str) {
+    let mut pixels = vec![0_u8; self.len() * 3];
+
+    pixels.chunks_exact_mut(3).zip(self.buf.iter()).for_each(
+      |(pixel, v)| {
+        let rgb = v.rgb();
+
+        pixel[0] = rgb.r();
+        pixel[1] = rgb.g();
+        pixel[2] = rgb.b();
+      },
+    );
+
+    image::save_buffer(
+      filename,
+      &pixels,
+      self.width as u32,
+      self.height as u32,
+      image::ColorType::Rgb8,
+    )
+    .unwrap();
+  }
+}
+
+impl<T> Index<usize> for Frame<T> {
+  type Output = T;
+
+  fn index(&self, i: usize) -> &Self::Output {
+    &self.buf[i]
+  }
+}
+
+impl<T> IndexMut<usize> for Frame<T> {
+  fn index_mut(&mut self, i: usize) -> &mut Self::Output {
+    &mut self.buf[i]
   }
 }

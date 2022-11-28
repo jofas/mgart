@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use anyhow::Result;
-
 use crate::util::gradient::Gradient;
 
 pub mod clahe;
@@ -36,7 +34,7 @@ impl PostProcessing {
     buffer: &mut [f64],
     width: usize,
     height: usize,
-  ) -> Result<()> {
+  ) {
     match self {
       Self::Normalize => {
         let (min, max) = min_max(buffer);
@@ -64,11 +62,9 @@ impl PostProcessing {
         s.smooth(buffer, width, height);
       }
       Self::Clahe(c) => {
-        c.apply(buffer, width, height)?;
+        c.apply(buffer, width, height);
       }
     }
-
-    Ok(())
   }
 }
 

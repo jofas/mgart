@@ -8,13 +8,13 @@ use num_complex::Complex64;
 
 use map_macro::vec_no_clone;
 
-use anyhow::Result;
-
 use log::info;
 
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use crate::util::coloring::colors::Color;
 use crate::util::coloring::ColorMap1d;
+use crate::util::frame::Frame;
 use crate::util::post_processing::PostProcessing;
 use crate::util::sampler::{Sampler, Sampling};
 use crate::util::viewport::Viewport;
@@ -22,18 +22,17 @@ use crate::util::{ComplexNumber, ProgressPrinter};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct Buddhabrot {
-  pub width: usize,
-  pub height: usize,
-  pub center: ComplexNumber,
-  pub zoom: f64,
-  pub iter: u64,
-  pub rotation: Option<usize>,
-  pub filename: String,
-  pub color_map: ColorMap1d,
-  pub exponent: f64,
-  pub sample_count: u64,
-  pub sampler: Sampler,
-  pub post_processing: Vec<PostProcessing>,
+  width: usize,
+  height: usize,
+  center: ComplexNumber,
+  zoom: f64,
+  iter: u64,
+  rotation: Option<usize>,
+  color_map: ColorMap1d,
+  exponent: f64,
+  sample_count: u64,
+  sampler: Sampler,
+  post_processing: Vec<PostProcessing>,
 }
 
 impl Buddhabrot {
@@ -47,7 +46,8 @@ impl Buddhabrot {
   ///
   /// [buddhabrot]: https://en.wikipedia.org/wiki/Buddhabrot
   ///
-  pub fn create(self) -> Result<()> {
+  #[must_use]
+  pub fn create(self) -> Frame<Color> {
     let aspect_ratio = self.width as f64 / self.height as f64;
 
     let vp_width = aspect_ratio / self.zoom;
@@ -86,7 +86,7 @@ impl Buddhabrot {
 
     let buffer = vec_no_clone![AtomicU64::new(0); num_pixel];
 
-    let pp = ProgressPrinter::new(num_pixel as u64, 2500);
+    let pp = ProgressPrinter::new(self.sample_count, 2500);
 
     (0..self.sample_count).into_par_iter().for_each(|_| {
       let c = sampler.sample();
@@ -124,37 +124,21 @@ impl Buddhabrot {
       buffer.into_iter().map(|x| x.into_inner() as f64).collect();
 
     for process in self.post_processing {
-      process.apply(&mut buffer, self.width, self.height)?;
+      process.apply(&mut buffer, self.width, self.height);
     }
 
     info!("post processing done");
 
     info!("generating final color values");
 
-    let mut pixels = vec![0_u8; num_pixel * 3];
+    let mut pixels: Frame<Color> =
+      Frame::filled_default(self.width, self.height);
+
+    for i in 0..pixels.len() {
+      pixels[i] = self.color_map.color(buffer[i]).as_color();
+    }
 
     pixels
-      .chunks_exact_mut(3)
-      .enumerate()
-      .for_each(|(i, pixel)| {
-        let rgb = self.color_map.color(buffer[i]);
-
-        pixel[0] = rgb.r();
-        pixel[1] = rgb.g();
-        pixel[2] = rgb.b();
-      });
-
-    image::save_buffer(
-      &self.filename,
-      &pixels,
-      self.width as u32,
-      self.height as u32,
-      image::ColorType::Rgb8,
-    )?;
-
-    info!("successfully written: {}", self.filename);
-
-    Ok(())
   }
 
   fn iter_mandel_check_vp(

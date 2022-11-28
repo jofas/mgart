@@ -5,9 +5,6 @@ use rayon::iter::{
   ParallelIterator,
 };
 
-use anyhow::{ensure, Result};
-
-use crate::util::errors::OperationDisabled;
 use crate::util::frame::Frame;
 
 mod pos;
@@ -56,9 +53,9 @@ impl CLAHE {
   ///
   /// `buffer` has a width of `width` and height of `height`.
   ///
-  /// # Errors
+  /// # Panics
   ///
-  /// An error is thrown if `width` isn't divisible by [`tile_size_x`]
+  /// Panics, if `width` isn't divisible by [`tile_size_x`]
   /// or `height` isn't divisible by [`tile_size_y`].
   ///
   pub fn apply(
@@ -66,13 +63,13 @@ impl CLAHE {
     buffer: &mut [f64],
     width: usize,
     height: usize,
-  ) -> Result<()> {
-    ensure!(
+  ) {
+    assert!(
       width % self.tile_size_x == 0 && height % self.tile_size_y == 0,
       "width and height must be divisible by tile_size_x and tile_size_y, respectively",
     );
 
-    let tiles = self.tiles(buffer, width, height)?;
+    let tiles = self.tiles(buffer, width, height);
 
     buffer.par_iter_mut().enumerate().for_each(|(i, v)| {
       let x = i % width;
@@ -103,8 +100,6 @@ impl CLAHE {
 
       *v = it.transform(*v);
     });
-
-    Ok(())
   }
 
   fn tiles(
@@ -112,11 +107,11 @@ impl CLAHE {
     buffer: &[f64],
     width: usize,
     height: usize,
-  ) -> Result<Frame<Tile>, OperationDisabled> {
+  ) -> Frame<Tile> {
     let tiles_w = width / self.tile_size_x;
     let tiles_h = height / self.tile_size_y;
 
-    let mut tiles: Frame<Tile> = Frame::empty(tiles_w, tiles_h);
+    let mut tiles = Vec::with_capacity(tiles_w * tiles_h);
 
     for start_block in 0..tiles_h {
       for offset in 0..tiles_w {
@@ -133,11 +128,11 @@ impl CLAHE {
           stride,
           self.bin_count,
           self.contrast_limit,
-        ))?;
+        ));
       }
     }
 
-    Ok(tiles)
+    Frame::new(tiles, tiles_w, tiles_h)
   }
 
   fn tile_indices(&self, x: usize, y: usize) -> (usize, usize) {
