@@ -212,6 +212,8 @@ fn discrete_rectangle_from_center(
 
 #[cfg(test)]
 mod tests {
+  use crate::util::frame::Frame;
+
   use super::{
     discrete_rectangle_from_center, NonLocalMeans, SummedAreaTable,
   };
@@ -381,16 +383,16 @@ mod tests {
 
   #[test]
   fn nlm() {
-    let mut image: Vec<f64> = (1..=16).map(f64::from).collect();
-    let width = 4;
-    let height = 4;
+    let image: Vec<f64> = (1..=16).map(f64::from).collect();
+
+    let mut frame = Frame::new(image, 4, 4);
 
     let nlm = NonLocalMeans::new(3, 4, 3.);
 
-    nlm.smooth(&mut image, width, height);
+    nlm.smooth(&mut frame);
 
     assert_eq!(
-      image.into_iter().map(|x| x as u8).collect::<Vec<u8>>(),
+      frame.map(|x| x as u8).inner().to_vec(),
       vec![
         [3, 4, 5, 5],
         [5, 6, 6, 7],

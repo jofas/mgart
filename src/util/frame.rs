@@ -14,6 +14,7 @@ use crate::util::coloring::colors::Color;
 /// A [`Frame`] is contiguous in memory with a row-first layout and
 /// ungrowable.
 ///
+#[derive(Debug)]
 pub struct Frame<T> {
   width: usize,
   height: usize,
@@ -104,6 +105,12 @@ impl<T> Frame<T> {
   pub fn for_each_mut(&mut self, f: impl Fn((usize, &mut T))) {
     self.buf.iter_mut().enumerate().for_each(f);
   }
+
+  pub fn map<U>(self, f: impl Fn(T) -> U) -> Frame<U> {
+    let buf = self.buf.into_iter().map(f).collect();
+
+    Frame::new(buf, self.width, self.height)
+  }
 }
 
 impl<T: Send> Frame<T> {
@@ -112,6 +119,19 @@ impl<T: Send> Frame<T> {
     F: Fn((usize, &mut T)) + Sync + Send,
   {
     self.buf.par_iter_mut().enumerate().for_each(f);
+  }
+}
+
+impl<T: Clone> Frame<T> {
+  /// Creates a new [`Frame`] with `width` and `height`, where each
+  /// element is a clone of `v`.
+  ///
+  pub fn filled(v: T, width: usize, height: usize) -> Self {
+    Self {
+      width,
+      height,
+      buf: vec![v; width * height],
+    }
   }
 }
 
@@ -174,5 +194,22 @@ impl<T> Index<usize> for Frame<T> {
 impl<T> IndexMut<usize> for Frame<T> {
   fn index_mut(&mut self, i: usize) -> &mut Self::Output {
     &mut self.buf[i]
+  }
+}
+
+impl<T> Index<(usize, usize)> for Frame<T> {
+  type Output = T;
+
+  fn index(&self, (x, y): (usize, usize)) -> &Self::Output {
+    &self.buf[y * self.width + x]
+  }
+}
+
+impl<T> IndexMut<(usize, usize)> for Frame<T> {
+  fn index_mut(
+    &mut self,
+    (x, y): (usize, usize),
+  ) -> &mut Self::Output {
+    &mut self.buf[y * self.width + x]
   }
 }

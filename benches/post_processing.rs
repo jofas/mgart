@@ -23,13 +23,12 @@ pub fn clahe(c: &mut Criterion) {
 pub fn nlm(c: &mut Criterion) {
   let nlm = NonLocalMeans::new(7, 21, 1e-4);
 
-  let width = 256;
-  let height = 256;
+  let buffer = vec_no_clone![random::<f64>(); 256 * 256];
 
-  let mut buffer = vec_no_clone![random::<f64>(); width * height];
+  let mut frame = Frame::new(buffer, 256, 256);
 
   c.bench_function("nlm", |b| {
-    b.iter(|| nlm.smooth(&mut buffer, width, height));
+    b.iter(|| nlm.smooth(&mut frame));
   });
 }
 

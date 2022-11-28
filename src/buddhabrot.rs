@@ -82,9 +82,10 @@ impl Buddhabrot {
 
     info!("starting buddhabrot generation");
 
-    let num_pixel = self.width * self.height;
+    let buf =
+      vec_no_clone![AtomicU64::new(0); self.width * self.height];
 
-    let buffer = vec_no_clone![AtomicU64::new(0); num_pixel];
+    let frame = Frame::new(buf, self.width, self.height);
 
     let pp = ProgressPrinter::new(self.sample_count, 2500);
 
@@ -105,8 +106,7 @@ impl Buddhabrot {
           let idx = viewport.grid_pos(&z);
 
           if let Some((x, y)) = idx {
-            buffer[y * self.width + x]
-              .fetch_add(1, Ordering::Relaxed);
+            frame[(x, y)].fetch_add(1, Ordering::Relaxed);
           }
 
           z = z.powf(self.exponent) + c;
@@ -120,10 +120,7 @@ impl Buddhabrot {
 
     info!("starting post processing");
 
-    let buffer: Vec<f64> =
-      buffer.into_iter().map(|x| x.into_inner() as f64).collect();
-
-    let mut frame = Frame::new(buffer, self.width, self.height);
+    let mut frame = frame.map(|x| x.into_inner() as f64);
 
     for process in self.post_processing {
       process.apply(&mut frame);
