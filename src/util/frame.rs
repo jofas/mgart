@@ -87,6 +87,7 @@ impl<T> Frame<T> {
     }
   }
 
+  #[must_use]
   pub fn inner(&self) -> &[T] {
     &self.buf
   }

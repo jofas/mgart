@@ -23,11 +23,7 @@ pub struct ColorMap1dRenderer {
 impl ColorMap1dRenderer {
   /// Creates a visualization of a color map as a `PNG` image.
   ///
-  /// # Errors
-  ///
-  /// Returns an error, if the generated `PNG` image could not be saved
-  /// to disk.
-  ///
+  #[must_use]
   pub fn create(&self) -> Frame<Color> {
     let (w, h) = (self.width as usize, self.height as usize);
 

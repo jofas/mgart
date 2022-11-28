@@ -170,11 +170,7 @@ pub struct JuliaSet {
 impl JuliaSet {
   /// Creates a rendering of a julia set as a `PNG` image.
   ///
-  /// # Errors
-  ///
-  /// Returns an error, if the generated `PNG` image could not be saved
-  /// to disk.
-  ///
+  #[must_use]
   pub fn create(&self) -> Frame<Color> {
     let (width, height) = (self.width as usize, self.height as usize);
 
