@@ -1,8 +1,3 @@
-use rayon::iter::{
-  IndexedParallelIterator, IntoParallelRefMutIterator,
-  ParallelIterator,
-};
-
 use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJsonPretty;
@@ -33,7 +28,7 @@ impl ColorMap1dRenderer {
 
     let pp = ProgressPrinter::new(num_pixel as u64, 2500);
 
-    frame.inner_mut().par_iter_mut().enumerate().for_each(
+    frame.par_for_each_mut(
       |(i, pixel)| {
         let x = (i % w) as f64;
 

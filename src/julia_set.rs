@@ -1,10 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use rayon::iter::{
-  IndexedParallelIterator, IntoParallelRefMutIterator,
-  ParallelIterator,
-};
-
 use display_json::DisplayAsJsonPretty;
 
 use num_complex::Complex64;
@@ -189,7 +184,7 @@ impl JuliaSet {
     let vp_height_half = vp_height * 0.5;
     let vp_width_half = vp_width * 0.5;
 
-    frame.inner_mut().par_iter_mut().enumerate().for_each(
+    frame.par_for_each_mut(
       |(i, pixel)| {
         let x = (i % width) as f64 / w;
         let x = x * vp_width - vp_width_half + self.zpx;

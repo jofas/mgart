@@ -31,35 +31,33 @@ impl PostProcessing {
   /// a bug.
   ///
   pub fn apply(&self, frame: &mut Frame<f64>) {
-    let width = frame.width();
-    let height = frame.height();
-    let buffer = frame.inner_mut();
-
     match self {
       Self::Normalize => {
-        let (min, max) = min_max(buffer);
+        let (min, max) = min_max(frame.inner());
 
-        for v in buffer {
+        frame.par_for_each_mut(|(_, v)| {
           *v = (*v - min) / (max - min);
-        }
+        });
       }
       Self::Clamp { min, max } => {
-        for v in buffer {
+        frame.par_for_each_mut(|(_, v)| {
           *v = v.clamp(*min, *max);
-        }
+        });
       }
       Self::ClampAndNormalize { min, max } => {
-        for v in buffer {
+        frame.par_for_each_mut(|(_, v)| {
           *v = (v.clamp(*min, *max) - min) / (max - min);
-        }
+        });
       }
       Self::Gradient(g) => {
-        for v in buffer {
+        frame.par_for_each_mut(|(_, v)| {
           *v = g.apply(*v);
-        }
+        });
       }
       Self::Smoothing(s) => {
-        s.smooth(buffer, width, height);
+        let width = frame.width();
+        let height = frame.height();
+        s.smooth(frame.inner_mut(), width, height);
       }
       Self::Clahe(c) => {
         c.apply(frame);

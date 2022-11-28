@@ -176,23 +176,3 @@ impl<T> IndexMut<usize> for Frame<T> {
     &mut self.buf[i]
   }
 }
-
-pub struct FrameIter<'a, T> {
-  frame: &'a Frame<T>,
-  i: usize,
-}
-
-impl<'a, T> FrameIter<'a, T> {
-  pub fn new(frame: &'a Frame<T>) -> Self {
-    Self { frame, i: 0 }
-  }
-}
-
-impl<'a, T> Iterator for FrameIter<'a, T> {
-  type Item = &'a T;
-
-  fn next(&mut self) -> Option<Self::Item> {
-    self.i += 1;
-    self.frame.inner().get(self.i - 1)
-  }
-}

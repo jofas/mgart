@@ -59,7 +59,7 @@ impl CLAHE {
       "width and height must be divisible by tile_size_x and tile_size_y, respectively",
     );
 
-    let tiles = self.tiles(&frame);
+    let tiles = self.tiles(frame);
 
     let width = frame.width();
 
@@ -274,18 +274,19 @@ mod tests {
 
   use rand::random;
 
+  use crate::util::frame::Frame;
+
   use super::CLAHE;
 
   #[test]
   fn clahe() {
     let clahe = CLAHE::new(20, 256, 8, 8);
 
-    let width = 64;
-    let height = 64;
+    let buffer = vec_no_clone![random::<f64>(); 64 * 64];
 
-    let mut buffer = vec_no_clone![random::<f64>(); width * height];
+    let mut frame = Frame::new(buffer, 64, 64);
 
-    clahe.apply(&mut buffer, width, height);
+    clahe.apply(&mut frame);
   }
 
   #[test]
