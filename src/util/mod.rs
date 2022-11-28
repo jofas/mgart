@@ -84,6 +84,7 @@ pub enum ProgressPrinter {
 }
 
 impl ProgressPrinter {
+  #[must_use]
   pub fn new(n: u64, interval: u64) -> Self {
     if log_enabled!(Level::Info) {
       Self::Info(InfoProgressPrinter::new(n, interval))
@@ -106,6 +107,7 @@ pub struct InfoProgressPrinter {
 }
 
 impl InfoProgressPrinter {
+  #[must_use]
   pub fn new(n: u64, interval: u64) -> Self {
     Self {
       counter: AtomicU64::new(0),
