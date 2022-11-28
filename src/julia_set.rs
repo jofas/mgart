@@ -184,80 +184,78 @@ impl JuliaSet {
     let vp_height_half = vp_height * 0.5;
     let vp_width_half = vp_width * 0.5;
 
-    frame.par_for_each_mut(
-      |(i, pixel)| {
-        let x = (i % width) as f64 / w;
-        let x = x * vp_width - vp_width_half + self.zpx;
+    frame.par_for_each_mut(|(i, pixel)| {
+      let x = (i % width) as f64 / w;
+      let x = x * vp_width - vp_width_half + self.zpx;
 
-        let y = (i / width) as f64 / h;
-        let y = y * vp_height - vp_height_half + self.zpy;
+      let y = (i / width) as f64 / h;
+      let y = y * vp_height - vp_height_half + self.zpy;
 
-        let mut z = Complex64::new(x, y);
+      let mut z = Complex64::new(x, y);
 
-        let c = if let Some(c) = &self.c { c.into() } else { z };
+      let c = if let Some(c) = &self.c { c.into() } else { z };
 
-        let mut z_sqr = z.norm_sqr();
+      let mut z_sqr = z.norm_sqr();
 
-        // outer distance
-        //let mut dzx = 0.;
-        //let mut dzy = 0.;
+      // outer distance
+      //let mut dzx = 0.;
+      //let mut dzy = 0.;
 
-        let mut j = 0;
-        while j < self.iter && z_sqr <= 4.0 {
-          //dzx = 2. * zx * dzx + 1.;
-          //dzy = 2. * zy * dzy + 1.;
+      let mut j = 0;
+      while j < self.iter && z_sqr <= 4.0 {
+        //dzx = 2. * zx * dzx + 1.;
+        //dzy = 2. * zy * dzy + 1.;
 
-          z = z.powi(2) + c;
-          z_sqr = z.norm_sqr();
+        z = z.powi(2) + c;
+        z_sqr = z.norm_sqr();
 
-          j += 1;
-        }
+        j += 1;
+      }
 
-        let color = if j == self.iter {
-          1.
-          //j as f64 / self.iter as f64
-        } else {
-          let mu = z_sqr.sqrt().log2().log2();
-          ((j + 1) as f64 - mu) / self.iter as f64
-
-          /*
-          let z_mag = (zx_sqr + zy_sqr).sqrt();
-          let dz_mag = (dzx.powi(2) + dzy.powi(2)).sqrt();
-          //let distance = z_mag.powi(2).ln() * z_mag / dz_mag;
-          //let distance = 0. - 5. * distance.ln() / self.zoom.ln();
-
-          let distance = 2. * z_mag * z_mag.ln() / dz_mag;
-
-          //info!("distance: {}", distance);
-          distance
-          */
-        };
-
-        //let rgb = self.color_map.color(color);
+      let color = if j == self.iter {
+        1.
+        //j as f64 / self.iter as f64
+      } else {
+        let mu = z_sqr.sqrt().log2().log2();
+        ((j + 1) as f64 - mu) / self.iter as f64
 
         /*
-        let rgb = LCH::new(
-          //((color * 100. * std::f64::consts::PI).sin() / 2. + 0.5) * 100.,
-          color.powf(3.5).fract() * 100.,
-          0.,
-          0.,
-          //65.,
-          //100. - (100. * color),
-          //132.,//32. + 100. - (100. * color),
-          //(360. * color).powi(2),
-        ).rgb();
+        let z_mag = (zx_sqr + zy_sqr).sqrt();
+        let dz_mag = (dzx.powi(2) + dzy.powi(2)).sqrt();
+        //let distance = z_mag.powi(2).ln() * z_mag / dz_mag;
+        //let distance = 0. - 5. * distance.ln() / self.zoom.ln();
+
+        let distance = 2. * z_mag * z_mag.ln() / dz_mag;
+
+        //info!("distance: {}", distance);
+        distance
         */
+      };
 
-        *pixel = RGB::new(
-          (color * 255.) as u8,
-          (color * 255.) as u8,
-          (color * 255.) as u8,
-        )
-        .as_color();
+      //let rgb = self.color_map.color(color);
 
-        pp.increment();
-      },
-    );
+      /*
+      let rgb = LCH::new(
+        //((color * 100. * std::f64::consts::PI).sin() / 2. + 0.5) * 100.,
+        color.powf(3.5).fract() * 100.,
+        0.,
+        0.,
+        //65.,
+        //100. - (100. * color),
+        //132.,//32. + 100. - (100. * color),
+        //(360. * color).powi(2),
+      ).rgb();
+      */
+
+      *pixel = RGB::new(
+        (color * 255.) as u8,
+        (color * 255.) as u8,
+        (color * 255.) as u8,
+      )
+      .as_color();
+
+      pp.increment();
+    });
 
     frame
   }
