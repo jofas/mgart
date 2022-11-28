@@ -1,10 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use rayon::iter::{
-  IndexedParallelIterator, IntoParallelRefMutIterator,
-  ParallelIterator,
-};
-
 use crate::util::frame::Frame;
 
 mod pos;
@@ -58,20 +53,17 @@ impl CLAHE {
   /// Panics, if `width` isn't divisible by [`tile_size_x`]
   /// or `height` isn't divisible by [`tile_size_y`].
   ///
-  pub fn apply(
-    &self,
-    buffer: &mut [f64],
-    width: usize,
-    height: usize,
-  ) {
+  pub fn apply(&self, frame: &mut Frame<f64>) {
     assert!(
-      width % self.tile_size_x == 0 && height % self.tile_size_y == 0,
+      frame.width() % self.tile_size_x == 0 && frame.height() % self.tile_size_y == 0,
       "width and height must be divisible by tile_size_x and tile_size_y, respectively",
     );
 
-    let tiles = self.tiles(buffer, width, height);
+    let tiles = self.tiles(&frame);
 
-    buffer.par_iter_mut().enumerate().for_each(|(i, v)| {
+    let width = frame.width();
+
+    frame.par_for_each_mut(|(i, v)| {
       let x = i % width;
       let y = i / width;
 
@@ -102,26 +94,21 @@ impl CLAHE {
     });
   }
 
-  fn tiles(
-    &self,
-    buffer: &[f64],
-    width: usize,
-    height: usize,
-  ) -> Frame<Tile> {
-    let tiles_w = width / self.tile_size_x;
-    let tiles_h = height / self.tile_size_y;
+  fn tiles(&self, frame: &Frame<f64>) -> Frame<Tile> {
+    let tiles_w = frame.width() / self.tile_size_x;
+    let tiles_h = frame.height() / self.tile_size_y;
 
     let mut tiles = Vec::with_capacity(tiles_w * tiles_h);
 
     for start_block in 0..tiles_h {
       for offset in 0..tiles_w {
         let stride = Strided::new(
-          width,
+          frame.width(),
           self.tile_size_x,
           offset * self.tile_size_x,
           Some(self.tile_size_y),
           Some(start_block * self.tile_size_y),
-          buffer,
+          frame.inner(),
         );
 
         tiles.push(Tile::new(

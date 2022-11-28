@@ -1,3 +1,8 @@
+use rayon::iter::{
+  IndexedParallelIterator, IntoParallelRefMutIterator,
+  ParallelIterator,
+};
+
 use map_macro::vec_no_clone;
 
 use std::ops::{Index, IndexMut};
@@ -95,6 +100,19 @@ impl<T> Frame<T> {
   pub fn inner_mut(&mut self) -> &mut [T] {
     &mut self.buf
   }
+
+  pub fn for_each_mut(&mut self, f: impl Fn((usize, &mut T))) {
+    self.buf.iter_mut().enumerate().for_each(f);
+  }
+}
+
+impl<T: Send> Frame<T> {
+  pub fn par_for_each_mut<F>(&mut self, f: F)
+  where
+    F: Fn((usize, &mut T)) + Sync + Send,
+  {
+    self.buf.par_iter_mut().enumerate().for_each(f);
+  }
 }
 
 impl<T: Default> Frame<T> {
@@ -156,5 +174,25 @@ impl<T> Index<usize> for Frame<T> {
 impl<T> IndexMut<usize> for Frame<T> {
   fn index_mut(&mut self, i: usize) -> &mut Self::Output {
     &mut self.buf[i]
+  }
+}
+
+pub struct FrameIter<'a, T> {
+  frame: &'a Frame<T>,
+  i: usize,
+}
+
+impl<'a, T> FrameIter<'a, T> {
+  pub fn new(frame: &'a Frame<T>) -> Self {
+    Self { frame, i: 0 }
+  }
+}
+
+impl<'a, T> Iterator for FrameIter<'a, T> {
+  type Item = &'a T;
+
+  fn next(&mut self) -> Option<Self::Item> {
+    self.i += 1;
+    self.frame.inner().get(self.i - 1)
   }
 }

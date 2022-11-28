@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::util::frame::Frame;
 use crate::util::gradient::Gradient;
 
 pub mod clahe;
@@ -29,12 +30,11 @@ impl PostProcessing {
   /// Otherwise, an error running a [`PostProcessing`] algorithm is
   /// a bug.
   ///
-  pub fn apply(
-    &self,
-    buffer: &mut [f64],
-    width: usize,
-    height: usize,
-  ) {
+  pub fn apply(&self, frame: &mut Frame<f64>) {
+    let width = frame.width();
+    let height = frame.height();
+    let buffer = frame.inner_mut();
+
     match self {
       Self::Normalize => {
         let (min, max) = min_max(buffer);
@@ -62,7 +62,7 @@ impl PostProcessing {
         s.smooth(buffer, width, height);
       }
       Self::Clahe(c) => {
-        c.apply(buffer, width, height);
+        c.apply(frame);
       }
     }
   }

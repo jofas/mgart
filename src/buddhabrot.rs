@@ -120,11 +120,13 @@ impl Buddhabrot {
 
     info!("starting post processing");
 
-    let mut buffer: Vec<f64> =
+    let buffer: Vec<f64> =
       buffer.into_iter().map(|x| x.into_inner() as f64).collect();
 
+    let mut frame = Frame::new(buffer, self.width, self.height);
+
     for process in self.post_processing {
-      process.apply(&mut buffer, self.width, self.height);
+      process.apply(&mut frame);
     }
 
     info!("post processing done");
@@ -135,7 +137,7 @@ impl Buddhabrot {
       Frame::filled_default(self.width, self.height);
 
     for i in 0..pixels.len() {
-      pixels[i] = self.color_map.color(buffer[i]).as_color();
+      pixels[i] = self.color_map.color(frame[i]).as_color();
     }
 
     pixels
