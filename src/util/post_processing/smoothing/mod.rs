@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
+use crate::util::frame::Frame;
+
 pub mod non_local_means;
 
 use non_local_means::NonLocalMeans;
@@ -16,14 +18,9 @@ pub enum Smoothing {
 }
 
 impl Smoothing {
-  pub fn smooth(
-    &self,
-    buffer: &mut [f64],
-    width: usize,
-    height: usize,
-  ) {
+  pub fn smooth(&self, frame: &mut Frame<f64>) {
     match self {
-      Self::NonLocalMeans(nlm) => nlm.smooth(buffer, width, height),
+      Self::NonLocalMeans(nlm) => nlm.smooth(frame),
     }
   }
 }

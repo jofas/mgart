@@ -28,15 +28,13 @@ impl ColorMap1dRenderer {
 
     let pp = ProgressPrinter::new(num_pixel as u64, 2500);
 
-    frame.par_for_each_mut(
-      |(i, pixel)| {
-        let x = (i % w) as f64;
+    frame.par_for_each_mut(|(i, pixel)| {
+      let x = (i % w) as f64;
 
-        *pixel = self.color_map.color(x / w as f64).as_color();
+      *pixel = self.color_map.color(x / w as f64).as_color();
 
-        pp.increment();
-      },
-    );
+      pp.increment();
+    });
 
     frame
   }

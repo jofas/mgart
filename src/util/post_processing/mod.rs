@@ -55,9 +55,7 @@ impl PostProcessing {
         });
       }
       Self::Smoothing(s) => {
-        let width = frame.width();
-        let height = frame.height();
-        s.smooth(frame.inner_mut(), width, height);
+        s.smooth(frame);
       }
       Self::Clahe(c) => {
         c.apply(frame);

@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
+use crate::util::frame::Frame;
 use crate::util::ProgressPrinter;
 
 #[derive(
@@ -24,12 +25,11 @@ impl NonLocalMeans {
     Self { n, window_size, h }
   }
 
-  pub fn smooth(
-    &self,
-    buffer: &mut [f64],
-    width: usize,
-    height: usize,
-  ) {
+  pub fn smooth(&self, frame: &mut Frame<f64>) {
+    let width = frame.width();
+    let height = frame.height();
+    let buffer = frame.inner_mut();
+
     let m = self.window_mean(buffer, width, height);
 
     let num_pixel = buffer.len();
