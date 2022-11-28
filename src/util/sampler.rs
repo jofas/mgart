@@ -6,6 +6,8 @@ use num_complex::Complex64;
 
 use rand::random;
 
+use log::info;
+
 use std::f64::consts::PI;
 use std::marker::PhantomData;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -97,7 +99,7 @@ impl Sampler {
   where
     Distribution<T>: Sampling<Space = T>,
   {
-    println!("initializing kde population");
+    info!("initializing kde population");
 
     let processed_samples = AtomicU64::new(0);
 
@@ -119,7 +121,7 @@ impl Sampler {
       })
       .collect();
 
-    println!("\ninitializing kde population done");
+    info!("initializing kde population done");
 
     res
   }

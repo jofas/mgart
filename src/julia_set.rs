@@ -9,12 +9,14 @@ use num_complex::Complex64;
 
 use anyhow::Result;
 
-use std::sync::atomic::{AtomicUsize, Ordering};
+use log::info;
+
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use crate::util::coloring::colors::RGB;
 use crate::util::coloring::ColorMap1d;
-use crate::util::ComplexNumber;
+use crate::util::{print_progress, ComplexNumber};
 
 /*
 fn interior_distance(z0: Complex64, c: Complex64, p: usize) -> f64 {
@@ -150,7 +152,7 @@ pub fn julia_set_interior_distance(
     image::ColorType::Rgb8,
   )?;
 
-  println!("\nsuccessfully written: {}", args.filename);
+  info!("\nsuccessfully written: {}", args.filename);
 
   Ok(())
 }
@@ -184,7 +186,7 @@ impl JuliaSet {
 
     let mut buf = vec![0_u8; num_pixel * 3];
 
-    let pixel_created = Arc::new(AtomicUsize::new(0));
+    let pixel_created = Arc::new(AtomicU64::new(0));
 
     let (w, h) = (f64::from(self.width), f64::from(self.height));
 
@@ -242,7 +244,7 @@ impl JuliaSet {
 
           let distance = 2. * z_mag * z_mag.ln() / dz_mag;
 
-          //println!("distance: {}", distance);
+          //info!("distance: {}", distance);
           distance
           */
         };
@@ -274,14 +276,7 @@ impl JuliaSet {
 
         let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
-        if pc % 2500 == 0 || pc == num_pixel {
-          print!(
-            "{}/{} pixels created ({:.2}%)\r",
-            pc,
-            num_pixel,
-            (pc as f32 / num_pixel as f32) * 100.,
-          );
-        }
+        print_progress(pc, num_pixel as u64, 2500);
       });
 
     image::save_buffer(
@@ -292,7 +287,7 @@ impl JuliaSet {
       image::ColorType::Rgb8,
     )?;
 
-    println!("\nsuccessfully written: {}", self.filename);
+    info!("successfully written: {}", self.filename);
 
     Ok(())
   }

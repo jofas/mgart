@@ -6,6 +6,8 @@ use rayon::iter::{
   ParallelIterator,
 };
 
+use log::info;
+
 use std::f32::consts::PI;
 use std::fs::File;
 
@@ -23,8 +25,6 @@ fn create_frame(frame: &mut Frame, a: f32) {
     for y in 0..imgy {
       let cx = x as f32 * scalex - 1.5;
       let cy = y as f32 * scaley - 1.5;
-
-      //println!("x: {}, y: {}, cx: {}, cy: {}", x, y, cx, cy);
 
       let mut z = num_complex::Complex::new(cx, cy);
 
@@ -55,7 +55,7 @@ fn main() {
     vec![Frame::new(RgbaImage::new(imgx, imgy)); num_frames];
 
   frames.par_iter_mut().enumerate().for_each(|(i, f)| {
-    println!("creating frame: {}", i);
+    info!("creating frame: {}", i);
     let a = i as f32 * 2. * PI / num_frames as f32;
     create_frame(f, a);
   });
@@ -67,9 +67,9 @@ fn main() {
 
   gif.set_repeat(Repeat::Infinite).unwrap();
 
-  println!("writing frames to file");
+  info!("writing frames to file");
 
   gif.encode_frames(frames).unwrap();
 
-  println!("finished creating gif");
+  info!("finished creating gif");
 }

@@ -11,6 +11,8 @@ use serde::Deserialize;
 
 use anyhow::Result;
 
+use log::debug;
+
 pub mod buddhabrot;
 pub mod debug;
 pub mod julia_set;
@@ -43,15 +45,15 @@ impl Algorithm {
   pub fn create(self) -> Result<()> {
     match self {
       Self::JuliaSet(j) => {
-        println!("generating julia:\n{}", j);
+        debug!("generating julia:\n{}", j);
         j.create()
       }
       Self::Buddhabrot(b) => {
-        println!("generating buddhabrot: \n{}", b);
+        debug!("generating buddhabrot: \n{}", b);
         b.create()
       }
       Self::ColorMap1dRenderer(c) => {
-        println!("generating 1d color map:\n{}", c);
+        debug!("generating 1d color map:\n{}", c);
         c.create()
       }
     }

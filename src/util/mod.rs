@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use num_complex::Complex64;
 
+use log::{log_enabled, Level};
+
 pub mod coloring;
 pub mod gradient;
 pub mod post_processing;
@@ -72,8 +74,10 @@ pub fn finite_attractor(
 }
 
 pub fn print_progress(i: u64, n: u64, interval: u64) {
-  if i % interval == interval - 1 || i == n - 1 {
-    let p = i as f64 / n as f64 * 100.;
-    print!("{}/{} iterations done ({:.2}%)\r", i + 1, n, p);
+  if log_enabled!(Level::Info) {
+    if i % interval == interval - 1 || i == n - 1 {
+      let p = i as f64 / n as f64 * 100.;
+      print!("{}/{} iterations done ({:.2}%)\r", i + 1, n, p);
+    }
   }
 }

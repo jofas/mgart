@@ -10,6 +10,8 @@ use map_macro::vec_no_clone;
 
 use anyhow::Result;
 
+use log::info;
+
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::util::coloring::ColorMap1d;
@@ -78,7 +80,7 @@ impl Buddhabrot {
       }
     });
 
-    println!("starting buddhabrot generation");
+    info!("starting buddhabrot generation");
 
     let num_pixel = self.width * self.height;
 
@@ -115,9 +117,9 @@ impl Buddhabrot {
       print_progress(ps, self.sample_count, 2500);
     });
 
-    println!("\nbuddhabrot generation finished");
+    info!("buddhabrot generation finished");
 
-    println!("starting post processing");
+    info!("starting post processing");
 
     let mut buffer: Vec<f64> =
       buffer.into_iter().map(|x| x.into_inner() as f64).collect();
@@ -126,9 +128,9 @@ impl Buddhabrot {
       process.apply(&mut buffer, self.width, self.height);
     }
 
-    println!("post processing done");
+    info!("post processing done");
 
-    println!("generating final color values");
+    info!("generating final color values");
 
     let mut pixels = vec![0_u8; num_pixel * 3];
 
@@ -151,7 +153,7 @@ impl Buddhabrot {
       image::ColorType::Rgb8,
     )?;
 
-    println!("successfully written: {}", self.filename);
+    info!("successfully written: {}", self.filename);
 
     Ok(())
   }

@@ -7,10 +7,13 @@ use display_json::DisplayAsJsonPretty;
 
 use anyhow::Result;
 
-use std::sync::atomic::{AtomicUsize, Ordering};
+use log::info;
+
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
 use crate::util::coloring::ColorMap1d;
+use crate::util::print_progress;
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct ColorMap1dRenderer {
@@ -35,7 +38,7 @@ impl ColorMap1dRenderer {
 
     let mut buf = vec![0_u8; num_pixel * 3];
 
-    let pixel_created = Arc::new(AtomicUsize::new(0));
+    let pixel_created = Arc::new(AtomicU64::new(0));
 
     buf
       .par_chunks_exact_mut(3)
@@ -51,12 +54,7 @@ impl ColorMap1dRenderer {
 
         let pc = pixel_created.fetch_add(1, Ordering::SeqCst);
 
-        print!(
-          "{}/{} pixels created ({:.2}%)\r",
-          pc,
-          num_pixel,
-          (pc as f32 / num_pixel as f32) * 100.,
-        );
+        print_progress(pc, num_pixel as u64, 2500);
       });
 
     image::save_buffer(
@@ -67,7 +65,7 @@ impl ColorMap1dRenderer {
       image::ColorType::Rgb8,
     )?;
 
-    println!("\nsuccessfully written: {}", self.filename);
+    info!("\nsuccessfully written: {}", self.filename);
 
     Ok(())
   }
