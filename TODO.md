@@ -112,6 +112,8 @@
 
 * [x] nicer progress printing abstraction
 
+* [ ] split image generation from drawing algorithms
+
 * [ ] Frame object (with indexing and iteration)
 
 * [ ] make SAT nice (minimize casting)
