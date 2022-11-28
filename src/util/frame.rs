@@ -75,11 +75,19 @@ impl<T> Frame<T> {
 
   #[must_use]
   pub fn get(&self, x: usize, y: usize) -> Option<&T> {
-    self.buf.get(y * self.width + x)
+    if x < self.width && y < self.height {
+      self.buf.get(y * self.width + x)
+    } else {
+      None
+    }
   }
 
   pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
-    self.buf.get_mut(y * self.width + x)
+    if x < self.width && y < self.height {
+      self.buf.get_mut(y * self.width + x)
+    } else {
+      None
+    }
   }
 }
 

@@ -143,6 +143,7 @@ impl CLAHE {
 /// Contains the logic for computing the [`CLAHE`] value of a
 /// non-center pixel using interpolation.
 ///
+#[derive(Default)]
 struct InterpolationTiles<'a> {
   nw: Option<&'a Tile>,
   ne: Option<&'a Tile>,
@@ -164,27 +165,11 @@ impl<'a> InterpolationTiles<'a> {
     tile_size_x: usize,
     tile_size_y: usize,
   ) -> Self {
-    let (nw, ne, se, sw) =
-      Self::interpolation_tiles(pos, tiles, x, y);
+    let mut res = Self::default();
 
-    let (dn, ds, dw, de) = Self::interpolation_distances(
-      pos,
-      x,
-      y,
-      tile_size_x,
-      tile_size_y,
-    );
+    res.interpolation_tiles(pos, tiles, x, y);
 
-    let mut res = Self {
-      nw,
-      ne,
-      se,
-      sw,
-      dn,
-      ds,
-      dw,
-      de,
-    };
+    res.interpolation_distances(pos, x, y, tile_size_x, tile_size_y);
 
     res.handle_corners_and_borders();
 
@@ -192,15 +177,11 @@ impl<'a> InterpolationTiles<'a> {
   }
 
   fn interpolation_tiles(
+    &mut self,
     pos: &Pos,
     tiles: &'a Frame<Tile>,
     x: usize,
     y: usize,
-  ) -> (
-    Option<&'a Tile>,
-    Option<&'a Tile>,
-    Option<&'a Tile>,
-    Option<&'a Tile>,
   ) {
     let (x1, x2, y1, y2) = match pos {
       Pos::NW => {
@@ -219,37 +200,31 @@ impl<'a> InterpolationTiles<'a> {
       Pos::Center => unreachable!(),
     };
 
-    let mut nw = None;
-    let mut ne = None;
-    let mut se = None;
-    let mut sw = None;
-
     if let (Some(x1), Some(y1)) = (x1, y1) {
-      nw = tiles.get(x1, y1);
+      self.nw = tiles.get(x1, y1);
     }
 
     if let (Some(x2), Some(y1)) = (x2, y1) {
-      ne = tiles.get(x2, y1);
+      self.ne = tiles.get(x2, y1);
     }
 
     if let (Some(x2), Some(y2)) = (x2, y2) {
-      se = tiles.get(x2, y2);
+      self.se = tiles.get(x2, y2);
     }
 
     if let (Some(x1), Some(y2)) = (x1, y2) {
-      sw = tiles.get(x1, y2);
+      self.sw = tiles.get(x1, y2);
     }
-
-    (nw, ne, se, sw)
   }
 
   fn interpolation_distances(
+    &mut self,
     pos: &Pos,
     x: usize,
     y: usize,
     tile_size_x: usize,
     tile_size_y: usize,
-  ) -> (f64, f64, f64, f64) {
+  ) {
     let center_x = tile_size_x as f64 / 2.;
     let center_y = tile_size_y as f64 / 2.;
 
@@ -259,7 +234,7 @@ impl<'a> InterpolationTiles<'a> {
     let dx = dx / tile_size_x as f64;
     let dy = dy / tile_size_y as f64;
 
-    match pos {
+    (self.dn, self.ds, self.dw, self.de) = match pos {
       Pos::NW => (dy, 1. - dy, dx, 1. - dx),
       Pos::NE => (dy, 1. - dy, 1. - dx, dx),
       Pos::SE => (1. - dy, dy, 1. - dx, dx),
@@ -308,7 +283,23 @@ impl<'a> InterpolationTiles<'a> {
 
 #[cfg(test)]
 mod tests {
+  use map_macro::vec_no_clone;
+
+  use rand::random;
+
   use super::CLAHE;
+
+  #[test]
+  fn clahe() {
+    let clahe = CLAHE::new(20, 256, 8, 8);
+
+    let width = 64;
+    let height = 64;
+
+    let mut buffer = vec_no_clone![random::<f64>(); width * height];
+
+    clahe.apply(&mut buffer, width, height);
+  }
 
   #[test]
   fn tile_indexing() {
