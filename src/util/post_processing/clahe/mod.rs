@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use divrem::DivRem;
+
 use crate::util::frame::Frame;
 
 mod pos;
@@ -64,8 +66,7 @@ impl CLAHE {
     let width = frame.width();
 
     frame.par_for_each_mut(|(i, v)| {
-      let x = i % width;
-      let y = i / width;
+      let (y, x) = i.div_rem(width);
 
       let pos = Pos::new(
         x % self.tile_size_x,

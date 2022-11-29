@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
+use divrem::DivRem;
+
 use crate::util::frame::Frame;
 use crate::util::ProgressPrinter;
 
@@ -29,8 +31,7 @@ impl NonLocalMeans {
     let pp = ProgressPrinter::new(frame.len() as u64, 100);
 
     for i in 0..frame.len() {
-      let x = i % width;
-      let y = i / width;
+      let (y, x) = i.div_rem(width);
 
       let (wx0, wy0, wx1, wy1) = discrete_rectangle_from_center(
         x as isize,
@@ -74,8 +75,7 @@ impl NonLocalMeans {
     let mut res = Frame::filled(0., frame.width(), frame.height());
 
     res.par_for_each_mut(|(i, p)| {
-      let x = i % frame.width();
-      let y = i / frame.width();
+      let (y, x) = i.div_rem(frame.width());
 
       *p = sat.mean_rectangle_from_center(x, y, self.n, self.n);
     });
@@ -91,8 +91,7 @@ impl SummedAreaTable {
     let mut sat = frame.clone();
 
     for i in 1..sat.len() {
-      let x = i % frame.width();
-      let y = i / frame.width();
+      let (y, x) = i.div_rem(frame.width());
 
       if x > 0 {
         sat[i] += sat[i - 1];
@@ -195,6 +194,8 @@ fn discrete_rectangle_from_center(
 
 #[cfg(test)]
 mod tests {
+  use divrem::DivRem;
+
   use crate::util::frame::Frame;
 
   use super::{
@@ -273,8 +274,7 @@ mod tests {
 
     let res: Vec<f64> = (0..16)
       .map(|i| {
-        let x = i % 4;
-        let y = i / 4;
+        let (y, x) = i.div_rem(4_usize);
 
         sat.sum_rectangle_from_center(x, y, 3, 3)
       })
@@ -302,8 +302,7 @@ mod tests {
 
     let res: Vec<f64> = (0..16)
       .map(|i| {
-        let x = i % 4;
-        let y = i / 4;
+        let (y, x) = i.div_rem(4_usize);
 
         sat.mean_rectangle_from_center(x, y, 3, 3)
       })
