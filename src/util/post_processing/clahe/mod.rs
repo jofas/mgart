@@ -1,5 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+use divrem::DivRem;
+
+use crate::util::frame::Frame;
+
 mod pos;
 mod strided;
 mod tile;
@@ -48,28 +52,21 @@ impl CLAHE {
   ///
   /// # Panics
   ///
-  /// Panics, if `width` isn't divisible by [`tile_size_x`] or
-  /// `height` isn't divisible by [`tile_size_y`].
+  /// Panics, if `width` isn't divisible by [`tile_size_x`]
+  /// or `height` isn't divisible by [`tile_size_y`].
   ///
-  pub fn apply(
-    &self,
-    buffer: &mut [f64],
-    width: usize,
-    height: usize,
-  ) {
+  pub fn apply(&self, frame: &mut Frame<f64>) {
     assert!(
-      width % self.tile_size_x == 0 && height % self.tile_size_y == 0,
+      frame.width() % self.tile_size_x == 0 && frame.height() % self.tile_size_y == 0,
       "width and height must be divisible by tile_size_x and tile_size_y, respectively",
     );
 
-    let tiles_w = width / self.tile_size_x;
-    let tiles_h = height / self.tile_size_y;
+    let tiles = self.tiles(frame);
 
-    let tiles = self.tiles(buffer, width, tiles_w, tiles_h);
+    let width = frame.width();
 
-    for (i, v) in buffer.iter_mut().enumerate() {
-      let x = i % width;
-      let y = i / width;
+    frame.par_for_each_mut(|(i, v)| {
+      let (y, x) = i.div_rem(width);
 
       let pos = Pos::new(
         x % self.tile_size_x,
@@ -81,48 +78,38 @@ impl CLAHE {
       let (x_tile, y_tile) = self.tile_indices(x, y);
 
       if let Pos::Center = pos {
-        let i = y_tile as usize * tiles_w + x_tile as usize;
-        *v = tiles[i].transform(*v);
-        continue;
+        *v = tiles.get(x_tile, y_tile).transform(*v);
+        return;
       }
 
-      let (nw, ne, se, sw) = Self::interpolation_tiles(
-        &pos, x_tile, y_tile, &tiles, tiles_w, tiles_h,
+      let it = InterpolationTiles::new(
+        &pos,
+        &tiles,
+        x_tile,
+        y_tile,
+        self.tile_size_x,
+        self.tile_size_y,
       );
 
-      let (dn, ds, dw, de) = self.interpolation_distances(x, y, &pos);
-
-      let (dn, ds, dw, de) = Self::handle_corners_and_borders(
-        nw, ne, se, sw, dn, ds, dw, de,
-      );
-
-      let q_nw = nw.transform(*v) * dn * dw;
-      let q_ne = ne.transform(*v) * dn * de;
-      let q_se = se.transform(*v) * ds * de;
-      let q_sw = sw.transform(*v) * ds * dw;
-
-      *v = q_nw + q_ne + q_se + q_sw;
-    }
+      *v = it.transform(*v);
+    });
   }
 
-  fn tiles(
-    &self,
-    buffer: &[f64],
-    width: usize,
-    tiles_w: usize,
-    tiles_h: usize,
-  ) -> Vec<Tile> {
-    let mut tiles: Vec<Tile> = Vec::with_capacity(tiles_w * tiles_h);
+  fn tiles(&self, frame: &Frame<f64>) -> Frame<Tile> {
+    let tiles_w = frame.width() / self.tile_size_x;
+    let tiles_h = frame.height() / self.tile_size_y;
+
+    let mut tiles = Vec::with_capacity(tiles_w * tiles_h);
 
     for start_block in 0..tiles_h {
       for offset in 0..tiles_w {
         let stride = Strided::new(
-          width,
+          frame.width(),
           self.tile_size_x,
           offset * self.tile_size_x,
           Some(self.tile_size_y),
           Some(start_block * self.tile_size_y),
-          buffer,
+          frame.inner(),
         );
 
         tiles.push(Tile::new(
@@ -133,71 +120,109 @@ impl CLAHE {
       }
     }
 
-    tiles
+    Frame::new(tiles, tiles_w, tiles_h)
   }
 
-  fn interpolation_tiles<'a>(
+  fn tile_indices(&self, x: usize, y: usize) -> (usize, usize) {
+    (x / self.tile_size_x, y / self.tile_size_y)
+  }
+}
+
+/// Contains the logic for computing the [`CLAHE`] value of a
+/// non-center pixel using interpolation.
+///
+#[derive(Default)]
+struct InterpolationTiles<'a> {
+  nw: Option<&'a Tile>,
+  ne: Option<&'a Tile>,
+  se: Option<&'a Tile>,
+  sw: Option<&'a Tile>,
+  dn: f64,
+  ds: f64,
+  dw: f64,
+  de: f64,
+}
+
+impl<'a> InterpolationTiles<'a> {
+  #[must_use]
+  fn new(
     pos: &Pos,
-    x_tile: isize,
-    y_tile: isize,
-    tiles: &'a [Tile],
-    tiles_w: usize,
-    tiles_h: usize,
-  ) -> (
-    Option<&'a Tile>,
-    Option<&'a Tile>,
-    Option<&'a Tile>,
-    Option<&'a Tile>,
+    tiles: &'a Frame<Tile>,
+    x: usize,
+    y: usize,
+    tile_size_x: usize,
+    tile_size_y: usize,
+  ) -> Self {
+    let mut res = Self::default();
+
+    res.interpolation_tiles(pos, tiles, x, y);
+
+    res.interpolation_distances(pos, x, y, tile_size_x, tile_size_y);
+
+    res.handle_corners_and_borders();
+
+    res
+  }
+
+  fn interpolation_tiles(
+    &mut self,
+    pos: &Pos,
+    tiles: &'a Frame<Tile>,
+    x: usize,
+    y: usize,
   ) {
     let (x1, x2, y1, y2) = match pos {
-      Pos::NW => (x_tile - 1, x_tile, y_tile - 1, y_tile),
-      Pos::NE => (x_tile, x_tile + 1, y_tile - 1, y_tile),
-      Pos::SE => (x_tile, x_tile + 1, y_tile, y_tile + 1),
-      Pos::SW => (x_tile - 1, x_tile, y_tile, y_tile + 1),
+      Pos::NW => {
+        (x.checked_sub(1), Some(x), y.checked_sub(1), Some(y))
+      }
+      Pos::NE => {
+        (Some(x), x.checked_add(1), y.checked_sub(1), Some(y))
+      }
+      Pos::SE => {
+        (Some(x), x.checked_add(1), Some(y), y.checked_add(1))
+      }
+      Pos::SW => {
+        (x.checked_sub(1), Some(x), Some(y), y.checked_add(1))
+      }
       // center pixels are handled, before this method is called
       Pos::Center => unreachable!(),
     };
 
-    let mut nw = None;
-    let mut ne = None;
-    let mut se = None;
-    let mut sw = None;
-
-    if x1 >= 0 && y1 >= 0 {
-      nw = Some(&tiles[y1 as usize * tiles_w + x1 as usize]);
+    if let (Some(x1), Some(y1)) = (x1, y1) {
+      self.nw = tiles.get(x1, y1);
     }
 
-    if x2 < tiles_w as isize && y1 >= 0 {
-      ne = Some(&tiles[y1 as usize * tiles_w + x2 as usize]);
+    if let (Some(x2), Some(y1)) = (x2, y1) {
+      self.ne = tiles.get(x2, y1);
     }
 
-    if x2 < tiles_w as isize && y2 < tiles_h as isize {
-      se = Some(&tiles[y2 as usize * tiles_w + x2 as usize]);
+    if let (Some(x2), Some(y2)) = (x2, y2) {
+      self.se = tiles.get(x2, y2);
     }
 
-    if x1 >= 0 && y2 < tiles_h as isize {
-      sw = Some(&tiles[y2 as usize * tiles_w + x1 as usize]);
+    if let (Some(x1), Some(y2)) = (x1, y2) {
+      self.sw = tiles.get(x1, y2);
     }
-
-    (nw, ne, se, sw)
   }
 
   fn interpolation_distances(
-    &self,
+    &mut self,
+    pos: &Pos,
     x: usize,
     y: usize,
-    pos: &Pos,
-  ) -> (f64, f64, f64, f64) {
-    let center_x = self.tile_size_x as f64 / 2.;
-    let center_y = self.tile_size_y as f64 / 2.;
+    tile_size_x: usize,
+    tile_size_y: usize,
+  ) {
+    let center_x = tile_size_x as f64 / 2.;
+    let center_y = tile_size_y as f64 / 2.;
 
-    let dx = (center_x - (x % self.tile_size_x) as f64).abs();
-    let dy = (center_y - (y % self.tile_size_y) as f64).abs();
+    let dx = (center_x - (x % tile_size_x) as f64).abs();
+    let dy = (center_y - (y % tile_size_y) as f64).abs();
 
-    let dx = dx / self.tile_size_x as f64;
-    let dy = dy / self.tile_size_y as f64;
+    let dx = dx / tile_size_x as f64;
+    let dy = dy / tile_size_y as f64;
 
-    match pos {
+    (self.dn, self.ds, self.dw, self.de) = match pos {
       Pos::NW => (dy, 1. - dy, dx, 1. - dx),
       Pos::NE => (dy, 1. - dy, 1. - dx, dx),
       Pos::SE => (1. - dy, dy, 1. - dx, dx),
@@ -207,45 +232,63 @@ impl CLAHE {
     }
   }
 
-  #[allow(clippy::too_many_arguments)]
-  fn handle_corners_and_borders(
-    nw: Option<&Tile>,
-    ne: Option<&Tile>,
-    se: Option<&Tile>,
-    sw: Option<&Tile>,
-    dn: f64,
-    ds: f64,
-    dw: f64,
-    de: f64,
-  ) -> (f64, f64, f64, f64) {
-    match (nw, ne, se, sw) {
+  fn handle_corners_and_borders(&mut self) {
+    (self.dn, self.ds, self.dw, self.de) = match self.tiles() {
       // corners
       (Some(_), None, None, None) => (1., 0., 1., 0.),
       (None, Some(_), None, None) => (1., 0., 0., 1.),
       (None, None, Some(_), None) => (0., 1., 0., 1.),
       (None, None, None, Some(_)) => (0., 1., 1., 0.),
       // borders
-      (Some(_), Some(_), None, None) => (1., 0., dw, de),
-      (Some(_), None, None, Some(_)) => (dn, ds, 1., 0.),
-      (None, Some(_), Some(_), None) => (dn, ds, 0., 1.),
-      (None, None, Some(_), Some(_)) => (0., 1., dw, de),
+      (Some(_), Some(_), None, None) => (1., 0., self.dw, self.de),
+      (Some(_), None, None, Some(_)) => (self.dn, self.ds, 1., 0.),
+      (None, Some(_), Some(_), None) => (self.dn, self.ds, 0., 1.),
+      (None, None, Some(_), Some(_)) => (0., 1., self.dw, self.de),
       // center
-      (Some(_), Some(_), Some(_), Some(_)) => (dn, ds, dw, de),
+      (Some(_), Some(_), Some(_), Some(_)) => {
+        (self.dn, self.ds, self.dw, self.de)
+      }
       _ => unreachable!(),
-    }
+    };
   }
 
-  fn tile_indices(&self, x: usize, y: usize) -> (isize, isize) {
-    (
-      (x / self.tile_size_x) as isize,
-      (y / self.tile_size_y) as isize,
-    )
+  fn transform(&self, v: f64) -> f64 {
+    let q_nw = self.nw.transform(v) * self.dn * self.dw;
+    let q_ne = self.ne.transform(v) * self.dn * self.de;
+    let q_se = self.se.transform(v) * self.ds * self.de;
+    let q_sw = self.sw.transform(v) * self.ds * self.dw;
+
+    q_nw + q_ne + q_se + q_sw
+  }
+
+  fn tiles(
+    &self,
+  ) -> (Option<&Tile>, Option<&Tile>, Option<&Tile>, Option<&Tile>)
+  {
+    (self.nw, self.ne, self.se, self.sw)
   }
 }
 
 #[cfg(test)]
 mod tests {
+  use map_macro::vec_no_clone;
+
+  use rand::random;
+
+  use crate::util::frame::Frame;
+
   use super::CLAHE;
+
+  #[test]
+  fn clahe() {
+    let clahe = CLAHE::new(20, 256, 8, 8);
+
+    let buffer = vec_no_clone![random::<f64>(); 64 * 64];
+
+    let mut frame = Frame::new(buffer, 64, 64);
+
+    clahe.apply(&mut frame);
+  }
 
   #[test]
   fn tile_indexing() {

@@ -9,8 +9,6 @@
 
 use serde::Deserialize;
 
-use anyhow::Result;
-
 use log::debug;
 
 pub mod buddhabrot;
@@ -23,9 +21,16 @@ use crate::debug::ColorMap1dRenderer;
 use crate::julia_set::JuliaSet;
 
 #[derive(Deserialize)]
+pub struct Algorithm {
+  #[serde(flatten)]
+  algorithm: AlgorithmInner,
+  filename: String,
+}
+
+#[derive(Deserialize)]
 #[serde(tag = "algorithm")]
 #[serde(rename_all = "snake_case")]
-pub enum Algorithm {
+pub enum AlgorithmInner {
   JuliaSet(JuliaSet),
   Buddhabrot(Buddhabrot),
   #[serde(rename = "debug.color_map_1d")]
@@ -36,25 +41,26 @@ impl Algorithm {
   /// Executes the rendering process for the given [`Algorithm`],
   /// creating a media file containing the generated artwork.
   ///
-  /// # Errors
+  /// # Panics
   ///
-  /// Returns an error if the rendering process fails.
+  /// Panics if the rendering process fails.
   /// Rendering processes fail, because saving the generated image to
-  /// disk was unsuccessful.
+  /// disk was unsuccessful or because the provided
+  /// [`configuration`](Self) is faulty.
   ///
-  pub fn create(self) -> Result<()> {
-    match self {
-      Self::JuliaSet(j) => {
+  pub fn create(self) {
+    match self.algorithm {
+      AlgorithmInner::JuliaSet(j) => {
         debug!("generating julia:\n{}", j);
-        j.create()
+        j.create().save_as_image(&self.filename);
       }
-      Self::Buddhabrot(b) => {
+      AlgorithmInner::Buddhabrot(b) => {
         debug!("generating buddhabrot: \n{}", b);
-        b.create()
+        b.create().save_as_image(&self.filename);
       }
-      Self::ColorMap1dRenderer(c) => {
+      AlgorithmInner::ColorMap1dRenderer(c) => {
         debug!("generating 1d color map:\n{}", c);
-        c.create()
+        c.create().save_as_image(&self.filename);
       }
     }
   }
@@ -69,16 +75,13 @@ impl Algorithms {
   /// Multi-threading is implemented inside the rendering process of
   /// each [`Algorithm`].
   ///
-  /// # Errors
+  /// # Panics
   ///
-  /// If one of the provided algorithms fails, execution is stopped
-  /// and the error of the failing alogrithm is returned.
+  /// If one of the provided algorithms fails.
   ///
-  pub fn create(self) -> Result<()> {
+  pub fn create(self) {
     for cmd in self.0 {
-      cmd.create()?;
+      cmd.create();
     }
-
-    Ok(())
   }
 }

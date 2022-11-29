@@ -7,6 +7,7 @@ use log::{log_enabled, Level};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub mod coloring;
+pub mod frame;
 pub mod gradient;
 pub mod post_processing;
 pub mod sampler;

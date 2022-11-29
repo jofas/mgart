@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::util::frame::Frame;
 use crate::util::gradient::Gradient;
 
 pub mod clahe;
@@ -21,40 +22,43 @@ pub enum PostProcessing {
 }
 
 impl PostProcessing {
-  pub fn apply(
-    &self,
-    buffer: &mut [f64],
-    width: usize,
-    height: usize,
-  ) {
+  /// Applies the [`PostProcessing`] algorithm to `buffer`.
+  ///
+  /// # Errors
+  ///
+  /// An algorithm may fail, if it's configuration is faulty.
+  /// Otherwise, an error running a [`PostProcessing`] algorithm is
+  /// a bug.
+  ///
+  pub fn apply(&self, frame: &mut Frame<f64>) {
     match self {
       Self::Normalize => {
-        let (min, max) = min_max(buffer);
+        let (min, max) = min_max(frame.inner());
 
-        for v in buffer {
+        frame.par_for_each_mut(|(_, v)| {
           *v = (*v - min) / (max - min);
-        }
+        });
       }
       Self::Clamp { min, max } => {
-        for v in buffer {
+        frame.par_for_each_mut(|(_, v)| {
           *v = v.clamp(*min, *max);
-        }
+        });
       }
       Self::ClampAndNormalize { min, max } => {
-        for v in buffer {
+        frame.par_for_each_mut(|(_, v)| {
           *v = (v.clamp(*min, *max) - min) / (max - min);
-        }
+        });
       }
       Self::Gradient(g) => {
-        for v in buffer {
+        frame.par_for_each_mut(|(_, v)| {
           *v = g.apply(*v);
-        }
+        });
       }
       Self::Smoothing(s) => {
-        s.smooth(buffer, width, height);
+        s.smooth(frame);
       }
       Self::Clahe(c) => {
-        c.apply(buffer, width, height);
+        c.apply(frame);
       }
     }
   }

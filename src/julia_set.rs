@@ -1,18 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use rayon::iter::{IndexedParallelIterator, ParallelIterator};
-use rayon::slice::ParallelSliceMut;
-
 use display_json::DisplayAsJsonPretty;
 
 use num_complex::Complex64;
 
-use anyhow::Result;
-
-use log::info;
-
-use crate::util::coloring::colors::RGB;
+use crate::util::coloring::colors::{Color, RGB};
 use crate::util::coloring::ColorMap1d;
+use crate::util::frame::Frame;
 use crate::util::{ComplexNumber, ProgressPrinter};
 
 /*
@@ -157,33 +151,28 @@ pub fn julia_set_interior_distance(
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSet {
-  pub width: u32,
-  pub height: u32,
-  pub zoom: f64,
-  pub zpx: f64,
-  pub zpy: f64,
-  pub iter: u64,
-  pub filename: String,
-  pub color_map: ColorMap1d,
-  pub c: Option<ComplexNumber>,
+  width: u32,
+  height: u32,
+  zoom: f64,
+  zpx: f64,
+  zpy: f64,
+  iter: u64,
+  filename: String,
+  color_map: ColorMap1d,
+  c: Option<ComplexNumber>,
 }
 
 impl JuliaSet {
   /// Creates a rendering of a julia set as a `PNG` image.
   ///
-  /// # Errors
-  ///
-  /// Returns an error, if the generated `PNG` image could not be saved
-  /// to disk.
-  ///
-  pub fn create(&self) -> Result<()> {
+  #[must_use]
+  pub fn create(&self) -> Frame<Color> {
     let (width, height) = (self.width as usize, self.height as usize);
 
-    let num_pixel = width * height;
+    let mut frame = Frame::filled_default(width, height);
 
-    let mut buf = vec![0_u8; num_pixel * 3];
-
-    let pp = ProgressPrinter::new(num_pixel as u64, 2500);
+    let pp = (self.width * self.height) as u64;
+    let pp = ProgressPrinter::new(pp, 2500);
 
     let (w, h) = (f64::from(self.width), f64::from(self.height));
 
@@ -195,95 +184,79 @@ impl JuliaSet {
     let vp_height_half = vp_height * 0.5;
     let vp_width_half = vp_width * 0.5;
 
-    buf
-      .par_chunks_exact_mut(3)
-      .enumerate()
-      .for_each(|(i, pixel)| {
-        let x = (i % width) as f64 / w;
-        let x = x * vp_width - vp_width_half + self.zpx;
+    frame.par_for_each_mut(|(i, pixel)| {
+      let x = (i % width) as f64 / w;
+      let x = x * vp_width - vp_width_half + self.zpx;
 
-        let y = (i / width) as f64 / h;
-        let y = y * vp_height - vp_height_half + self.zpy;
+      let y = (i / width) as f64 / h;
+      let y = y * vp_height - vp_height_half + self.zpy;
 
-        let mut z = Complex64::new(x, y);
+      let mut z = Complex64::new(x, y);
 
-        let c = if let Some(c) = &self.c { c.into() } else { z };
+      let c = if let Some(c) = &self.c { c.into() } else { z };
 
-        let mut z_sqr = z.norm_sqr();
+      let mut z_sqr = z.norm_sqr();
 
-        // outer distance
-        //let mut dzx = 0.;
-        //let mut dzy = 0.;
+      // outer distance
+      //let mut dzx = 0.;
+      //let mut dzy = 0.;
 
-        let mut j = 0;
-        while j < self.iter && z_sqr <= 4.0 {
-          //dzx = 2. * zx * dzx + 1.;
-          //dzy = 2. * zy * dzy + 1.;
+      let mut j = 0;
+      while j < self.iter && z_sqr <= 4.0 {
+        //dzx = 2. * zx * dzx + 1.;
+        //dzy = 2. * zy * dzy + 1.;
 
-          z = z.powi(2) + c;
-          z_sqr = z.norm_sqr();
+        z = z.powi(2) + c;
+        z_sqr = z.norm_sqr();
 
-          j += 1;
-        }
+        j += 1;
+      }
 
-        let color = if j == self.iter {
-          1.
-          //j as f64 / self.iter as f64
-        } else {
-          let mu = z_sqr.sqrt().log2().log2();
-          ((j + 1) as f64 - mu) / self.iter as f64
-
-          /*
-          let z_mag = (zx_sqr + zy_sqr).sqrt();
-          let dz_mag = (dzx.powi(2) + dzy.powi(2)).sqrt();
-          //let distance = z_mag.powi(2).ln() * z_mag / dz_mag;
-          //let distance = 0. - 5. * distance.ln() / self.zoom.ln();
-
-          let distance = 2. * z_mag * z_mag.ln() / dz_mag;
-
-          //info!("distance: {}", distance);
-          distance
-          */
-        };
-
-        //let rgb = self.color_map.color(color);
+      let color = if j == self.iter {
+        1.
+        //j as f64 / self.iter as f64
+      } else {
+        let mu = z_sqr.sqrt().log2().log2();
+        ((j + 1) as f64 - mu) / self.iter as f64
 
         /*
-        let rgb = LCH::new(
-          //((color * 100. * std::f64::consts::PI).sin() / 2. + 0.5) * 100.,
-          color.powf(3.5).fract() * 100.,
-          0.,
-          0.,
-          //65.,
-          //100. - (100. * color),
-          //132.,//32. + 100. - (100. * color),
-          //(360. * color).powi(2),
-        ).rgb();
+        let z_mag = (zx_sqr + zy_sqr).sqrt();
+        let dz_mag = (dzx.powi(2) + dzy.powi(2)).sqrt();
+        //let distance = z_mag.powi(2).ln() * z_mag / dz_mag;
+        //let distance = 0. - 5. * distance.ln() / self.zoom.ln();
+
+        let distance = 2. * z_mag * z_mag.ln() / dz_mag;
+
+        //info!("distance: {}", distance);
+        distance
         */
+      };
 
-        let rgb = RGB::new(
-          (color * 255.) as u8,
-          (color * 255.) as u8,
-          (color * 255.) as u8,
-        );
+      //let rgb = self.color_map.color(color);
 
-        pixel[0] = rgb.r();
-        pixel[1] = rgb.g();
-        pixel[2] = rgb.b();
+      /*
+      let rgb = LCH::new(
+        //((color * 100. * std::f64::consts::PI).sin() / 2. + 0.5) * 100.,
+        color.powf(3.5).fract() * 100.,
+        0.,
+        0.,
+        //65.,
+        //100. - (100. * color),
+        //132.,//32. + 100. - (100. * color),
+        //(360. * color).powi(2),
+      ).rgb();
+      */
 
-        pp.increment();
-      });
+      *pixel = RGB::new(
+        (color * 255.) as u8,
+        (color * 255.) as u8,
+        (color * 255.) as u8,
+      )
+      .as_color();
 
-    image::save_buffer(
-      &self.filename,
-      &buf,
-      self.width,
-      self.height,
-      image::ColorType::Rgb8,
-    )?;
+      pp.increment();
+    });
 
-    info!("successfully written: {}", self.filename);
-
-    Ok(())
+    frame
   }
 }

@@ -75,7 +75,7 @@ impl HistogramEqualization for Tile {
   fn transform(&self, v: f64) -> f64 {
     let bin = (v * (self.hist.len() - 1) as f64) as usize;
 
-    let res = (self.hist[bin] - self.cdf_min) as f64;
+    let res = self.hist[bin].saturating_sub(self.cdf_min) as f64;
 
     res / (self.n - self.cdf_min) as f64
   }

@@ -33,6 +33,14 @@ impl Color {
   }
 }
 
+impl Default for Color {
+  /// The default [`Color`] is [`RGB::BLACK`].
+  ///
+  fn default() -> Self {
+    Self::RGB(RGB::BLACK)
+  }
+}
+
 #[derive(Serialize, Deserialize, Clone, Copy, Debug)]
 pub struct LCH {
   #[serde(with = "serde_nan")]
@@ -175,6 +183,9 @@ pub struct RGB {
 }
 
 impl RGB {
+  pub const BLACK: Self = Self::new(0, 0, 0);
+  pub const WHITE: Self = Self::new(255, 255, 255);
+
   /// Creates a new [RGB] color.
   ///
   #[must_use]
@@ -203,8 +214,13 @@ impl RGB {
   }
 
   #[must_use]
-  pub fn as_vec(self) -> [u8; 3] {
+  pub fn as_array(self) -> [u8; 3] {
     [self.r, self.g, self.b]
+  }
+
+  #[must_use]
+  pub fn as_color(self) -> Color {
+    Color::RGB(self)
   }
 
   fn lab(self) -> LAB {

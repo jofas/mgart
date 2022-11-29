@@ -112,15 +112,21 @@
 
 * [x] nicer progress printing abstraction
 
-* [ ] Frame object (with indexing and iteration)
+* [x] split image generation from drawing algorithms
+
+* [x] Frame object (with indexing and iteration)
+
+* [x] make SAT nice (minimize casting)
 
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible
 
 * [ ] increase coverage
 
+* [ ] sampling benchmark
+
 * [ ] kde sampling: make sure sampling points are evenly distributed
-  in space
+  in space 
 
 * [ ] collect stats (hits, avg. iterations, etc.)
 
@@ -150,22 +156,22 @@
 
 * [ ] drawing algorithms: 
   
-      outer: 
-      - [x] EscapeTime
-      - [ ] OuterDistance
-    
-      inner:
-      - [ ] FiniteAttractors (magnitude `dz0`)
-      - [x] InnerDistance
+  outer: 
+  - [x] EscapeTime
+  - [ ] OuterDistance
 
-      both:
-      - [ ] Constant
-      - [ ] EscapeAngle
-      - [ ] CurvatureEstimation
-      - [ ] Atoms
+  inner:
+  - [ ] FiniteAttractors (magnitude `dz0`)
+  - [x] InnerDistance
 
-      else:
-      - [ ] PickoverStalks
+  both:
+  - [ ] Constant
+  - [ ] EscapeAngle
+  - [ ] CurvatureEstimation
+  - [ ] Atoms
+
+  else:
+  - [ ] PickoverStalks
 
 * [ ] multibrot
 
