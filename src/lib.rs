@@ -4,7 +4,6 @@
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_possible_truncation)]
 #![allow(clippy::float_cmp)]
-#![allow(clippy::many_single_char_names)]
 
 use serde::Deserialize;
 

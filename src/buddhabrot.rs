@@ -103,7 +103,7 @@ impl Buddhabrot {
         let mut z = c;
 
         for _ in 0..=j {
-          let idx = viewport.grid_pos(&z);
+          let idx = viewport.rotated_grid_pos(&z);
 
           if let Some((x, y)) = idx {
             frame[(x, y)].fetch_add(1, Ordering::Relaxed);
@@ -150,13 +150,13 @@ impl Buddhabrot {
     let mut z_sqr = z.norm_sqr();
 
     let mut j = 0;
-    let mut passed_viewport = viewport.contains_point(&z);
+    let mut passed_viewport = viewport.contains_rotated_point(&z);
 
     while j < iter && z_sqr <= 4.0 {
       z = z.powf(exponent) + c;
       z_sqr = z.norm_sqr();
 
-      if viewport.contains_point(&z) {
+      if viewport.contains_rotated_point(&z) {
         passed_viewport = true;
       }
 

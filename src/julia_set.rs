@@ -2,11 +2,12 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJsonPretty;
 
-use num_complex::Complex64;
+use divrem::DivRem;
 
 use crate::util::coloring::colors::{Color, RGB};
 use crate::util::coloring::ColorMap1d;
 use crate::util::frame::Frame;
+use crate::util::viewport::Viewport;
 use crate::util::{ComplexNumber, ProgressPrinter};
 
 /*
@@ -151,13 +152,12 @@ pub fn julia_set_interior_distance(
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSet {
-  width: u32,
-  height: u32,
+  width: usize,
+  height: usize,
+  center: ComplexNumber,
   zoom: f64,
-  zpx: f64,
-  zpy: f64,
   iter: u64,
-  filename: String,
+  rotation: Option<usize>,
   color_map: ColorMap1d,
   c: Option<ComplexNumber>,
 }
@@ -167,31 +167,32 @@ impl JuliaSet {
   ///
   #[must_use]
   pub fn create(&self) -> Frame<Color> {
-    let (width, height) = (self.width as usize, self.height as usize);
-
-    let mut frame = Frame::filled_default(width, height);
+    let mut frame = Frame::filled_default(self.width, self.height);
 
     let pp = (self.width * self.height) as u64;
     let pp = ProgressPrinter::new(pp, 2500);
 
-    let (w, h) = (f64::from(self.width), f64::from(self.height));
+    let aspect_ratio = self.width as f64 / self.height as f64;
 
-    let aspect_ratio = w / h;
-
+    let vp_width = aspect_ratio / self.zoom;
     let vp_height = 1. / self.zoom;
-    let vp_width = vp_height * aspect_ratio;
 
-    let vp_height_half = vp_height * 0.5;
-    let vp_width_half = vp_width * 0.5;
+    let grid_delta_x = vp_width / self.width as f64;
+    let grid_delta_y = vp_height / self.height as f64;
+
+    let viewport = Viewport::from_center(
+      self.center.into(),
+      vp_width,
+      vp_height,
+      grid_delta_x,
+      grid_delta_y,
+      self.rotation.unwrap_or(0),
+    );
 
     frame.par_for_each_mut(|(i, pixel)| {
-      let x = (i % width) as f64 / w;
-      let x = x * vp_width - vp_width_half + self.zpx;
+      let (im, re) = i.div_rem(self.width);
 
-      let y = (i / width) as f64 / h;
-      let y = y * vp_height - vp_height_half + self.zpy;
-
-      let mut z = Complex64::new(x, y);
+      let mut z = viewport.rotated_point(re, im);
 
       let c = if let Some(c) = &self.c { c.into() } else { z };
 

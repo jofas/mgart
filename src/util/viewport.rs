@@ -47,8 +47,6 @@ impl Viewport {
 
   #[must_use]
   pub fn contains_point(&self, p: &Complex64) -> bool {
-    let p = p * self.rotation;
-
     self.x_min <= p.re
       && p.re < self.x_max
       && self.y_min <= p.im
@@ -56,10 +54,13 @@ impl Viewport {
   }
 
   #[must_use]
+  pub fn contains_rotated_point(&self, p: &Complex64) -> bool {
+    self.contains_point(&(p * self.rotation))
+  }
+
+  #[must_use]
   pub fn grid_pos(&self, p: &Complex64) -> Option<(usize, usize)> {
     if self.contains_point(p) {
-      let p = p * self.rotation;
-
       let x = ((p.re - self.x_min) / self.grid_delta_x) as usize;
       let y = ((p.im - self.y_min) / self.grid_delta_y) as usize;
 
@@ -67,6 +68,27 @@ impl Viewport {
     } else {
       None
     }
+  }
+
+  #[must_use]
+  pub fn rotated_grid_pos(
+    &self,
+    p: &Complex64,
+  ) -> Option<(usize, usize)> {
+    self.grid_pos(&(p * self.rotation))
+  }
+
+  #[must_use]
+  pub fn point(&self, x: usize, y: usize) -> Complex64 {
+    let re = x as f64 * self.grid_delta_x + self.x_min;
+    let im = y as f64 * self.grid_delta_y + self.y_min;
+
+    Complex64::new(re, im)
+  }
+
+  #[must_use]
+  pub fn rotated_point(&self, x: usize, y: usize) -> Complex64 {
+    self.point(x, y) * self.rotation
   }
 }
 
@@ -213,7 +235,7 @@ mod tests {
   }
 
   #[test]
-  fn grid_pos7() {
+  fn rotated_grid_pos() {
     let center = Complex64::new(0., 0.);
     let width = 1.;
     let height = 2.;
@@ -229,7 +251,8 @@ mod tests {
       0,
     );
 
-    let (x, y) = vp.grid_pos(&Complex64::new(0.15, 0.)).unwrap();
+    let (x, y) =
+      vp.rotated_grid_pos(&Complex64::new(0.15, 0.)).unwrap();
 
     assert_eq!(x, 6);
     assert_eq!(y, 10);
@@ -243,7 +266,8 @@ mod tests {
       90,
     );
 
-    let (x, y) = vp.grid_pos(&Complex64::new(0.15, 0.)).unwrap();
+    let (x, y) =
+      vp.rotated_grid_pos(&Complex64::new(0.15, 0.)).unwrap();
 
     assert_eq!(x, 5);
     assert_eq!(y, 11);
@@ -257,7 +281,8 @@ mod tests {
       180,
     );
 
-    let (x, y) = vp.grid_pos(&Complex64::new(0.15, 0.)).unwrap();
+    let (x, y) =
+      vp.rotated_grid_pos(&Complex64::new(0.15, 0.)).unwrap();
 
     assert_eq!(x, 3);
     assert_eq!(y, 10);
@@ -271,9 +296,102 @@ mod tests {
       270,
     );
 
-    let (x, y) = vp.grid_pos(&Complex64::new(0.15, 0.)).unwrap();
+    let (x, y) =
+      vp.rotated_grid_pos(&Complex64::new(0.15, 0.)).unwrap();
 
     assert_eq!(x, 5);
     assert_eq!(y, 8);
+  }
+
+  #[test]
+  fn point1() {
+    let center = Complex64::new(0., 0.);
+    let width = 2.;
+    let height = 2.;
+    let grid_delta_x = 0.01;
+    let grid_delta_y = 0.01;
+
+    let vp = Viewport::from_center(
+      center,
+      width,
+      height,
+      grid_delta_x,
+      grid_delta_y,
+      0,
+    );
+
+    let point = vp.point(100, 100);
+
+    assert!(point.re <= f64::EPSILON);
+    assert!(point.im <= f64::EPSILON);
+  }
+
+  #[test]
+  fn point2() {
+    let center = Complex64::new(0., 0.);
+    let width = 2.;
+    let height = 2.;
+    let grid_delta_x = 0.01;
+    let grid_delta_y = 0.01;
+
+    let vp = Viewport::from_center(
+      center,
+      width,
+      height,
+      grid_delta_x,
+      grid_delta_y,
+      0,
+    );
+
+    let point = vp.point(0, 0);
+
+    assert!((point.re + 1.) <= f64::EPSILON);
+    assert!((point.im + 1.) <= f64::EPSILON);
+  }
+
+  #[test]
+  fn point2_with_rotation() {
+    let center = Complex64::new(0., 0.);
+    let width = 2.;
+    let height = 2.;
+    let grid_delta_x = 0.01;
+    let grid_delta_y = 0.01;
+
+    let vp = Viewport::from_center(
+      center,
+      width,
+      height,
+      grid_delta_x,
+      grid_delta_y,
+      180,
+    );
+
+    let point = vp.rotated_point(0, 0);
+
+    assert!((point.re - 1.) <= f64::EPSILON);
+    assert!((point.im - 1.) <= f64::EPSILON);
+  }
+
+  #[test]
+  fn point3() {
+    let center = Complex64::new(0., 0.);
+    let width = 2.;
+    let height = 2.;
+    let grid_delta_x = 0.01;
+    let grid_delta_y = 0.005;
+
+    let vp = Viewport::from_center(
+      center,
+      width,
+      height,
+      grid_delta_x,
+      grid_delta_y,
+      0,
+    );
+
+    let point = vp.point(199, 399);
+
+    assert!((point.re - 0.99).abs() <= f64::EPSILON);
+    assert!((point.im - 0.995).abs() <= f64::EPSILON);
   }
 }
