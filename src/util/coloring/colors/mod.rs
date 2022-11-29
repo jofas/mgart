@@ -223,6 +223,7 @@ impl RGB {
     Color::RGB(self)
   }
 
+  #[allow(clippy::many_single_char_names)]
   fn lab(self) -> LAB {
     let r = Self::rgb_xyz(self.r());
     let g = Self::rgb_xyz(self.g());
@@ -334,6 +335,7 @@ impl LAB {
   /// Returns the [RGB] representation of the color defined by
   /// `self`.
   ///
+  #[allow(clippy::many_single_char_names)]
   fn rgb(&self) -> RGB {
     let y = (self.l() + 16.) / 116.;
 
