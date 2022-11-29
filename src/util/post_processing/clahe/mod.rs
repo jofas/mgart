@@ -253,12 +253,12 @@ impl<'a> InterpolationTiles<'a> {
   }
 
   fn transform(&self, v: f64) -> f64 {
-    let q_nw = self.nw.transform(v) * self.dn * self.dw;
-    let q_ne = self.ne.transform(v) * self.dn * self.de;
-    let q_se = self.se.transform(v) * self.ds * self.de;
-    let q_sw = self.sw.transform(v) * self.ds * self.dw;
+    let nw = self.nw.transform(v) * self.dn * self.dw;
+    let ne = self.ne.transform(v) * self.dn * self.de;
+    let se = self.se.transform(v) * self.ds * self.de;
+    let sw = self.sw.transform(v) * self.ds * self.dw;
 
-    q_nw + q_ne + q_se + q_sw
+    nw + ne + se + sw
   }
 
   fn tiles(

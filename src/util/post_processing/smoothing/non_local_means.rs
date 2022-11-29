@@ -33,7 +33,7 @@ impl NonLocalMeans {
     for i in 0..frame.len() {
       let (y, x) = i.div_rem(width);
 
-      let (wx0, wy0, wx1, wy1) = discrete_rectangle_from_center(
+      let (x0, y0, x1, y1) = discrete_rectangle_from_center(
         x,
         y,
         self.window_size,
@@ -45,8 +45,8 @@ impl NonLocalMeans {
       let mut s = 0.;
       let mut cp = 0.;
 
-      for x in wx0..wx1 {
-        for y in wy0..wy1 {
+      for x in x0..x1 {
+        for y in y0..y1 {
           let fpq = self.weight_function(m[i], m[(x, y)]);
 
           s += frame[(x, y)] * fpq;
