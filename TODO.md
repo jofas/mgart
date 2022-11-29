@@ -123,8 +123,10 @@
 
 * [ ] increase coverage
 
+* [ ] sampling benchmark
+
 * [ ] kde sampling: make sure sampling points are evenly distributed
-  in space
+  in space 
 
 * [ ] collect stats (hits, avg. iterations, etc.)
 
