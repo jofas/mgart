@@ -116,7 +116,7 @@
 
 * [x] Frame object (with indexing and iteration)
 
-* [ ] make SAT nice (minimize casting)
+* [x] make SAT nice (minimize casting)
 
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible

@@ -34,27 +34,22 @@ impl NonLocalMeans {
       let (y, x) = i.div_rem(width);
 
       let (wx0, wy0, wx1, wy1) = discrete_rectangle_from_center(
-        x as isize,
-        y as isize,
-        self.window_size as isize,
-        self.window_size as isize,
+        x,
+        y,
+        self.window_size,
+        self.window_size,
+        width,
+        height,
       );
-
-      let wx0 = wx0.max(0) as usize;
-      let wy0 = wy0.max(0) as usize;
-      let wx1 = wx1.min(width as isize - 1) as usize;
-      let wy1 = wy1.min(height as isize - 1) as usize;
 
       let mut s = 0.;
       let mut cp = 0.;
 
-      for x in wx0..=wx1 {
-        for y in wy0..=wy1 {
-          let j = y * width + x;
+      for x in wx0..wx1 {
+        for y in wy0..wy1 {
+          let fpq = self.weight_function(m[i], m[(x, y)]);
 
-          let fpq = self.weight_function(m[i], m[j]);
-
-          s += frame[j] * fpq;
+          s += frame[(x, y)] * fpq;
           cp += fpq;
         }
       }
@@ -117,37 +112,30 @@ impl SummedAreaTable {
     size_y: usize,
   ) -> f64 {
     let (x0, y0, x1, y1) = discrete_rectangle_from_center(
-      cx as isize,
-      cy as isize,
-      size_x as isize,
-      size_y as isize,
+      cx,
+      cy,
+      size_x,
+      size_y,
+      self.0.width() - 1,
+      self.0.height() - 1,
     );
 
-    let x0 = x0 - 1;
-    let y0 = y0 - 1;
-
-    let x1 = x1.min(self.0.width() as isize - 1) as usize;
-    let y1 = y1.min(self.0.height() as isize - 1) as usize;
-
-    let c00 = if x0 >= 0 && y0 >= 0 {
-      self.0[(x0 as usize, y0 as usize)]
-    } else {
-      0.
-    };
-
-    let c01 = if y0 >= 0 {
-      self.0[(x1, y0 as usize)]
-    } else {
-      0.
-    };
-
-    let c10 = if x0 >= 0 {
-      self.0[(x0 as usize, y1)]
-    } else {
-      0.
-    };
-
+    let mut c00 = 0.;
+    let mut c01 = 0.;
+    let mut c10 = 0.;
     let c11 = self.0[(x1, y1)];
+
+    if x0 > 0 && y0 > 0 {
+      c00 = self.0[(x0 - 1, y0 - 1)];
+    }
+
+    if y0 > 0 {
+      c01 = self.0[(x1, y0 - 1)];
+    }
+
+    if x0 > 0 {
+      c10 = self.0[(x0 - 1, y1)];
+    }
 
     c00 + c11 - c01 - c10
   }
@@ -162,33 +150,31 @@ impl SummedAreaTable {
     let c = self.sum_rectangle_from_center(cx, cy, size_x, size_y);
 
     let (x0, y0, x1, y1) = discrete_rectangle_from_center(
-      cx as isize,
-      cy as isize,
-      size_x as isize,
-      size_y as isize,
+      cx,
+      cy,
+      size_x,
+      size_y,
+      self.0.width() - 1,
+      self.0.height() - 1,
     );
-
-    let x0 = x0.max(0);
-    let y0 = y0.max(0);
-
-    let x1 = x1.min((self.0.width() - 1) as isize);
-    let y1 = y1.min((self.0.height() - 1) as isize);
 
     c / ((x1 - x0 + 1) * (y1 - y0 + 1)) as f64
   }
 }
 
 fn discrete_rectangle_from_center(
-  cx: isize,
-  cy: isize,
-  size_x: isize,
-  size_y: isize,
-) -> (isize, isize, isize, isize) {
+  cx: usize,
+  cy: usize,
+  size_x: usize,
+  size_y: usize,
+  upper_boundary_x: usize,
+  upper_boundary_y: usize,
+) -> (usize, usize, usize, usize) {
   (
-    cx - size_x / 2 + isize::from(size_x % 2 == 0),
-    cy - size_y / 2 + isize::from(size_y % 2 == 0),
-    cx + size_x / 2,
-    cy + size_y / 2,
+    (cx + usize::from(size_x % 2 == 0)).saturating_sub(size_x / 2),
+    (cy + usize::from(size_y % 2 == 0)).saturating_sub(size_y / 2),
+    cx.saturating_add(size_x / 2).min(upper_boundary_x),
+    cy.saturating_add(size_y / 2).min(upper_boundary_y),
   )
 }
 
@@ -204,29 +190,29 @@ mod tests {
 
   #[test]
   fn drfc() {
-    let res = discrete_rectangle_from_center(0, 0, 3, 3);
-    assert_eq!(res, (-1, -1, 1, 1));
-
-    let res = discrete_rectangle_from_center(1, 1, 3, 3);
-    assert_eq!(res, (0, 0, 2, 2));
-
-    let res = discrete_rectangle_from_center(2, 2, 3, 3);
-    assert_eq!(res, (1, 1, 3, 3));
-
-    let res = discrete_rectangle_from_center(3, 3, 3, 3);
-    assert_eq!(res, (2, 2, 4, 4));
-
-    let res = discrete_rectangle_from_center(0, 0, 2, 2);
+    let res = discrete_rectangle_from_center(0, 0, 3, 3, 3, 3);
     assert_eq!(res, (0, 0, 1, 1));
 
-    let res = discrete_rectangle_from_center(1, 1, 2, 2);
-    assert_eq!(res, (1, 1, 2, 2));
+    let res = discrete_rectangle_from_center(1, 1, 3, 3, 3, 3);
+    assert_eq!(res, (0, 0, 2, 2));
 
-    let res = discrete_rectangle_from_center(2, 2, 2, 2);
+    let res = discrete_rectangle_from_center(2, 2, 3, 3, 3, 3);
+    assert_eq!(res, (1, 1, 3, 3));
+
+    let res = discrete_rectangle_from_center(3, 3, 3, 3, 3, 3);
     assert_eq!(res, (2, 2, 3, 3));
 
-    let res = discrete_rectangle_from_center(3, 3, 2, 2);
-    assert_eq!(res, (3, 3, 4, 4));
+    let res = discrete_rectangle_from_center(0, 0, 2, 2, 3, 3);
+    assert_eq!(res, (0, 0, 1, 1));
+
+    let res = discrete_rectangle_from_center(1, 1, 2, 2, 3, 3);
+    assert_eq!(res, (1, 1, 2, 2));
+
+    let res = discrete_rectangle_from_center(2, 2, 2, 2, 3, 3);
+    assert_eq!(res, (2, 2, 3, 3));
+
+    let res = discrete_rectangle_from_center(3, 3, 2, 2, 3, 3);
+    assert_eq!(res, (3, 3, 3, 3));
   }
 
   #[test]
@@ -365,10 +351,10 @@ mod tests {
     assert_eq!(
       frame.map(|x| x as u8).inner().to_vec(),
       vec![
-        [3, 4, 5, 5],
-        [5, 6, 6, 7],
+        [2, 3, 4, 5],
+        [4, 5, 6, 7],
         [10, 11, 12, 13],
-        [12, 13, 13, 14],
+        [12, 12, 13, 14],
       ]
       .into_iter()
       .flatten()
