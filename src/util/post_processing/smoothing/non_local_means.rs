@@ -1,8 +1,3 @@
-use rayon::iter::{
-  IndexedParallelIterator, IntoParallelRefMutIterator,
-  ParallelIterator,
-};
-
 use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
@@ -28,15 +23,12 @@ impl NonLocalMeans {
   pub fn smooth(&self, frame: &mut Frame<f64>) {
     let width = frame.width();
     let height = frame.height();
-    let buffer = frame.inner_mut();
 
-    let m = self.window_mean(buffer, width, height);
+    let m = self.window_mean(frame);
 
-    let num_pixel = buffer.len();
+    let pp = ProgressPrinter::new(frame.len() as u64, 100);
 
-    let pp = ProgressPrinter::new(num_pixel as u64, 100);
-
-    for i in 0..buffer.len() {
+    for i in 0..frame.len() {
       let x = i % width;
       let y = i / width;
 
@@ -61,12 +53,12 @@ impl NonLocalMeans {
 
           let fpq = self.weight_function(m[i], m[j]);
 
-          s += buffer[j] * fpq;
+          s += frame[j] * fpq;
           cp += fpq;
         }
       }
 
-      buffer[i] = s / cp;
+      frame[i] = s / cp;
 
       pp.increment();
     }
@@ -76,19 +68,14 @@ impl NonLocalMeans {
     (-(bq - bp).powi(2) / self.h.powi(2)).exp()
   }
 
-  fn window_mean(
-    &self,
-    buffer: &[f64],
-    width: usize,
-    height: usize,
-  ) -> Vec<f64> {
-    let sat = SummedAreaTable::new(buffer, width, height);
+  fn window_mean(&self, frame: &Frame<f64>) -> Frame<f64> {
+    let sat = SummedAreaTable::new(frame);
 
-    let mut res = vec![0.; width * height];
+    let mut res = Frame::filled(0., frame.width(), frame.height());
 
-    res.par_iter_mut().enumerate().for_each(|(i, p)| {
-      let x = i % width;
-      let y = i / width;
+    res.par_for_each_mut(|(i, p)| {
+      let x = i % frame.width();
+      let y = i / frame.width();
 
       *p = sat.mean_rectangle_from_center(x, y, self.n, self.n);
     });
@@ -97,34 +84,30 @@ impl NonLocalMeans {
   }
 }
 
-struct SummedAreaTable {
-  sat: Vec<f64>,
-  width: usize,
-  height: usize,
-}
+struct SummedAreaTable(Frame<f64>);
 
 impl SummedAreaTable {
-  fn new(buffer: &[f64], width: usize, height: usize) -> Self {
-    let mut sat = buffer.to_vec();
+  fn new(frame: &Frame<f64>) -> Self {
+    let mut sat = frame.clone();
 
     for i in 1..sat.len() {
-      let x = i % width;
-      let y = i / width;
+      let x = i % frame.width();
+      let y = i / frame.width();
 
       if x > 0 {
         sat[i] += sat[i - 1];
       }
 
       if y > 0 {
-        sat[i] += sat[(y - 1) * width + x];
+        sat[i] += sat[(x, y - 1)];
       }
 
       if x > 0 && y > 0 {
-        sat[i] -= sat[(y - 1) * width + x - 1];
+        sat[i] -= sat[(x - 1, y - 1)];
       }
     }
 
-    Self { sat, width, height }
+    Self(sat)
   }
 
   fn sum_rectangle_from_center(
@@ -144,28 +127,28 @@ impl SummedAreaTable {
     let x0 = x0 - 1;
     let y0 = y0 - 1;
 
-    let x1 = x1.min(self.width as isize - 1) as usize;
-    let y1 = y1.min(self.height as isize - 1) as usize;
+    let x1 = x1.min(self.0.width() as isize - 1) as usize;
+    let y1 = y1.min(self.0.height() as isize - 1) as usize;
 
     let c00 = if x0 >= 0 && y0 >= 0 {
-      self.sat[y0 as usize * self.width + x0 as usize]
+      self.0[(x0 as usize, y0 as usize)]
     } else {
       0.
     };
 
     let c01 = if y0 >= 0 {
-      self.sat[y0 as usize * self.width + x1]
+      self.0[(x1, y0 as usize)]
     } else {
       0.
     };
 
     let c10 = if x0 >= 0 {
-      self.sat[y1 * self.width + x0 as usize]
+      self.0[(x0 as usize, y1)]
     } else {
       0.
     };
 
-    let c11 = self.sat[y1 * self.width + x1];
+    let c11 = self.0[(x1, y1)];
 
     c00 + c11 - c01 - c10
   }
@@ -189,8 +172,8 @@ impl SummedAreaTable {
     let x0 = x0.max(0);
     let y0 = y0.max(0);
 
-    let x1 = x1.min((self.width - 1) as isize);
-    let y1 = y1.min((self.height - 1) as isize);
+    let x1 = x1.min((self.0.width() - 1) as isize);
+    let y1 = y1.min((self.0.height() - 1) as isize);
 
     c / ((x1 - x0 + 1) * (y1 - y0 + 1)) as f64
   }
@@ -247,14 +230,12 @@ mod tests {
 
   #[test]
   fn sat() {
-    let image = [1.; 16];
-    let width = 4;
-    let height = 4;
+    let frame = Frame::new(vec![1.; 16], 4, 4);
 
-    let sat = SummedAreaTable::new(&image, width, height);
+    let sat = SummedAreaTable::new(&frame);
 
     assert_eq!(
-      sat.sat,
+      sat.0.inner().to_vec(),
       vec![
         [1., 2., 3., 4.],
         [2., 4., 6., 8.],
@@ -266,14 +247,12 @@ mod tests {
       .collect::<Vec<f64>>(),
     );
 
-    let image: Vec<f64> = (1..=16).map(f64::from).collect();
-    let width = 4;
-    let height = 4;
+    let frame = Frame::new((1..=16).map(f64::from).collect(), 4, 4);
 
-    let sat = SummedAreaTable::new(&image, width, height);
+    let sat = SummedAreaTable::new(&frame);
 
     assert_eq!(
-      sat.sat,
+      sat.0.inner().to_vec(),
       vec![
         [1., 3., 6., 10.],
         [6., 14., 24., 36.],
@@ -288,16 +267,14 @@ mod tests {
 
   #[test]
   fn sat_sum_rectangle_from_center() {
-    let image: Vec<f64> = (1..=16).map(f64::from).collect();
-    let width = 4;
-    let height = 4;
+    let frame = Frame::new((1..=16).map(f64::from).collect(), 4, 4);
 
-    let sat = SummedAreaTable::new(&image, width, height);
+    let sat = SummedAreaTable::new(&frame);
 
     let res: Vec<f64> = (0..16)
       .map(|i| {
-        let x = i % width;
-        let y = i / width;
+        let x = i % 4;
+        let y = i / 4;
 
         sat.sum_rectangle_from_center(x, y, 3, 3)
       })
@@ -319,16 +296,14 @@ mod tests {
 
   #[test]
   fn sat_mean_rectangle_from_center() {
-    let image: Vec<f64> = (1..=16).map(f64::from).collect();
-    let width = 4;
-    let height = 4;
+    let frame = Frame::new((1..=16).map(f64::from).collect(), 4, 4);
 
-    let sat = SummedAreaTable::new(&image, width, height);
+    let sat = SummedAreaTable::new(&frame);
 
     let res: Vec<f64> = (0..16)
       .map(|i| {
-        let x = i % width;
-        let y = i / width;
+        let x = i % 4;
+        let y = i / 4;
 
         sat.mean_rectangle_from_center(x, y, 3, 3)
       })
@@ -350,16 +325,14 @@ mod tests {
 
   #[test]
   fn nlm_window_mean() {
-    let image: Vec<f64> = (1..=16).map(f64::from).collect();
-    let width = 4;
-    let height = 4;
+    let frame = Frame::new((1..=16).map(f64::from).collect(), 4, 4);
 
     let nlm = NonLocalMeans::new(3, 4, 3.);
 
-    let res = nlm.window_mean(&image, width, height);
+    let res = nlm.window_mean(&frame);
 
     assert_eq!(
-      res,
+      res.inner().to_vec(),
       vec![
         [3.5, 4., 5., 5.5],
         [5.5, 6., 7., 7.5],
@@ -383,9 +356,8 @@ mod tests {
 
   #[test]
   fn nlm() {
-    let image: Vec<f64> = (1..=16).map(f64::from).collect();
-
-    let mut frame = Frame::new(image, 4, 4);
+    let mut frame =
+      Frame::new((1..=16).map(f64::from).collect(), 4, 4);
 
     let nlm = NonLocalMeans::new(3, 4, 3.);
 

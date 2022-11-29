@@ -14,7 +14,7 @@ use crate::util::coloring::colors::Color;
 /// A [`Frame`] is contiguous in memory with a row-first layout and
 /// ungrowable.
 ///
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Frame<T> {
   width: usize,
   height: usize,
