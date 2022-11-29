@@ -123,7 +123,6 @@ impl SummedAreaTable {
     let mut c00 = 0.;
     let mut c01 = 0.;
     let mut c10 = 0.;
-    let c11 = self.0[(x1, y1)];
 
     if x0 > 0 && y0 > 0 {
       c00 = self.0[(x0 - 1, y0 - 1)];
@@ -137,7 +136,7 @@ impl SummedAreaTable {
       c10 = self.0[(x0 - 1, y1)];
     }
 
-    c00 + c11 - c01 - c10
+    self.0[(x1, y1)] + c00 - c01 - c10
   }
 
   fn mean_rectangle_from_center(
