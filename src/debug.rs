@@ -11,7 +11,6 @@ use crate::util::ProgressPrinter;
 pub struct ColorMap1dRenderer {
   pub width: u32,
   pub height: u32,
-  pub filename: String,
   pub color_map: ColorMap1d,
 }
 
