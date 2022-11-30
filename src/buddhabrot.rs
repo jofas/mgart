@@ -129,22 +129,6 @@ impl Buddhabrot {
         }
       }
 
-      /*
-      if j != self.iter && passed_viewport {
-        let mut z = c;
-
-        for _ in 0..=j {
-          let idx = viewport.rotated_grid_pos(&z);
-
-          if let Some((x, y)) = idx {
-            frame[(x, y)].fetch_add(1, Ordering::Relaxed);
-          }
-
-          z = z.powf(self.exponent) + c;
-        }
-      }
-      */
-
       pp.increment();
     });
 
@@ -159,8 +143,6 @@ impl Buddhabrot {
     }
 
     info!("post processing done");
-
-    info!("generating final color values");
 
     frame.map(|x| self.color_map.color(x).as_color())
   }
