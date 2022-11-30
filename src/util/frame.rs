@@ -86,8 +86,24 @@ impl<T> Frame<T> {
     self.buf.is_empty()
   }
 
+  /// Tries to retrieve a reference to the element at row `x` and
+  /// column `y`.
+  ///
+  /// Returns [`None`] if either `x` or `y` are out of bounds.
+  ///
+  /// # Panics
+  ///
+  /// Panics, if either `x` or `y` do not fit into the [`usize`] type
+  /// of the machine.
+  ///
   #[must_use]
-  pub fn get(&self, x: usize, y: usize) -> Option<&T> {
+  pub fn get<I: TryInto<usize>>(&self, x: I, y: I) -> Option<&T>
+  where
+    <I as TryInto<usize>>::Error: std::fmt::Debug,
+  {
+    let x = x.try_into().unwrap();
+    let y = y.try_into().unwrap();
+
     if x < self.width && y < self.height {
       self.buf.get(y * self.width + x)
     } else {
@@ -95,7 +111,27 @@ impl<T> Frame<T> {
     }
   }
 
-  pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut T> {
+  /// Tries to retrieve a mutable reference to the element at row `x`
+  /// and column `y`.
+  ///
+  /// Returns [`None`] if either `x` or `y` are out of bounds.
+  ///
+  /// # Panics
+  ///
+  /// Panics, if either `x` or `y` do not fit into the [`usize`] type
+  /// of the machine.
+  ///
+  pub fn get_mut<I: TryInto<usize>>(
+    &mut self,
+    x: I,
+    y: I,
+  ) -> Option<&mut T>
+  where
+    <I as TryInto<usize>>::Error: std::fmt::Debug,
+  {
+    let x = x.try_into().unwrap();
+    let y = y.try_into().unwrap();
+
     if x < self.width && y < self.height {
       self.buf.get_mut(y * self.width + x)
     } else {
