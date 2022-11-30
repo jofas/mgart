@@ -149,13 +149,26 @@ impl<T: Default> Frame<T> {
   /// Creates a new [`Frame`] with `width` and `height`, where each
   /// element is the [Default] value of the given type.
   ///
+  /// # Panics
+  ///
+  /// Panics, if there is an overflow (e.g. `width * height` doesn't
+  /// fit in the `usize` type of the machine).
+  ///
   #[must_use]
-  pub fn filled_default(width: usize, height: usize) -> Self {
-    Self {
-      width,
-      height,
-      buf: vec_no_clone![T::default(); width * height],
-    }
+  pub fn filled_default<I: TryInto<usize>>(
+    width: I,
+    height: I,
+  ) -> Self
+  where
+    <I as TryInto<usize>>::Error: std::fmt::Debug,
+  {
+    let width = width.try_into().unwrap();
+    let height = height.try_into().unwrap();
+
+    let buf =
+      vec_no_clone![T::default(); width.checked_mul(height).unwrap()];
+
+    Self { width, height, buf }
   }
 }
 

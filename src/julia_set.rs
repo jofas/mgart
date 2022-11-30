@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJsonPretty;
 
-use divrem::DivRem;
+use num::cast;
+use num::integer::div_rem;
 
 use crate::util::coloring::colors::{Color, RGB};
 use crate::util::coloring::ColorMap1d;
@@ -152,11 +153,11 @@ pub fn julia_set_interior_distance(
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSet {
-  width: usize,
-  height: usize,
+  width: u32,
+  height: u32,
   center: ComplexNumber,
   zoom: f64,
-  iter: u64,
+  iter: u32,
   rotation: Option<u16>,
   color_map: ColorMap1d,
   c: Option<ComplexNumber>,
@@ -189,16 +190,21 @@ impl Creator {
 
   /// Creates a rendering of a julia set as a `PNG` image.
   ///
+  /// # Panics
+  ///
+  /// Panics, if the configuration is faulty, e.g if there happens an
+  /// overflow.
+  ///
   #[must_use]
   pub fn create(&self) -> Frame<Color> {
     let mut frame =
       Frame::filled_default(self.args.width, self.args.height);
 
-    let pp = (self.args.width * self.args.height) as u64;
+    let pp = u64::from(self.args.width * self.args.height);
     let pp = ProgressPrinter::new(pp, 2500);
 
     frame.par_for_each_mut(|(i, pixel)| {
-      let (im, re) = i.div_rem(self.args.width);
+      let (im, re) = div_rem(i, self.args.width.try_into().unwrap());
 
       let mut z = self.viewport.rotated_point(re, im);
 
@@ -230,7 +236,7 @@ impl Creator {
         //j as f64 / self.args.iter as f64
       } else {
         let mu = z_sqr.sqrt().log2().log2();
-        ((j + 1) as f64 - mu) / self.args.iter as f64
+        (f64::from(j + 1) - mu) / f64::from(self.args.iter)
 
         /*
         let z_mag = (zx_sqr + zy_sqr).sqrt();
@@ -261,9 +267,9 @@ impl Creator {
       */
 
       *pixel = RGB::new(
-        (color * 255.) as u8,
-        (color * 255.) as u8,
-        (color * 255.) as u8,
+        cast(color * 255.).unwrap(),
+        cast(color * 255.).unwrap(),
+        cast(color * 255.).unwrap(),
       )
       .as_color();
 
@@ -276,13 +282,16 @@ impl Creator {
   /// Creates a [`Viewport`] from [`args`](JuliaSet).
   ///
   fn viewport(args: &JuliaSet) -> Viewport {
-    let aspect_ratio = args.width as f64 / args.height as f64;
+    let w = f64::from(args.width);
+    let h = f64::from(args.height);
+
+    let aspect_ratio = w / h;
 
     let vp_width = aspect_ratio / args.zoom;
     let vp_height = 1. / args.zoom;
 
-    let grid_delta_x = vp_width / args.width as f64;
-    let grid_delta_y = vp_height / args.height as f64;
+    let grid_delta_x = vp_width / w;
+    let grid_delta_y = vp_height / h;
 
     Viewport::from_center(
       args.center.into(),
