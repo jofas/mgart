@@ -31,7 +31,17 @@ impl<T> Frame<T> {
   /// many elements.
   ///
   #[must_use]
-  pub fn new(buf: Vec<T>, width: usize, height: usize) -> Self {
+  pub fn new<I: TryInto<usize>>(
+    buf: Vec<T>,
+    width: I,
+    height: I,
+  ) -> Self
+  where
+    <I as TryInto<usize>>::Error: std::fmt::Debug,
+  {
+    let width = width.try_into().unwrap();
+    let height = height.try_into().unwrap();
+
     assert_eq!(
       buf.len(),
       width * height,

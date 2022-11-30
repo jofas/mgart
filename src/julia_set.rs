@@ -157,7 +157,7 @@ pub struct JuliaSet {
   center: ComplexNumber,
   zoom: f64,
   iter: u64,
-  rotation: Option<usize>,
+  rotation: Option<u16>,
   color_map: ColorMap1d,
   c: Option<ComplexNumber>,
 }

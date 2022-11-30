@@ -10,7 +10,7 @@ use map_macro::vec_no_clone;
 
 use log::info;
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicU32, Ordering};
 
 use crate::util::coloring::colors::Color;
 use crate::util::coloring::ColorMap1d;
@@ -22,12 +22,12 @@ use crate::util::{ComplexNumber, ProgressPrinter};
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty, Clone)]
 pub struct Buddhabrot {
-  width: usize,
-  height: usize,
+  width: u32,
+  height: u32,
   center: ComplexNumber,
   zoom: f64,
-  iter: u64,
-  rotation: Option<usize>,
+  iter: u32,
+  rotation: Option<u16>,
   color_map: ColorMap1d,
   exponent: f64,
   sample_count: u64,
@@ -41,12 +41,12 @@ impl Buddhabrot {
   #[must_use]
   #[allow(clippy::too_many_arguments)]
   pub fn new(
-    width: usize,
-    height: usize,
+    width: u32,
+    height: u32,
     center: ComplexNumber,
     zoom: f64,
-    iter: u64,
-    rotation: Option<usize>,
+    iter: u32,
+    rotation: Option<u16>,
     color_map: ColorMap1d,
     exponent: f64,
     sample_count: u64,
@@ -98,10 +98,10 @@ impl Creator {
   /// Creates a rendering of a [buddhabrot][buddhabrot] as a `PNG`
   /// image.
   ///
-  /// # Errors
+  /// # Panics
   ///
-  /// Returns an error, if the configuration is faulty or if the
-  /// generated `PNG` image could not be saved to disk.
+  /// Panics, if the configuration is faulty, e.g if there happens an
+  /// overflow.
   ///
   /// [buddhabrot]: https://en.wikipedia.org/wiki/Buddhabrot
   ///
@@ -112,8 +112,8 @@ impl Creator {
     info!("starting buddhabrot generation");
 
     let buf = vec_no_clone![
-      AtomicU64::new(0);
-      self.args.width * self.args.height
+      AtomicU32::new(0);
+      (self.args.width * self.args.height).try_into().unwrap()
     ];
 
     let frame = Frame::new(buf, self.args.width, self.args.height);
@@ -136,7 +136,7 @@ impl Creator {
 
     info!("starting post processing");
 
-    let mut frame = frame.map(|x| x.into_inner() as f64);
+    let mut frame = frame.map(|x| f64::from(x.into_inner()));
 
     for process in &self.args.post_processing {
       process.apply(&mut frame);
@@ -152,7 +152,7 @@ impl Creator {
     self.args.sampler.distribution(&|c| self.probability(*c))
   }
 
-  fn trace_point(&self, c: Complex64) -> (Vec<(usize, usize)>, u64) {
+  fn trace_point(&self, c: Complex64) -> (Vec<(usize, usize)>, u32) {
     let mut z = c;
     let mut z_sqr = z.norm_sqr();
 
@@ -202,20 +202,23 @@ impl Creator {
     if j == self.args.iter {
       0.
     } else {
-      vp_hits as f64 / self.args.iter as f64
+      f64::from(vp_hits) / f64::from(self.args.iter)
     }
   }
 
   /// Creates a [`Viewport`] from [`args`](Buddhabrot).
   ///
   fn viewport(args: &Buddhabrot) -> Viewport {
-    let aspect_ratio = args.width as f64 / args.height as f64;
+    let w = f64::from(args.width);
+    let h = f64::from(args.height);
+
+    let aspect_ratio = w / h;
 
     let vp_width = aspect_ratio / args.zoom;
     let vp_height = 1. / args.zoom;
 
-    let grid_delta_x = vp_width / args.width as f64;
-    let grid_delta_y = vp_height / args.height as f64;
+    let grid_delta_x = vp_width / w;
+    let grid_delta_y = vp_height / h;
 
     Viewport::from_center(
       args.center.into(),

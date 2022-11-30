@@ -21,7 +21,7 @@ impl Viewport {
     height: f64,
     grid_delta_x: f64,
     grid_delta_y: f64,
-    rotation: usize,
+    rotation: u16,
   ) -> Self {
     let x_min = center.re - width * 0.5;
     let x_max = center.re + width * 0.5;
@@ -30,8 +30,8 @@ impl Viewport {
     let y_max = center.im + height * 0.5;
 
     let rotation = Complex64::new(
-      (rotation as f64 * PI / 180.).cos(),
-      (rotation as f64 * PI / 180.).sin(),
+      (f64::from(rotation) * PI / 180.).cos(),
+      (f64::from(rotation) * PI / 180.).sin(),
     );
 
     Self {
