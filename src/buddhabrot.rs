@@ -147,6 +147,11 @@ impl Creator {
     frame.map(|x| self.args.color_map.color(x).as_color())
   }
 
+  #[must_use]
+  pub fn sampler(&self) -> Distribution<Complex64> {
+    self.args.sampler.distribution(&|c| self.probability(*c))
+  }
+
   fn trace_point(&self, c: Complex64) -> (Vec<(usize, usize)>, u64) {
     let mut z = c;
     let mut z_sqr = z.norm_sqr();
@@ -199,11 +204,6 @@ impl Creator {
     } else {
       vp_hits as f64 / self.args.iter as f64
     }
-  }
-
-  #[must_use]
-  pub fn sampler(&self) -> Distribution<Complex64> {
-    self.args.sampler.distribution(&|c| self.probability(*c))
   }
 
   /// Creates a [`Viewport`] from [`args`](Buddhabrot).
