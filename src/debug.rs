@@ -38,21 +38,26 @@ impl Creator {
 
   /// Creates a visualization of a color map as a `PNG` image.
   ///
+  /// # Panics
+  ///
+  /// Panics, if the configuration is faulty, e.g if there happens an
+  /// overflow.
+  ///
   #[must_use]
   pub fn create(&self) -> Frame<Color> {
-    let (w, h) =
-      (self.args.width as usize, self.args.height as usize);
+    let mut frame =
+      Frame::filled_default(self.args.width, self.args.height);
 
-    let num_pixel = w * h;
-
-    let mut frame = Frame::filled_default(w, h);
-
-    let pp = ProgressPrinter::new(num_pixel as u64, 2500);
+    let pp = ProgressPrinter::new(frame.len() as u64, 2500);
 
     frame.par_for_each_mut(|(i, pixel)| {
-      let x = (i % w) as f64;
+      let x = f64::from(u32::try_from(i).unwrap() % self.args.width);
 
-      *pixel = self.args.color_map.color(x / w as f64).as_color();
+      *pixel = self
+        .args
+        .color_map
+        .color(x / f64::from(self.args.width))
+        .as_color();
 
       pp.increment();
     });
