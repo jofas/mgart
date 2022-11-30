@@ -1,5 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
+use std::time::Duration;
+
 use mgart::buddhabrot::Buddhabrot;
 use mgart::util::coloring::ColorMap1d;
 use mgart::util::sampler::Sampler;
@@ -19,7 +21,7 @@ pub fn buddhabrot_kde_sampler(c: &mut Criterion) {
     Sampler::KernelDensityEstimation {
       weighted: true,
       kernel: Box::new(Sampler::Uniform { h: 2e-2 }),
-      population: 1_000_000,
+      population: 10_000_000,
       p_min: 0.01,
       pre_sampler: Box::new(Sampler::UniformPolar { r: 3. }),
     },
@@ -33,5 +35,12 @@ pub fn buddhabrot_kde_sampler(c: &mut Criterion) {
   });
 }
 
-criterion_group!(benches, buddhabrot_kde_sampler);
+criterion_group!(
+  name = benches;
+  config = Criterion::default()
+    .sample_size(10)
+    .measurement_time(Duration::new(10, 0));
+  targets = buddhabrot_kde_sampler
+);
+
 criterion_main!(benches);

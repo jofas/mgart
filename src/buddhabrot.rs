@@ -121,14 +121,7 @@ impl Creator {
     let pp = ProgressPrinter::new(self.args.sample_count, 2500);
 
     (0..self.args.sample_count).into_par_iter().for_each(|_| {
-      let c = sampler.sample();
-
-      let (grid_pos, j) = Self::trace_point(
-        c,
-        self.args.iter,
-        self.args.exponent,
-        &self.viewport,
-      );
+      let (grid_pos, j) = self.trace_point(sampler.sample());
 
       if j != self.args.iter {
         for pos in grid_pos {
@@ -154,27 +147,22 @@ impl Creator {
     frame.map(|x| self.args.color_map.color(x).as_color())
   }
 
-  fn trace_point(
-    c: Complex64,
-    iter: u64,
-    exponent: f64,
-    viewport: &Viewport,
-  ) -> (Vec<(usize, usize)>, u64) {
+  fn trace_point(&self, c: Complex64) -> (Vec<(usize, usize)>, u64) {
     let mut z = c;
     let mut z_sqr = z.norm_sqr();
 
     let mut grid_pos = Vec::new();
     let mut j = 0;
 
-    if let Some(pos) = viewport.rotated_grid_pos(&z) {
+    if let Some(pos) = self.viewport.rotated_grid_pos(&z) {
       grid_pos.push(pos);
     }
 
-    while j < iter && z_sqr <= 4.0 {
-      z = z.powf(exponent) + c;
+    while j < self.args.iter && z_sqr <= 4.0 {
+      z = z.powf(self.args.exponent) + c;
       z_sqr = z.norm_sqr();
 
-      if let Some(pos) = viewport.rotated_grid_pos(&z) {
+      if let Some(pos) = self.viewport.rotated_grid_pos(&z) {
         grid_pos.push(pos);
       }
 
@@ -187,12 +175,7 @@ impl Creator {
   #[must_use]
   pub fn sampler(&self) -> Distribution<Complex64> {
     self.args.sampler.distribution(&|c| {
-      let (grid_pos, iter) = Self::trace_point(
-        *c,
-        self.args.iter,
-        self.args.exponent,
-        &self.viewport,
-      );
+      let (grid_pos, iter) = self.trace_point(*c);
 
       if iter == self.args.iter {
         0.

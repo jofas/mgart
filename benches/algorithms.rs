@@ -1,5 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
+use std::time::Duration;
+
 use mgart::buddhabrot::Buddhabrot;
 use mgart::util::coloring::ColorMap1d;
 use mgart::util::sampler::Sampler;
@@ -11,11 +13,11 @@ pub fn buddhabrot(c: &mut Criterion) {
     1024,
     ComplexNumber::Cartesian { re: 0., im: 0. },
     1.,
-    20,
+    200,
     None,
     ColorMap1d::default(),
     2.,
-    1000,
+    1_000_000,
     Sampler::UniformPolar { r: 2. },
     vec![],
   );
@@ -27,5 +29,12 @@ pub fn buddhabrot(c: &mut Criterion) {
   });
 }
 
-criterion_group!(benches, buddhabrot);
+criterion_group!(
+  name = benches;
+  config = Criterion::default()
+    .sample_size(10)
+    .measurement_time(Duration::new(10, 0));
+  targets = buddhabrot
+);
+
 criterion_main!(benches);
