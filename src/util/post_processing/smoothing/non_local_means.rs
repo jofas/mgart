@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
-use divrem::DivRem;
+use num::cast;
+use num::integer::div_rem;
 
 use crate::util::frame::Frame;
 use crate::util::ProgressPrinter;
@@ -31,7 +32,7 @@ impl NonLocalMeans {
     let pp = ProgressPrinter::new(frame.len() as u64, 100);
 
     for i in 0..frame.len() {
-      let (y, x) = i.div_rem(width);
+      let (y, x) = div_rem(i, width);
 
       let (x0, y0, x1, y1) = discrete_rectangle_from_center(
         x,
@@ -70,7 +71,7 @@ impl NonLocalMeans {
     let mut res = Frame::filled(0., frame.width(), frame.height());
 
     res.par_for_each_mut(|(i, p)| {
-      let (y, x) = i.div_rem(frame.width());
+      let (y, x) = div_rem(i, frame.width());
 
       *p = sat.mean_rectangle_from_center(x, y, self.n, self.n);
     });
@@ -86,7 +87,7 @@ impl SummedAreaTable {
     let mut sat = frame.clone();
 
     for i in 1..sat.len() {
-      let (y, x) = i.div_rem(frame.width());
+      let (y, x) = div_rem(i, frame.width());
 
       if x > 0 {
         sat[i] += sat[i - 1];
@@ -157,7 +158,7 @@ impl SummedAreaTable {
       self.0.height() - 1,
     );
 
-    c / ((x1 - x0 + 1) * (y1 - y0 + 1)) as f64
+    c / cast::<_, f64>((x1 - x0 + 1) * (y1 - y0 + 1)).unwrap()
   }
 }
 
@@ -179,7 +180,8 @@ fn discrete_rectangle_from_center(
 
 #[cfg(test)]
 mod tests {
-  use divrem::DivRem;
+  use num::cast;
+  use num::integer::div_rem;
 
   use crate::util::frame::Frame;
 
@@ -259,7 +261,7 @@ mod tests {
 
     let res: Vec<f64> = (0..16)
       .map(|i| {
-        let (y, x) = i.div_rem(4_usize);
+        let (y, x) = div_rem(i, 4_usize);
 
         sat.sum_rectangle_from_center(x, y, 3, 3)
       })
@@ -287,7 +289,7 @@ mod tests {
 
     let res: Vec<f64> = (0..16)
       .map(|i| {
-        let (y, x) = i.div_rem(4_usize);
+        let (y, x) = div_rem(i, 4_usize);
 
         sat.mean_rectangle_from_center(x, y, 3, 3)
       })
@@ -348,7 +350,7 @@ mod tests {
     nlm.smooth(&mut frame);
 
     assert_eq!(
-      frame.map(|x| x as u8).inner().to_vec(),
+      frame.map(|x| cast::<_, u8>(x).unwrap()).inner().to_vec(),
       vec![
         [2, 3, 4, 5],
         [4, 5, 6, 7],
