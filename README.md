@@ -15,7 +15,7 @@
 "em-gart" is a rust crate and CLI application for generating 
 algorithmic art.
 
-## Table of contents
+## Table of Contents
 
 <!--ts-->
    * [Install](#install)
@@ -69,7 +69,7 @@ mgart -V
 This should print `mgart`, followed by the version you have installed.
 
 
-### From source
+### From Source
 
 For development or if you would like to work with the latest, unstable
 version, you can install Mgart from source. 
