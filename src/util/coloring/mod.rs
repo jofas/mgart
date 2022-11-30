@@ -8,7 +8,7 @@ pub mod colors;
 
 use colors::{Color, LCH, RGB};
 
-#[derive(Serialize, Deserialize, DisplayAsJson)]
+#[derive(Serialize, Deserialize, DisplayAsJson, Clone)]
 #[serde(from = "ColorMap1dDeserializer")]
 pub struct ColorMap1d {
   map: Vec<LCH>,

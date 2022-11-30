@@ -41,3 +41,7 @@ bench = false
 [[bench]]
 name = "post_processing"
 harness = false
+
+[[bench]]
+name = "algorithms"
+harness = false

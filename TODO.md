@@ -122,7 +122,7 @@
 
 * [x] Viewport rotated and unrotated version of each method
 
-* [ ] benchmark buddhabrot creation 
+* [x] benchmark buddhabrot creation 
 
 * [ ] optimize buddhabrot `iter_mandel_check_vp` (rename to 
   `trace_point`)

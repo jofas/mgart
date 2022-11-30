@@ -20,7 +20,7 @@ use crate::util::sampler::{Sampler, Sampling};
 use crate::util::viewport::Viewport;
 use crate::util::{ComplexNumber, ProgressPrinter};
 
-#[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
+#[derive(Serialize, Deserialize, DisplayAsJsonPretty, Clone)]
 pub struct Buddhabrot {
   width: usize,
   height: usize,
@@ -36,6 +36,38 @@ pub struct Buddhabrot {
 }
 
 impl Buddhabrot {
+  /// Creates a new instance of [`Buddhabrot`].
+  ///
+  #[must_use]
+  #[allow(clippy::too_many_arguments)]
+  pub fn new(
+    width: usize,
+    height: usize,
+    center: ComplexNumber,
+    zoom: f64,
+    iter: u64,
+    rotation: Option<usize>,
+    color_map: ColorMap1d,
+    exponent: f64,
+    sample_count: u64,
+    sampler: Sampler,
+    post_processing: Vec<PostProcessing>,
+  ) -> Self {
+    Self {
+      width,
+      height,
+      center,
+      zoom,
+      iter,
+      rotation,
+      color_map,
+      exponent,
+      sample_count,
+      sampler,
+      post_processing,
+    }
+  }
+
   /// Creates a rendering of a [buddhabrot][buddhabrot] as a `PNG`
   /// image.
   ///
