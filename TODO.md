@@ -124,7 +124,8 @@
 
 * [ ] benchmark buddhabrot creation 
 
-* [ ] optimize buddhabrot `iter_mandel_check_vp`
+* [ ] optimize buddhabrot `iter_mandel_check_vp` (rename to 
+  `trace_point`)
 
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible
@@ -133,10 +134,10 @@
 
 * [ ] sampling benchmark
 
+* [ ] collect stats (hits, avg. iterations, etc.)
+
 * [ ] kde sampling: make sure sampling points are evenly distributed
   in space 
-
-* [ ] collect stats (hits, avg. iterations, etc.)
 
 * [ ] api integration test for jsonnet files 
   (using example files - `jsonnet-rs v0.17.0`)
