@@ -98,15 +98,11 @@ impl Buddhabrot {
     );
 
     let sampler = self.sampler.distribution(&|c| {
-      let (iter, passed_viewport) = Self::iter_mandel_check_vp(
-        *c,
-        self.iter,
-        self.exponent,
-        &viewport,
-      );
+      let (grid_pos, iter) =
+        Self::trace_point(*c, self.iter, self.exponent, &viewport);
 
-      if iter != self.iter && passed_viewport {
-        iter as f64 / self.iter as f64
+      if iter != self.iter {
+        grid_pos.len() as f64 / self.iter as f64
       } else {
         0.
       }
@@ -124,13 +120,16 @@ impl Buddhabrot {
     (0..self.sample_count).into_par_iter().for_each(|_| {
       let c = sampler.sample();
 
-      let (j, passed_viewport) = Self::iter_mandel_check_vp(
-        c,
-        self.iter,
-        self.exponent,
-        &viewport,
-      );
+      let (grid_pos, j) =
+        Self::trace_point(c, self.iter, self.exponent, &viewport);
 
+      if j != self.iter {
+        for pos in grid_pos {
+          frame[pos].fetch_add(1, Ordering::Relaxed);
+        }
+      }
+
+      /*
       if j != self.iter && passed_viewport {
         let mut z = c;
 
@@ -144,6 +143,7 @@ impl Buddhabrot {
           z = z.powf(self.exponent) + c;
         }
       }
+      */
 
       pp.increment();
     });
@@ -162,39 +162,36 @@ impl Buddhabrot {
 
     info!("generating final color values");
 
-    let mut pixels: Frame<Color> =
-      Frame::filled_default(self.width, self.height);
-
-    for i in 0..pixels.len() {
-      pixels[i] = self.color_map.color(frame[i]).as_color();
-    }
-
-    pixels
+    frame.map(|x| self.color_map.color(x).as_color())
   }
 
-  fn iter_mandel_check_vp(
+  fn trace_point(
     c: Complex64,
     iter: u64,
     exponent: f64,
     viewport: &Viewport,
-  ) -> (u64, bool) {
+  ) -> (Vec<(usize, usize)>, u64) {
     let mut z = c;
     let mut z_sqr = z.norm_sqr();
 
+    let mut grid_pos = Vec::new();
     let mut j = 0;
-    let mut passed_viewport = viewport.contains_rotated_point(&z);
+
+    if let Some(pos) = viewport.rotated_grid_pos(&z) {
+      grid_pos.push(pos);
+    }
 
     while j < iter && z_sqr <= 4.0 {
       z = z.powf(exponent) + c;
       z_sqr = z.norm_sqr();
 
-      if viewport.contains_rotated_point(&z) {
-        passed_viewport = true;
+      if let Some(pos) = viewport.rotated_grid_pos(&z) {
+        grid_pos.push(pos);
       }
 
       j += 1;
     }
 
-    (j, passed_viewport)
+    (grid_pos, j)
   }
 }

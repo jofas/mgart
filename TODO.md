@@ -124,7 +124,7 @@
 
 * [x] benchmark buddhabrot creation 
 
-* [ ] optimize buddhabrot `iter_mandel_check_vp` (rename to 
+* [x] optimize buddhabrot `iter_mandel_check_vp` (rename to 
   `trace_point`)
 
 * [ ] get code to pass pedantic clippy with as little allows as 
