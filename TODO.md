@@ -134,6 +134,8 @@
 
 * [x] optimize buddhabrot sampling
 
+* [x] creator pattern for each algorithm
+
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible
 

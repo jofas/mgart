@@ -50,7 +50,7 @@ impl Algorithm {
     match self.algorithm {
       AlgorithmInner::JuliaSet(j) => {
         debug!("generating julia:\n{}", j);
-        j.create().save_as_image(&self.filename);
+        j.creator().create().save_as_image(&self.filename);
       }
       AlgorithmInner::Buddhabrot(b) => {
         debug!("generating buddhabrot: \n{}", b);
@@ -58,7 +58,7 @@ impl Algorithm {
       }
       AlgorithmInner::ColorMap1dRenderer(c) => {
         debug!("generating 1d color map:\n{}", c);
-        c.create().save_as_image(&self.filename);
+        c.creator().create().save_as_image(&self.filename);
       }
     }
   }

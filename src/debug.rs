@@ -9,17 +9,39 @@ use crate::util::ProgressPrinter;
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct ColorMap1dRenderer {
-  pub width: u32,
-  pub height: u32,
-  pub color_map: ColorMap1d,
+  width: u32,
+  height: u32,
+  color_map: ColorMap1d,
 }
 
 impl ColorMap1dRenderer {
+  /// Transforms `self` into a [`Creator`] that can be used
+  /// to create an image that shows the color map.
+  ///
+  #[must_use]
+  pub fn creator(self) -> Creator {
+    Creator::new(self)
+  }
+}
+
+pub struct Creator {
+  args: ColorMap1dRenderer,
+}
+
+impl Creator {
+  /// Creates a new instance of [`Creator`].
+  ///
+  #[must_use]
+  pub fn new(args: ColorMap1dRenderer) -> Self {
+    Self { args }
+  }
+
   /// Creates a visualization of a color map as a `PNG` image.
   ///
   #[must_use]
   pub fn create(&self) -> Frame<Color> {
-    let (w, h) = (self.width as usize, self.height as usize);
+    let (w, h) =
+      (self.args.width as usize, self.args.height as usize);
 
     let num_pixel = w * h;
 
@@ -30,7 +52,7 @@ impl ColorMap1dRenderer {
     frame.par_for_each_mut(|(i, pixel)| {
       let x = (i % w) as f64;
 
-      *pixel = self.color_map.color(x / w as f64).as_color();
+      *pixel = self.args.color_map.color(x / w as f64).as_color();
 
       pp.increment();
     });

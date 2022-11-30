@@ -163,38 +163,50 @@ pub struct JuliaSet {
 }
 
 impl JuliaSet {
+  /// Transforms `self` into a [`Creator`] that can be used
+  /// to create a rendering of a julia set or the mandelbrot set.
+  ///
+  #[must_use]
+  pub fn creator(self) -> Creator {
+    Creator::new(self)
+  }
+}
+
+pub struct Creator {
+  args: JuliaSet,
+  viewport: Viewport,
+}
+
+impl Creator {
+  /// Creates a new instance of [`Creator`].
+  ///
+  #[must_use]
+  pub fn new(args: JuliaSet) -> Self {
+    let viewport = Self::viewport(&args);
+
+    Self { args, viewport }
+  }
+
   /// Creates a rendering of a julia set as a `PNG` image.
   ///
   #[must_use]
   pub fn create(&self) -> Frame<Color> {
-    let mut frame = Frame::filled_default(self.width, self.height);
+    let mut frame =
+      Frame::filled_default(self.args.width, self.args.height);
 
-    let pp = (self.width * self.height) as u64;
+    let pp = (self.args.width * self.args.height) as u64;
     let pp = ProgressPrinter::new(pp, 2500);
 
-    let aspect_ratio = self.width as f64 / self.height as f64;
-
-    let vp_width = aspect_ratio / self.zoom;
-    let vp_height = 1. / self.zoom;
-
-    let grid_delta_x = vp_width / self.width as f64;
-    let grid_delta_y = vp_height / self.height as f64;
-
-    let viewport = Viewport::from_center(
-      self.center.into(),
-      vp_width,
-      vp_height,
-      grid_delta_x,
-      grid_delta_y,
-      self.rotation.unwrap_or(0),
-    );
-
     frame.par_for_each_mut(|(i, pixel)| {
-      let (im, re) = i.div_rem(self.width);
+      let (im, re) = i.div_rem(self.args.width);
 
-      let mut z = viewport.rotated_point(re, im);
+      let mut z = self.viewport.rotated_point(re, im);
 
-      let c = if let Some(c) = &self.c { c.into() } else { z };
+      let c = if let Some(c) = &self.args.c {
+        c.into()
+      } else {
+        z
+      };
 
       let mut z_sqr = z.norm_sqr();
 
@@ -203,7 +215,7 @@ impl JuliaSet {
       //let mut dzy = 0.;
 
       let mut j = 0;
-      while j < self.iter && z_sqr <= 4.0 {
+      while j < self.args.iter && z_sqr <= 4.0 {
         //dzx = 2. * zx * dzx + 1.;
         //dzy = 2. * zy * dzy + 1.;
 
@@ -213,18 +225,18 @@ impl JuliaSet {
         j += 1;
       }
 
-      let color = if j == self.iter {
+      let color = if j == self.args.iter {
         1.
-        //j as f64 / self.iter as f64
+        //j as f64 / self.args.iter as f64
       } else {
         let mu = z_sqr.sqrt().log2().log2();
-        ((j + 1) as f64 - mu) / self.iter as f64
+        ((j + 1) as f64 - mu) / self.args.iter as f64
 
         /*
         let z_mag = (zx_sqr + zy_sqr).sqrt();
         let dz_mag = (dzx.powi(2) + dzy.powi(2)).sqrt();
         //let distance = z_mag.powi(2).ln() * z_mag / dz_mag;
-        //let distance = 0. - 5. * distance.ln() / self.zoom.ln();
+        //let distance = 0. - 5. * distance.ln() / self.args.zoom.ln();
 
         let distance = 2. * z_mag * z_mag.ln() / dz_mag;
 
@@ -233,7 +245,7 @@ impl JuliaSet {
         */
       };
 
-      //let rgb = self.color_map.color(color);
+      //let rgb = self.args.color_map.color(color);
 
       /*
       let rgb = LCH::new(
@@ -259,5 +271,26 @@ impl JuliaSet {
     });
 
     frame
+  }
+
+  /// Creates a [`Viewport`] from [`args`](JuliaSet).
+  ///
+  fn viewport(args: &JuliaSet) -> Viewport {
+    let aspect_ratio = args.width as f64 / args.height as f64;
+
+    let vp_width = aspect_ratio / args.zoom;
+    let vp_height = 1. / args.zoom;
+
+    let grid_delta_x = vp_width / args.width as f64;
+    let grid_delta_y = vp_height / args.height as f64;
+
+    Viewport::from_center(
+      args.center.into(),
+      vp_width,
+      vp_height,
+      grid_delta_x,
+      grid_delta_y,
+      args.rotation.unwrap_or(0),
+    )
   }
 }

@@ -68,7 +68,7 @@ impl Buddhabrot {
     }
   }
 
-  /// Transforms `self` into a [`BuddhabrotCreator`] that can be used
+  /// Transforms `self` into a [`Creator`] that can be used
   /// to create a [buddhabrot][buddhabrot] rendering.
   ///
   /// [buddhabrot]: https://en.wikipedia.org/wiki/Buddhabrot
