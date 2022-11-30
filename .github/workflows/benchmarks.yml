@@ -36,5 +36,5 @@ jobs:
           save-data-file: ${{ github.event_name != 'pull_request' }}
           comment-always: true
           comment-on-alert: true
-          fail-on-alert: true
-          alert-threshold: '125%'
+          fail-on-alert: false
+          alert-threshold: '150%'
