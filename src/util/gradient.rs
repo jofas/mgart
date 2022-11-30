@@ -100,17 +100,17 @@ mod tests {
   fn linear_gradient() {
     let g = Gradient::Linear { factor: 1. };
 
-    assert_eq!(g.apply(0.), 0.);
-    assert_eq!(g.apply(0.5), 0.5);
-    assert_eq!(g.apply(1.), 1.);
+    assert!((g.apply(0.) - 0.).abs() <= f64::EPSILON);
+    assert!((g.apply(0.5) - 0.5).abs() <= f64::EPSILON);
+    assert!((g.apply(1.) - 1.).abs() <= f64::EPSILON);
 
     let g = Gradient::Linear { factor: 2. };
 
-    assert_eq!(g.apply(0.), 0.);
-    assert_eq!(g.apply(0.25), 0.5);
-    assert_eq!(g.apply(0.5), 1.);
-    assert_eq!(g.apply(0.75), 0.5);
-    assert_eq!(g.apply(1.), 1.);
+    assert!((g.apply(0.) - 0.).abs() <= f64::EPSILON);
+    assert!((g.apply(0.25) - 0.5).abs() <= f64::EPSILON);
+    assert!((g.apply(0.5) - 1.).abs() <= f64::EPSILON);
+    assert!((g.apply(0.75) - 0.5).abs() <= f64::EPSILON);
+    assert!((g.apply(1.) - 1.).abs() <= f64::EPSILON);
   }
 
   #[test]
@@ -120,36 +120,44 @@ mod tests {
       gradient: Box::new(Gradient::Linear { factor: 1. }),
     };
 
-    assert_eq!(g.apply(0.), 0.);
-    assert_eq!(g.apply(0.25), 0.);
-    assert_eq!(g.apply(0.5), 1.);
-    assert_eq!(g.apply(0.75), 1.);
-    assert_eq!(g.apply(1.), 1.);
+    assert!((g.apply(0.) - 0.).abs() <= f64::EPSILON);
+    assert!((g.apply(0.25) - 0.).abs() <= f64::EPSILON);
+    assert!((g.apply(0.5) - 1.).abs() <= f64::EPSILON);
+    assert!((g.apply(0.75) - 1.).abs() <= f64::EPSILON);
+    assert!((g.apply(1.) - 1.).abs() <= f64::EPSILON);
 
     let g = Gradient::Discrete {
       n: 3,
       gradient: Box::new(Gradient::Linear { factor: 1. }),
     };
 
-    assert_eq!(g.apply(0.), 0.);
-    assert_eq!(g.apply(0.33), 0.);
-    assert_eq!(g.apply(0.34), 0.5);
-    assert_eq!(g.apply(0.66), 0.5);
-    assert_eq!(g.apply(0.67), 1.);
-    assert_eq!(g.apply(1.), 1.);
+    assert!((g.apply(0.) - 0.).abs() <= f64::EPSILON);
+    assert!((g.apply(0.33) - 0.).abs() <= f64::EPSILON);
+    assert!((g.apply(0.34) - 0.5).abs() <= f64::EPSILON);
+    assert!((g.apply(0.66) - 0.5).abs() <= f64::EPSILON);
+    assert!((g.apply(0.67) - 1.).abs() <= f64::EPSILON);
+    assert!((g.apply(1.) - 1.).abs() <= f64::EPSILON);
 
     let g = Gradient::Discrete {
       n: 4,
       gradient: Box::new(Gradient::Linear { factor: 1. }),
     };
 
-    assert_eq!(g.apply(0.), 0.);
-    assert_eq!(g.apply(0.24), 0.);
-    assert_eq!((g.apply(0.25) * 100.).floor(), 33.);
-    assert_eq!((g.apply(0.49) * 100.).floor(), 33.);
-    assert_eq!((g.apply(0.5) * 100.).floor(), 66.);
-    assert_eq!((g.apply(0.74) * 100.).floor(), 66.);
-    assert_eq!(g.apply(0.75), 1.);
-    assert_eq!(g.apply(1.), 1.);
+    assert!((g.apply(0.) - 0.).abs() <= f64::EPSILON);
+    assert!((g.apply(0.24) - 0.).abs() <= f64::EPSILON);
+    assert!(
+      ((g.apply(0.25) * 100.).floor() - 33.).abs() <= f64::EPSILON
+    );
+    assert!(
+      ((g.apply(0.49) * 100.).floor() - 33.).abs() <= f64::EPSILON
+    );
+    assert!(
+      ((g.apply(0.5) * 100.).floor() - 66.).abs() <= f64::EPSILON
+    );
+    assert!(
+      ((g.apply(0.74) * 100.).floor() - 66.).abs() <= f64::EPSILON
+    );
+    assert!((g.apply(0.75) - 1.).abs() <= f64::EPSILON);
+    assert!((g.apply(1.) - 1.).abs() <= f64::EPSILON);
   }
 }

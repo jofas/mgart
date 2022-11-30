@@ -3,7 +3,6 @@
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_possible_truncation)]
-#![allow(clippy::float_cmp)]
 
 use serde::Deserialize;
 

@@ -334,7 +334,7 @@ mod tests {
     let nlm = NonLocalMeans::new(3, 4, 3.);
 
     for x in [0., 0.25, 0.33, 0.5, 0.66, 0.75, 0.99, 1.] {
-      assert_eq!(nlm.weight_function(x, x), 1.);
+      assert!((nlm.weight_function(x, x) - 1.).abs() <= f64::EPSILON);
     }
   }
 

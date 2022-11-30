@@ -126,12 +126,12 @@ impl LCH {
       h = h0 + f * dh;
     } else if !h0.is_nan() {
       h = h0;
-      if l1 == 1. || l1 == 0. {
+      if (l1 - 1.).abs() <= f64::EPSILON || l1.abs() <= f64::EPSILON {
         c = Some(c0);
       }
     } else if !h1.is_nan() {
       h = h1;
-      if l0 == 1. || l0 == 0. {
+      if (l0 - 1.).abs() <= f64::EPSILON || l0.abs() <= f64::EPSILON {
         c = Some(c1);
       }
     }
