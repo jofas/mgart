@@ -20,7 +20,7 @@ algorithmic art.
 <!--ts-->
    * [Install](#install)
       * [Cargo](#cargo)
-      * [From source](#from-source)
+      * [From Source](#from-source)
    * [Example](#example)
    * [Supported Algorithms](#supported-algorithms)
       * [Fractals](#fractals)
