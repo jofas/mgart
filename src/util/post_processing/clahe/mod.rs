@@ -14,8 +14,8 @@ use tile::{HistogramEqualization, Tile};
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 pub struct CLAHE {
-  contrast_limit: usize,
-  bin_count: usize,
+  contrast_limit: u32,
+  bin_count: u32,
   tile_size_x: usize,
   tile_size_y: usize,
 }
@@ -23,8 +23,8 @@ pub struct CLAHE {
 impl CLAHE {
   #[must_use]
   pub fn new(
-    contrast_limit: usize,
-    bin_count: usize,
+    contrast_limit: u32,
+    bin_count: u32,
     tile_size_x: usize,
     tile_size_y: usize,
   ) -> Self {

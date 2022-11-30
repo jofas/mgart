@@ -1,27 +1,30 @@
+use num::cast;
+
 pub trait HistogramEqualization {
   fn transform(&self, v: f64) -> f64;
 }
 
 pub struct Tile {
-  hist: Vec<usize>,
-  cdf_min: usize,
-  n: usize,
+  hist: Vec<u32>,
+  cdf_min: u32,
+  n: u32,
 }
 
 impl Tile {
   pub fn new(
     buffer: impl Iterator<Item = f64>,
-    bin_count: usize,
-    contrast_limit: usize,
+    bin_count: u32,
+    contrast_limit: u32,
   ) -> Self {
-    let mut hist = vec![0; bin_count];
+    let mut hist = vec![0; bin_count.try_into().unwrap()];
     let mut n = 0;
 
     // contrast limiting
-    let mut clv = 0;
+    let mut clv: u32 = 0;
 
     for v in buffer {
-      let bin = (v * (bin_count - 1) as f64) as usize;
+      let bin =
+        cast::<_, usize>(v * f64::from(bin_count - 1)).unwrap();
 
       if hist[bin] < contrast_limit {
         hist[bin] += 1;
@@ -33,7 +36,7 @@ impl Tile {
     }
 
     loop {
-      let clv_bin = clv / bin_count;
+      let clv_bin: u32 = clv / bin_count;
 
       let mut new_clv = 0;
 
@@ -73,11 +76,12 @@ impl Tile {
 
 impl HistogramEqualization for Tile {
   fn transform(&self, v: f64) -> f64 {
-    let bin = (v * (self.hist.len() - 1) as f64) as usize;
+    let bin = v * cast::<_, f64>(self.hist.len() - 1).unwrap();
+    let bin = cast::<_, usize>(bin).unwrap();
 
-    let res = self.hist[bin].saturating_sub(self.cdf_min) as f64;
+    let res = f64::from(self.hist[bin].saturating_sub(self.cdf_min));
 
-    res / (self.n - self.cdf_min) as f64
+    res / f64::from(self.n - self.cdf_min)
   }
 }
 
