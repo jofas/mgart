@@ -2,7 +2,7 @@ use num_complex::Complex64;
 
 use std::f64::consts::PI;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Viewport {
   x_min: f64,
   y_min: f64,

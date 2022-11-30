@@ -54,7 +54,7 @@ impl Algorithm {
       }
       AlgorithmInner::Buddhabrot(b) => {
         debug!("generating buddhabrot: \n{}", b);
-        b.create().save_as_image(&self.filename);
+        b.creator().create().save_as_image(&self.filename);
       }
       AlgorithmInner::ColorMap1dRenderer(c) => {
         debug!("generating 1d color map:\n{}", c);

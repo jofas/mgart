@@ -45,3 +45,7 @@ harness = false
 [[bench]]
 name = "algorithms"
 harness = false
+
+[[bench]]
+name = "sampler"
+harness = false

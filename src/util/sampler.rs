@@ -52,7 +52,7 @@ impl Sampler {
     T: Sync + Send + Copy,
     P: Fn(&T) -> f64 + Sync + Send,
   >(
-    self,
+    &self,
     true_probability: &P,
   ) -> Distribution<T>
   where
@@ -60,10 +60,10 @@ impl Sampler {
   {
     match self {
       Self::Uniform { h } => {
-        Distribution::Uniform(Uniform::<T>::new(h))
+        Distribution::Uniform(Uniform::<T>::new(*h))
       }
       Self::UniformPolar { r } => {
-        Distribution::UniformPolar(UniformPolar::<T>::new(r))
+        Distribution::UniformPolar(UniformPolar::<T>::new(*r))
       }
       Self::KernelDensityEstimation {
         weighted,
@@ -75,14 +75,14 @@ impl Sampler {
         let elems = Self::pre_sample(
           &pre_sampler.distribution(true_probability),
           true_probability,
-          population,
-          p_min,
+          *population,
+          *p_min,
         );
 
         Distribution::KernelDensityEstimation(KDE::<T>::new(
-          weighted,
+          *weighted,
           Box::new(kernel.distribution(true_probability)),
-          population,
+          *population,
           elems,
         ))
       }

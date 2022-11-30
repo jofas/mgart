@@ -5,7 +5,7 @@ use mgart::util::coloring::ColorMap1d;
 use mgart::util::sampler::Sampler;
 use mgart::util::ComplexNumber;
 
-pub fn buddhabrot(c: &mut Criterion) {
+pub fn buddhabrot_kde_sampler(c: &mut Criterion) {
   let buddhabrot = Buddhabrot::new(
     1920,
     1024,
@@ -16,16 +16,22 @@ pub fn buddhabrot(c: &mut Criterion) {
     ColorMap1d::default(),
     2.,
     1000,
-    Sampler::UniformPolar { r: 2. },
+    Sampler::KernelDensityEstimation {
+      weighted: true,
+      kernel: Box::new(Sampler::Uniform { h: 2e-2 }),
+      population: 1_000_000,
+      p_min: 0.01,
+      pre_sampler: Box::new(Sampler::UniformPolar { r: 3. }),
+    },
     vec![],
   );
 
   let creator = buddhabrot.creator();
 
-  c.bench_function("buddhabrot", |b| {
-    b.iter(|| creator.clone().create());
+  c.bench_function("buddhabrot kde sampler", |b| {
+    b.iter(|| creator.clone().sampler());
   });
 }
 
-criterion_group!(benches, buddhabrot);
+criterion_group!(benches, buddhabrot_kde_sampler);
 criterion_main!(benches);
