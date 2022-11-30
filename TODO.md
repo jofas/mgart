@@ -132,6 +132,8 @@
 * [x] make benchmarking more resilient (aim for 1s time with 10
   samples)
 
+* [x] optimize buddhabrot sampling
+
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible
 

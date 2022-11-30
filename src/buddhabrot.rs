@@ -151,7 +151,7 @@ impl Creator {
     let mut z = c;
     let mut z_sqr = z.norm_sqr();
 
-    let mut grid_pos = Vec::new();
+    let mut grid_pos = Vec::with_capacity(self.args.iter as usize);
     let mut j = 0;
 
     if let Some(pos) = self.viewport.rotated_grid_pos(&z) {
@@ -172,17 +172,38 @@ impl Creator {
     (grid_pos, j)
   }
 
+  fn probability(&self, c: Complex64) -> f64 {
+    let mut z = c;
+    let mut z_sqr = z.norm_sqr();
+
+    let mut vp_hits = 0;
+    let mut j = 0;
+
+    if self.viewport.contains_rotated_point(&z) {
+      vp_hits += 1;
+    }
+
+    while j < self.args.iter && z_sqr <= 4.0 {
+      z = z.powf(self.args.exponent) + c;
+      z_sqr = z.norm_sqr();
+
+      if self.viewport.contains_rotated_point(&z) {
+        vp_hits += 1;
+      }
+
+      j += 1;
+    }
+
+    if j == self.args.iter {
+      0.
+    } else {
+      vp_hits as f64 / self.args.iter as f64
+    }
+  }
+
   #[must_use]
   pub fn sampler(&self) -> Distribution<Complex64> {
-    self.args.sampler.distribution(&|c| {
-      let (grid_pos, iter) = self.trace_point(*c);
-
-      if iter == self.args.iter {
-        0.
-      } else {
-        grid_pos.len() as f64 / self.args.iter as f64
-      }
-    })
+    self.args.sampler.distribution(&|c| self.probability(*c))
   }
 
   /// Creates a [`Viewport`] from [`args`](Buddhabrot).
