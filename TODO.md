@@ -127,12 +127,12 @@
 * [x] optimize buddhabrot `iter_mandel_check_vp` (rename to 
   `trace_point`)
 
+* [ ] sampling benchmark
+
 * [ ] get code to pass pedantic clippy with as little allows as 
   possible
 
 * [ ] increase coverage
-
-* [ ] sampling benchmark
 
 * [ ] collect stats (hits, avg. iterations, etc.)
 

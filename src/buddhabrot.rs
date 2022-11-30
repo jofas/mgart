@@ -101,10 +101,10 @@ impl Buddhabrot {
       let (grid_pos, iter) =
         Self::trace_point(*c, self.iter, self.exponent, &viewport);
 
-      if iter != self.iter {
-        grid_pos.len() as f64 / self.iter as f64
-      } else {
+      if iter == self.iter {
         0.
+      } else {
+        grid_pos.len() as f64 / self.iter as f64
       }
     });
 
