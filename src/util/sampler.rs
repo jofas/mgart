@@ -8,6 +8,8 @@ use rand::random;
 
 use log::info;
 
+use num::cast;
+
 use std::f64::consts::PI;
 use std::marker::PhantomData;
 
@@ -252,6 +254,12 @@ pub struct KDE<T> {
 }
 
 impl<T: Copy> KDE<T> {
+  /// Creates a new instance of [`KDE`].
+  ///
+  /// # Panics
+  ///
+  /// Panics, if `population` overflows the 53 bit mantissa of [f64].
+  ///
   #[must_use]
   pub fn new(
     weighted: bool,
@@ -259,13 +267,15 @@ impl<T: Copy> KDE<T> {
     population: u64,
     elems: Vec<(T, f64)>,
   ) -> Self {
+    let population = cast::<_, f64>(population).unwrap();
+
     let elems = if weighted {
       let p_sum: f64 = elems.iter().map(|x| x.1).sum();
 
       let mut res = Vec::new();
 
       for (e, p) in elems {
-        let count = (p * population as f64 / p_sum) as usize;
+        let count = cast::<_, usize>(p * population / p_sum).unwrap();
 
         for _ in 0..count {
           res.push(e);
@@ -286,7 +296,10 @@ impl Sampling for KDE<Complex64> {
   type Space = Complex64;
 
   fn sample(&self) -> Self::Space {
-    let idx = (random::<f64>() * self.elems.len() as f64) as usize;
+    let len = cast::<_, f64>(self.elems.len()).unwrap();
+
+    let idx = cast::<_, usize>(random::<f64>() * len).unwrap();
+
     self.kernel.kernel_sample(&self.elems[idx])
   }
 

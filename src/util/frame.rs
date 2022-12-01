@@ -234,8 +234,8 @@ impl Frame<Color> {
     image::save_buffer(
       filename,
       &pixels,
-      self.width as u32,
-      self.height as u32,
+      self.width.try_into().unwrap(),
+      self.height.try_into().unwrap(),
       image::ColorType::Rgb8,
     )
     .unwrap();

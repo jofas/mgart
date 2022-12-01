@@ -58,7 +58,7 @@ impl Gradient {
         (f + amplitude * (f * factor * PI)).clamp(0., 1.)
       }
       Self::Discrete { gradient, n } => {
-        let n = *n as f64;
+        let n = f64::from(*n);
         let f = gradient.apply(f).clamp(0., 1.);
 
         let res = (f * n).floor() / (n - 1.);
@@ -72,10 +72,14 @@ impl Gradient {
       Self::Smoothstep { order } => {
         let f = f.clamp(0., 1.);
         (0..=*order).into_iter().fold(0., |acc, n| {
-          acc
-            + Self::pascal_triangle(-order - 1, n) as f64
-              * Self::pascal_triangle(2 * order + 1, order - n) as f64
-              * f.powi(order + n + 1)
+          let p1 = f64::from(Self::pascal_triangle(-order - 1, n));
+
+          let p2 = f64::from(Self::pascal_triangle(
+            2 * order + 1,
+            order - n,
+          ));
+
+          acc + p1 * p2 * f.powi(order + n + 1)
         })
       }
     }
