@@ -1,8 +1,8 @@
 use mgart::buddhabrot::Buddhabrot;
 use mgart::util::coloring::ColorMap1d;
+use mgart::util::post_processing::PostProcessing;
 use mgart::util::sampler::Sampler;
 use mgart::util::ComplexNumber;
-use mgart::util::post_processing::PostProcessing;
 
 #[test]
 fn buddhabrot() {
@@ -15,12 +15,10 @@ fn buddhabrot() {
     None,
     ColorMap1d::default(),
     2.,
-    100_000,
+    1000,
     Sampler::UniformPolar { r: 2. },
-    vec![
-      PostProcessing::Normalize,
-    ],
+    vec![PostProcessing::Normalize],
   );
 
-  buddhabrot.creator().create();
+  drop(buddhabrot.creator().create());
 }
