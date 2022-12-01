@@ -4,6 +4,8 @@ use num_complex::Complex64;
 
 use log::{log_enabled, Level};
 
+use num::cast;
+
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub mod coloring;
@@ -104,24 +106,39 @@ impl ProgressPrinter {
 pub struct InfoProgressPrinter {
   counter: AtomicU64,
   n: u64,
+  n_f64: f64,
   interval: u64,
 }
 
 impl InfoProgressPrinter {
+  /// Creates a new instance of [`InfoProgressPrinter`].
+  ///
+  /// # Panics
+  ///
+  /// Panics, if [`n`] overflows the 53 bit mantissa of [f64].
+  ///
   #[must_use]
   pub fn new(n: u64, interval: u64) -> Self {
     Self {
       counter: AtomicU64::new(0),
       n,
+      n_f64: cast::<_, f64>(n).unwrap(),
       interval,
     }
   }
 
+  /// Increments the counter, printing a status update if the counter
+  /// equals a multiple of [`interval`] or [`n`].
+  ///
+  /// # Panics
+  ///
+  /// Panics, if the counter overflows the 53 bit mantissa of [f64].
+  ///
   pub fn increment(&self) {
     let i = self.counter.fetch_add(1, Ordering::SeqCst);
 
     if i % self.interval == self.interval - 1 || i == self.n - 1 {
-      let p = i as f64 / self.n as f64 * 100.;
+      let p = cast::<_, f64>(i).unwrap() / self.n_f64 * 100.;
       print!("{}/{} iterations done ({:.2}%)\r", i + 1, self.n, p);
     }
   }

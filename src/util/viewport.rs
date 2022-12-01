@@ -1,5 +1,7 @@
 use num_complex::Complex64;
 
+use num::cast;
+
 use std::f64::consts::PI;
 
 #[derive(Debug, Clone)]
@@ -58,11 +60,26 @@ impl Viewport {
     self.contains_point(&(p * self.rotation))
   }
 
+  /// Takes a complex number `p` and returns the grid cell it is part
+  /// of.
+  ///
+  /// If `p` does not lie in the [`Viewport`], [None] is returned.
+  ///
+  /// # Panics
+  ///
+  /// Could panic, if something goes wrong with casting between
+  /// [f64] and [usize].
+  ///
   #[must_use]
   pub fn grid_pos(&self, p: &Complex64) -> Option<(usize, usize)> {
     if self.contains_point(p) {
-      let x = ((p.re - self.x_min) / self.grid_delta_x) as usize;
-      let y = ((p.im - self.y_min) / self.grid_delta_y) as usize;
+      let x =
+        cast::<_, usize>((p.re - self.x_min) / self.grid_delta_x)
+          .unwrap();
+
+      let y =
+        cast::<_, usize>((p.im - self.y_min) / self.grid_delta_y)
+          .unwrap();
 
       Some((x, y))
     } else {
@@ -78,10 +95,20 @@ impl Viewport {
     self.grid_pos(&(p * self.rotation))
   }
 
+  /// Takes a 2d grid index of `x` and `y`, returning the complex
+  /// number at the grid position.
+  ///
+  /// # Panics
+  ///
+  /// Panics, if `x` or `y` overflow the 53 bit mantissa of [f64].
+  ///
   #[must_use]
   pub fn point(&self, x: usize, y: usize) -> Complex64 {
-    let re = x as f64 * self.grid_delta_x + self.x_min;
-    let im = y as f64 * self.grid_delta_y + self.y_min;
+    let x = cast::<_, f64>(x).unwrap();
+    let y = cast::<_, f64>(y).unwrap();
+
+    let re = x * self.grid_delta_x + self.x_min;
+    let im = y * self.grid_delta_y + self.y_min;
 
     Complex64::new(re, im)
   }

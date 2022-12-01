@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use divrem::DivRem;
+use num::cast;
+use num::integer::div_rem;
 
 use crate::util::frame::Frame;
 
@@ -66,7 +67,7 @@ impl CLAHE {
     let width = frame.width();
 
     frame.par_for_each_mut(|(i, v)| {
-      let (y, x) = i.div_rem(width);
+      let (y, x) = div_rem(i, width);
 
       let pos = Pos::new(
         x % self.tile_size_x,
@@ -213,14 +214,20 @@ impl<'a> InterpolationTiles<'a> {
     tile_size_x: usize,
     tile_size_y: usize,
   ) {
-    let center_x = tile_size_x as f64 / 2.;
-    let center_y = tile_size_y as f64 / 2.;
+    let mod_x = cast::<_, f64>(x % tile_size_x).unwrap();
+    let mod_y = cast::<_, f64>(y % tile_size_y).unwrap();
 
-    let dx = (center_x - (x % tile_size_x) as f64).abs();
-    let dy = (center_y - (y % tile_size_y) as f64).abs();
+    let tile_size_x = cast::<_, f64>(tile_size_x).unwrap();
+    let tile_size_y = cast::<_, f64>(tile_size_y).unwrap();
 
-    let dx = dx / tile_size_x as f64;
-    let dy = dy / tile_size_y as f64;
+    let center_x = tile_size_x / 2.;
+    let center_y = tile_size_y / 2.;
+
+    let dx = (center_x - mod_x).abs();
+    let dy = (center_y - mod_y).abs();
+
+    let dx = dx / tile_size_x;
+    let dy = dy / tile_size_y;
 
     (self.dn, self.ds, self.dw, self.de) = match pos {
       Pos::NW => (dy, 1. - dy, dx, 1. - dx),
