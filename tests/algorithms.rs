@@ -66,6 +66,11 @@ fn julia_set_mandelbrot() {
 
 #[test]
 fn julia_set_julia_set() {
+  env_logger::Builder::from_env(
+    env_logger::Env::default().default_filter_or("info"),
+  )
+  .init();
+
   let filename = "test_julia_set_julia_set.png";
 
   let julia_set = Algorithm::julia_set(
@@ -77,7 +82,7 @@ fn julia_set_julia_set() {
       20,
       None,
       ColorMap1d::default(),
-      Some(ComplexNumber::Cartesian { re: 0., im: 0. }),
+      Some(ComplexNumber::Polar { r: 0., theta: 0. }),
     ),
     filename.to_owned(),
   );

@@ -2,8 +2,6 @@ use clap::Parser;
 
 use jsonnet::JsonnetVm;
 
-use env_logger::Env;
-
 use std::fs::File;
 use std::io::stdin;
 
@@ -18,7 +16,7 @@ struct Cli {
 
 fn main() {
   env_logger::Builder::from_env(
-    Env::default().default_filter_or("info"),
+    env_logger::Env::default().default_filter_or("info"),
   )
   .init();
 
