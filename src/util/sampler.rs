@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use num_complex::Complex64;
+use num::complex::Complex64;
 
 use rand::random;
 

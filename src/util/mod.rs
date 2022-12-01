@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use num_complex::Complex64;
+use num::complex::Complex64;
 
 use log::{log_enabled, Level};
 

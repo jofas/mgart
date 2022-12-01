@@ -139,7 +139,7 @@
 * [x] get code to pass pedantic clippy with as little allows as 
   possible
 
-* [ ] replace `divrem` and `num_complex` with `num`
+* [x] replace `divrem` and `num_complex` with `num`
 
 * [ ] increase coverage
 

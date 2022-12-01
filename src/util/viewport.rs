@@ -1,4 +1,4 @@
-use num_complex::Complex64;
+use num::complex::Complex64;
 
 use num::cast;
 
@@ -121,7 +121,7 @@ impl Viewport {
 
 #[cfg(test)]
 mod tests {
-  use num_complex::Complex64;
+  use num::complex::Complex64;
 
   use super::Viewport;
 

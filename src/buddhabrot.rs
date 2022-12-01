@@ -4,7 +4,7 @@ use display_json::DisplayAsJsonPretty;
 
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
-use num_complex::Complex64;
+use num::complex::Complex64;
 
 use map_macro::vec_no_clone;
 
