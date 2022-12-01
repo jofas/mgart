@@ -514,4 +514,21 @@ mod test {
     assert_eq!(BLUE_RGB.lch().round(2), BLUE_LCH);
     assert_eq!(MAGENTA_RGB.lch().round(2), MAGENTA_LCH);
   }
+
+  #[test]
+  fn serde_lch() {
+    let json = r#"{
+      "l": 0,
+      "c": 0.0,
+      "h": "NaN"
+    }"#;
+
+    let c: LCH = serde_json::from_str(json).unwrap();
+
+    assert_eq!(c, BLACK_LCH);
+
+    let ser = r#"{"l":0.0,"c":0.0,"h":"NaN"}"#;
+
+    assert_eq!(serde_json::to_string(&c).unwrap(), ser);
+  }
 }
