@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use num::cast;
+
 use std::f64::consts::PI;
 
 mod serde_nan;
@@ -245,7 +247,7 @@ impl RGB {
   }
 
   fn rgb_xyz(r: u8) -> f64 {
-    let r = r as f64 / 255.;
+    let r = f64::from(r) / 255.;
 
     if r <= 0.04045 {
       r / 12.92
@@ -375,7 +377,7 @@ impl LAB {
       1.055 * r.powf(1. / 2.4) - 0.055
     };
 
-    (255. * x.clamp(0., 1.)).round() as u8
+    cast::<_, u8>((255. * x.clamp(0., 1.)).round()).unwrap()
   }
 
   fn lab_xyz(t: f64) -> f64 {

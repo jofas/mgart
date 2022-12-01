@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use display_json::DisplayAsJson;
 
+use num::cast;
+
 use crate::util::gradient::Gradient;
 
 pub mod colors;
@@ -42,6 +44,13 @@ impl ColorMap1d {
     self
   }
 
+  /// Creates an [`RGB`] color from `f`.
+  ///
+  /// # Panics
+  ///
+  /// Could panic, if something goes wrong with casting between
+  /// [f64] and [usize].
+  ///
   #[must_use]
   pub fn color(&self, f: f64) -> RGB {
     let f = self.gradient.apply(f);
@@ -50,11 +59,14 @@ impl ColorMap1d {
       return self.map[self.map.len() - 1].rgb();
     }
 
-    let interval = f * (self.map.len() - 1) as f64;
-    let pos = interval.fract() as f64;
+    let interval = f * cast::<_, f64>(self.map.len() - 1).unwrap();
 
-    let c1 = &self.map[interval as usize];
-    let c2 = &self.map[interval as usize + 1];
+    let pos = interval.fract();
+
+    let interval = cast::<_, usize>(interval).unwrap();
+
+    let c1 = &self.map[interval];
+    let c2 = &self.map[interval + 1];
 
     c1.interpolate(c2, pos).rgb()
   }

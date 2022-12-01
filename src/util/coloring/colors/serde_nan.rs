@@ -1,6 +1,8 @@
 use serde::de::{Deserializer, Error, Visitor};
 use serde::ser::Serializer;
 
+use num::cast;
+
 use std::fmt;
 
 #[allow(clippy::trivially_copy_pass_by_ref)]
@@ -40,7 +42,7 @@ where
     }
 
     fn visit_f32<E: Error>(self, f: f32) -> Result<f64, E> {
-      Ok(f as f64)
+      Ok(f64::from(f))
     }
 
     fn visit_f64<E: Error>(self, f: f64) -> Result<f64, E> {
@@ -48,19 +50,21 @@ where
     }
 
     fn visit_i32<E: Error>(self, i: i32) -> Result<f64, E> {
-      Ok(i as f64)
+      Ok(f64::from(i))
     }
 
     fn visit_i64<E: Error>(self, i: i64) -> Result<f64, E> {
-      Ok(i as f64)
+      cast::<_, f64>(i)
+        .ok_or_else(|| Error::custom("number overflowed"))
     }
 
     fn visit_u32<E: Error>(self, u: u32) -> Result<f64, E> {
-      Ok(u as f64)
+      Ok(f64::from(u))
     }
 
     fn visit_u64<E: Error>(self, u: u64) -> Result<f64, E> {
-      Ok(u as f64)
+      cast::<_, f64>(u)
+        .ok_or_else(|| Error::custom("number overflowed"))
     }
   }
 
