@@ -29,6 +29,47 @@ pub enum AlgorithmInner {
 }
 
 impl Algorithm {
+  /// Creates a new instance of [`Algorithm`] creating a rendering
+  /// of a [`JuliaSet`].
+  ///
+  #[must_use]
+  pub fn julia_set(julia_set: JuliaSet, filename: String) -> Self {
+    Self {
+      algorithm: AlgorithmInner::JuliaSet(julia_set),
+      filename,
+    }
+  }
+
+  /// Creates a new instance of [`Algorithm`] creating a rendering
+  /// of a [`Buddhabrot`].
+  ///
+  #[must_use]
+  pub fn buddhabrot(
+    buddhabrot: Buddhabrot,
+    filename: String,
+  ) -> Self {
+    Self {
+      algorithm: AlgorithmInner::Buddhabrot(buddhabrot),
+      filename,
+    }
+  }
+
+  /// Creates a new instance of [`Algorithm`] creating a debug
+  /// rendering of a [`ColorMap1d`][ColorMap1dRenderer].
+  ///
+  #[must_use]
+  pub fn color_map_1d_renderer(
+    color_map_1d_renderer: ColorMap1dRenderer,
+    filename: String,
+  ) -> Self {
+    Self {
+      algorithm: AlgorithmInner::ColorMap1dRenderer(
+        color_map_1d_renderer,
+      ),
+      filename,
+    }
+  }
+
   /// Executes the rendering process for the given [`Algorithm`],
   /// creating a media file containing the generated artwork.
   ///
@@ -61,6 +102,13 @@ impl Algorithm {
 pub struct Algorithms(Vec<Algorithm>);
 
 impl Algorithms {
+  /// Creates a new instance of [`Algorithms`].
+  ///
+  #[must_use]
+  pub fn new(algorithms: Vec<Algorithm>) -> Self {
+    Self(algorithms)
+  }
+
   /// Executes each [`Algorithm`] successively.
   ///
   /// Multi-threading is implemented inside the rendering process of
