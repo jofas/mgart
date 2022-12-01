@@ -11,12 +11,18 @@ fn buddhabrot() {
     1024,
     ComplexNumber::Cartesian { re: 0., im: 0. },
     1.,
-    200,
+    20,
     None,
     ColorMap1d::default(),
     2.,
     1000,
-    Sampler::UniformPolar { r: 2. },
+    Sampler::KernelDensityEstimation {
+      weighted: true,
+      kernel: Box::new(Sampler::Uniform { h: 2e-2 }),
+      population: 1000,
+      p_min: 0.01,
+      pre_sampler: Box::new(Sampler::UniformPolar { r: 3. }),
+    },
     vec![PostProcessing::Normalize],
   );
 
