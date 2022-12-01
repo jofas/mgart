@@ -1,4 +1,5 @@
 use mgart::buddhabrot::Buddhabrot;
+use mgart::debug::ColorMap1dRenderer;
 use mgart::julia_set::JuliaSet;
 use mgart::util::coloring::ColorMap1d;
 use mgart::util::post_processing::PostProcessing;
@@ -44,4 +45,12 @@ fn julia_set() {
   );
 
   drop(julia_set.creator().create());
+}
+
+#[test]
+fn color_map_1d_renderer() {
+  let cmr =
+    ColorMap1dRenderer::new(1920, 1024, ColorMap1d::default());
+
+  drop(cmr.creator().create());
 }

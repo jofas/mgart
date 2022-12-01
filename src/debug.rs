@@ -15,6 +15,17 @@ pub struct ColorMap1dRenderer {
 }
 
 impl ColorMap1dRenderer {
+  /// Creates a new instance of [`ColorMap1d`].
+  ///
+  #[must_use]
+  pub fn new(width: u32, height: u32, color_map: ColorMap1d) -> Self {
+    Self {
+      width,
+      height,
+      color_map,
+    }
+  }
+
   /// Transforms `self` into a [`Creator`] that can be used
   /// to create an image that shows the color map.
   ///
