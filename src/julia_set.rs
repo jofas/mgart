@@ -164,6 +164,32 @@ pub struct JuliaSet {
 }
 
 impl JuliaSet {
+  /// Creates a new instance of [`JuliaSet`].
+  ///
+  #[must_use]
+  #[allow(clippy::too_many_arguments)]
+  pub fn new(
+    width: u32,
+    height: u32,
+    center: ComplexNumber,
+    zoom: f64,
+    iter: u32,
+    rotation: Option<u16>,
+    color_map: ColorMap1d,
+    c: Option<ComplexNumber>,
+  ) -> Self {
+    Self {
+      width,
+      height,
+      center,
+      zoom,
+      iter,
+      rotation,
+      color_map,
+      c,
+    }
+  }
+
   /// Transforms `self` into a [`Creator`] that can be used
   /// to create a rendering of a julia set or the mandelbrot set.
   ///

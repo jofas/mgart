@@ -1,4 +1,5 @@
 use mgart::buddhabrot::Buddhabrot;
+use mgart::julia_set::JuliaSet;
 use mgart::util::coloring::ColorMap1d;
 use mgart::util::post_processing::PostProcessing;
 use mgart::util::sampler::Sampler;
@@ -27,4 +28,20 @@ fn buddhabrot() {
   );
 
   drop(buddhabrot.creator().create());
+}
+
+#[test]
+fn julia_set() {
+  let julia_set = JuliaSet::new(
+    1920,
+    1024,
+    ComplexNumber::Cartesian { re: 0., im: 0. },
+    1.,
+    20,
+    None,
+    ColorMap1d::default(),
+    None,
+  );
+
+  drop(julia_set.creator().create());
 }
