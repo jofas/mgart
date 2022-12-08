@@ -141,6 +141,10 @@
 
 * [x] replace `divrem` and `num_complex` with `num`
 
+* [ ] dimension struct (width, height)
+
+* [ ] use dimension struct in API (CLAHE, algorithms, etc.)
+
 * [ ] increase coverage
 
 * [ ] collect stats (hits, avg. iterations, etc.)
