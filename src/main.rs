@@ -32,7 +32,7 @@ fn main() {
         let content = vm.evaluate_file(cli.file).unwrap();
         serde_json::from_str(content.as_str()).unwrap()
       }
-      _ => panic!("unrecognizable file extension: {}. Only .json and .jsonnet files are supported", extension),
+      _ => panic!("unrecognizable file extension: {extension}. Only .json and .jsonnet files are supported"),
     }
   } else {
     panic!("unrecognizable file type. Only .json and .jsonnet files are supported");
