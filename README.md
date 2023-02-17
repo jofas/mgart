@@ -208,6 +208,8 @@ Algorithms for creating various types of fractal art.
 
 #### Mandelbrot and Julia Sets
 
+* [ ] A lot of different rendering methods still to implement
+
 #### Buddhabrot
 
 * [x] Buddhabrot
@@ -225,6 +227,8 @@ Algorithms for creating various types of fractal art.
 * [ ] Strange Attractors
 
 * [ ] L-Systems
+
+* [ ] Turing patterns
 
 ### AI Art
 
