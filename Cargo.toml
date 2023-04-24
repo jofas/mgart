@@ -7,6 +7,7 @@ readme = "README.md"
 description = "Machine Generated Art. CLI app for generating algorithmic art"
 keywords = ["cli", "terminal", "graphics", "image", "cgi"]
 repository = "https://github.com/jofas/mgart"
+exclude = ["/examples", "/docs", "/jsonnet"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
