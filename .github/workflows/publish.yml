@@ -6,10 +6,8 @@ on:
 permissions:
   contents: write
 jobs:
-  publish:
+  publish-release:
     runs-on: ubuntu-latest
-    container:
-      image: rust:latest
     steps:
       - name: install OS dependencies
         run: |
@@ -17,7 +15,6 @@ jobs:
           apt-get install -y zip
       - name: checkout repository
         uses: actions/checkout@v3
-      # create github release
       - name: create jsonnet tar.gz archive
         run: tar -czf jsonnet.tar.gz jsonnet
       - name: create jsonnet zip archive
@@ -27,7 +24,11 @@ jobs:
         with:
             artifcats: "jsonnet.tar.gz,jsonnet.zip"
             bodyFile: CHANGELOG.md
-      # publish on crates.io
+  publish-crates.io:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    steps:
       - name: load cache
         uses: Swatinem/rust-cache@v2
       - name: install toml-cli
