@@ -1,0 +1,38 @@
+name: Publish
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v3
+      # create github release
+      - name: create jsonnet tar.gz archive
+        run: tar -czf jsonnet.tar.gz jsonnet
+      - name: create jsonnet zip archive
+        run: zip -r -q jsonnet.zip jsonnet
+      - name: publish github release
+        uses: ncipollo/release-action@v1
+        with:
+            artifcats: "jsonnet.tar.gz,jsonnet.zip"
+            bodyFile: CHANGELOG.md
+      # publish on crates.io
+      - name: load cache
+        uses: Swatinem/rust-cache@v2
+      - name: install toml-cli
+        run: cargo install toml-cli
+      - name: extract cargo.toml version
+        run: echo "CRATE_VERSION=$(toml get -r Cargo.toml package.version)" >> "$GITHUB_ENV"
+      - name: check version
+        run: test "${{ format('v{0}', env.CRATE_VERSION) }}" = "${{ github.ref_name }}"
+      - name: publish to crates.io
+        run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
