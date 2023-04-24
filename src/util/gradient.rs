@@ -71,7 +71,7 @@ impl Gradient {
       }
       Self::Smoothstep { order } => {
         let f = f.clamp(0., 1.);
-        (0..=*order).into_iter().fold(0., |acc, n| {
+        (0..=*order).fold(0., |acc, n| {
           let p1 = f64::from(Self::pascal_triangle(-order - 1, n));
 
           let p2 = f64::from(Self::pascal_triangle(
@@ -86,7 +86,7 @@ impl Gradient {
   }
 
   fn pascal_triangle(a: i32, b: i32) -> i32 {
-    (0..b).into_iter().fold(1, |acc, i| acc * (a - i) / (i + 1))
+    (0..b).fold(1, |acc, i| acc * (a - i) / (i + 1))
   }
 }
 
