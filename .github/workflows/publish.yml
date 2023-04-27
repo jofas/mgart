@@ -35,10 +35,8 @@ jobs:
         uses: Swatinem/rust-cache@v2
       - name: install toml-cli
         run: cargo install toml-cli
-      - name: extract cargo.toml version
-        run: echo "CRATE_VERSION=$(toml get -r Cargo.toml package.version)" >> "$GITHUB_ENV"
       - name: check version
-        run: test "${{ format('v{0}', env.CRATE_VERSION) }}" = "${{ github.ref_name }}"
+        run: test "v$(toml get -r Cargo.toml package.version)" = "${{ github.ref_name }}"
       - name: publish to crates.io
         run: cargo publish
         env:
