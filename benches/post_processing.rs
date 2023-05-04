@@ -11,33 +11,33 @@ use mgart::util::post_processing::clahe::CLAHE;
 use mgart::util::post_processing::smoothing::non_local_means::NonLocalMeans;
 
 pub fn clahe(c: &mut Criterion) {
-  let clahe = CLAHE::new(60, 256, 1100, 1100);
+    let clahe = CLAHE::new(60, 256, 1100, 1100);
 
-  let width = 11_000;
-  let height = 11_000;
+    let width = 11_000;
+    let height = 11_000;
 
-  let buffer = vec_no_clone![random::<f64>(); width * height];
+    let buffer = vec_no_clone![random::<f64>(); width * height];
 
-  let mut frame = Frame::new(buffer, width, height);
+    let mut frame = Frame::new(buffer, width, height);
 
-  c.bench_function("clahe", |b| {
-    b.iter(|| clahe.apply(&mut frame));
-  });
+    c.bench_function("clahe", |b| {
+        b.iter(|| clahe.apply(&mut frame));
+    });
 }
 
 pub fn nlm(c: &mut Criterion) {
-  let nlm = NonLocalMeans::new(7, 21, 1e-4);
+    let nlm = NonLocalMeans::new(7, 21, 1e-4);
 
-  let width = 700;
-  let height = 700;
+    let width = 700;
+    let height = 700;
 
-  let buffer = vec_no_clone![random::<f64>(); width * height];
+    let buffer = vec_no_clone![random::<f64>(); width * height];
 
-  let mut frame = Frame::new(buffer, width, height);
+    let mut frame = Frame::new(buffer, width, height);
 
-  c.bench_function("nlm", |b| {
-    b.iter(|| nlm.smooth(&mut frame));
-  });
+    c.bench_function("nlm", |b| {
+        b.iter(|| nlm.smooth(&mut frame));
+    });
 }
 
 criterion_group!(
