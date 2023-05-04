@@ -153,22 +153,6 @@ pub fn julia_set_interior_distance(
 
 #[derive(Serialize, Deserialize, DisplayAsJsonPretty)]
 pub struct JuliaSet {
-  width: u32,
-  height: u32,
-  center: ComplexNumber,
-  zoom: f64,
-  iter: u32,
-  rotation: Option<u16>,
-  color_map: ColorMap1d,
-  c: Option<ComplexNumber>,
-}
-
-impl JuliaSet {
-  /// Creates a new instance of [`JuliaSet`].
-  ///
-  #[must_use]
-  #[allow(clippy::too_many_arguments)]
-  pub fn new(
     width: u32,
     height: u32,
     center: ComplexNumber,
@@ -177,155 +161,170 @@ impl JuliaSet {
     rotation: Option<u16>,
     color_map: ColorMap1d,
     c: Option<ComplexNumber>,
-  ) -> Self {
-    Self {
-      width,
-      height,
-      center,
-      zoom,
-      iter,
-      rotation,
-      color_map,
-      c,
-    }
-  }
+}
 
-  /// Transforms `self` into a [`Creator`] that can be used
-  /// to create a rendering of a julia set or the mandelbrot set.
-  ///
-  #[must_use]
-  pub fn creator(self) -> Creator {
-    Creator::new(self)
-  }
+impl JuliaSet {
+    /// Creates a new instance of [`JuliaSet`].
+    ///
+    #[must_use]
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        width: u32,
+        height: u32,
+        center: ComplexNumber,
+        zoom: f64,
+        iter: u32,
+        rotation: Option<u16>,
+        color_map: ColorMap1d,
+        c: Option<ComplexNumber>,
+    ) -> Self {
+        Self {
+            width,
+            height,
+            center,
+            zoom,
+            iter,
+            rotation,
+            color_map,
+            c,
+        }
+    }
+
+    /// Transforms `self` into a [`Creator`] that can be used
+    /// to create a rendering of a julia set or the mandelbrot set.
+    ///
+    #[must_use]
+    pub fn creator(self) -> Creator {
+        Creator::new(self)
+    }
 }
 
 pub struct Creator {
-  args: JuliaSet,
-  viewport: Viewport,
+    args: JuliaSet,
+    viewport: Viewport,
 }
 
 impl Creator {
-  /// Creates a new instance of [`Creator`].
-  ///
-  #[must_use]
-  pub fn new(args: JuliaSet) -> Self {
-    let viewport = Self::viewport(&args);
+    /// Creates a new instance of [`Creator`].
+    ///
+    #[must_use]
+    pub fn new(args: JuliaSet) -> Self {
+        let viewport = Self::viewport(&args);
 
-    Self { args, viewport }
-  }
+        Self { args, viewport }
+    }
 
-  /// Creates a rendering of a julia set as a `PNG` image.
-  ///
-  /// # Panics
-  ///
-  /// Panics, if the configuration is faulty, e.g if there happens an
-  /// overflow.
-  ///
-  #[must_use]
-  pub fn create(&self) -> Frame<Color> {
-    let mut frame =
-      Frame::filled_default(self.args.width, self.args.height);
+    /// Creates a rendering of a julia set as a `PNG` image.
+    ///
+    /// # Panics
+    ///
+    /// Panics, if the configuration is faulty, e.g if there happens an
+    /// overflow.
+    ///
+    #[must_use]
+    pub fn create(&self) -> Frame<Color> {
+        let mut frame = Frame::filled_default(self.args.width, self.args.height);
 
-    let pp = u64::from(self.args.width * self.args.height);
-    let pp = ProgressPrinter::new(pp, 2500);
+        let pp = u64::from(self.args.width * self.args.height);
+        let pp = ProgressPrinter::new(pp, 2500);
 
-    frame.par_for_each_mut(|(i, pixel)| {
-      let (im, re) = div_rem(i, self.args.width.try_into().unwrap());
+        frame.par_for_each_mut(|(i, pixel)| {
+            let (im, re) = div_rem(i, self.args.width.try_into().unwrap());
 
-      let mut z = self.viewport.rotated_point(re, im);
+            let mut z = self.viewport.rotated_point(re, im);
 
-      let c = if let Some(c) = &self.args.c {
-        c.into()
-      } else {
-        z
-      };
+            let c = if let Some(c) = &self.args.c {
+                c.into()
+            } else {
+                z
+            };
 
-      let mut z_sqr = z.norm_sqr();
+            let mut z_sqr = z.norm_sqr();
 
-      // outer distance
-      //let mut dzx = 0.;
-      //let mut dzy = 0.;
+            // outer distance
+            //let mut dzx = 0.;
+            //let mut dzy = 0.;
 
-      let mut j = 0;
-      while j < self.args.iter && z_sqr <= 4.0 {
-        //dzx = 2. * zx * dzx + 1.;
-        //dzy = 2. * zy * dzy + 1.;
+            let mut j = 0;
+            while j < self.args.iter && z_sqr <= 4.0 {
+                //dzx = 2. * zx * dzx + 1.;
+                //dzy = 2. * zy * dzy + 1.;
 
-        z = z.powi(2) + c;
-        z_sqr = z.norm_sqr();
+                z = z.powi(2) + c;
+                z_sqr = z.norm_sqr();
 
-        j += 1;
-      }
+                j += 1;
+            }
 
-      let color = if j == self.args.iter {
-        1.
-        //j as f64 / self.args.iter as f64
-      } else {
-        let mu = z_sqr.sqrt().log2().log2();
-        (f64::from(j + 1) - mu) / f64::from(self.args.iter)
+            let color = if j == self.args.iter {
+                1.
+                //j as f64 / self.args.iter as f64
+            } else {
+                let mu = z_sqr.sqrt().log2().log2();
+                (f64::from(j + 1) - mu) / f64::from(self.args.iter)
 
-        /*
-        let z_mag = (zx_sqr + zy_sqr).sqrt();
-        let dz_mag = (dzx.powi(2) + dzy.powi(2)).sqrt();
-        //let distance = z_mag.powi(2).ln() * z_mag / dz_mag;
-        //let distance = 0. - 5. * distance.ln() / self.args.zoom.ln();
+                /*
+                let z_mag = (zx_sqr + zy_sqr).sqrt();
+                let dz_mag = (dzx.powi(2) + dzy.powi(2)).sqrt();
+                //let distance = z_mag.powi(2).ln() * z_mag / dz_mag;
+                //let distance = 0. - 5. * distance.ln() / self.args.zoom.ln();
 
-        let distance = 2. * z_mag * z_mag.ln() / dz_mag;
+                let distance = 2. * z_mag * z_mag.ln() / dz_mag;
 
-        //info!("distance: {}", distance);
-        distance
-        */
-      };
+                //info!("distance: {}", distance);
+                distance
+                */
+            };
 
-      //let rgb = self.args.color_map.color(color);
+            //let rgb = self.args.color_map.color(color);
 
-      /*
-      let rgb = LCH::new(
-        //((color * 100. * std::f64::consts::PI).sin() / 2. + 0.5) * 100.,
-        color.powf(3.5).fract() * 100.,
-        0.,
-        0.,
-        //65.,
-        //100. - (100. * color),
-        //132.,//32. + 100. - (100. * color),
-        //(360. * color).powi(2),
-      ).rgb();
-      */
+            /*
+            let rgb = LCH::new(
+              //((color * 100. * std::f64::consts::PI).sin() / 2. + 0.5) * 100.,
+              color.powf(3.5).fract() * 100.,
+              0.,
+              0.,
+              //65.,
+              //100. - (100. * color),
+              //132.,//32. + 100. - (100. * color),
+              //(360. * color).powi(2),
+            ).rgb();
+            */
 
-      *pixel = RGB::new(
-        cast(color * 255.).unwrap(),
-        cast(color * 255.).unwrap(),
-        cast(color * 255.).unwrap(),
-      )
-      .as_color();
+            *pixel = RGB::new(
+                cast(color * 255.).unwrap(),
+                cast(color * 255.).unwrap(),
+                cast(color * 255.).unwrap(),
+            )
+            .as_color();
 
-      pp.increment();
-    });
+            pp.increment();
+        });
 
-    frame
-  }
+        frame
+    }
 
-  /// Creates a [`Viewport`] from [`args`](JuliaSet).
-  ///
-  fn viewport(args: &JuliaSet) -> Viewport {
-    let w = f64::from(args.width);
-    let h = f64::from(args.height);
+    /// Creates a [`Viewport`] from [`args`](JuliaSet).
+    ///
+    fn viewport(args: &JuliaSet) -> Viewport {
+        let w = f64::from(args.width);
+        let h = f64::from(args.height);
 
-    let aspect_ratio = w / h;
+        let aspect_ratio = w / h;
 
-    let vp_width = aspect_ratio / args.zoom;
-    let vp_height = 1. / args.zoom;
+        let vp_width = aspect_ratio / args.zoom;
+        let vp_height = 1. / args.zoom;
 
-    let grid_delta_x = vp_width / w;
-    let grid_delta_y = vp_height / h;
+        let grid_delta_x = vp_width / w;
+        let grid_delta_y = vp_height / h;
 
-    Viewport::from_center(
-      args.center.into(),
-      vp_width,
-      vp_height,
-      grid_delta_x,
-      grid_delta_y,
-      args.rotation.unwrap_or(0),
-    )
-  }
+        Viewport::from_center(
+            args.center.into(),
+            vp_width,
+            vp_height,
+            grid_delta_x,
+            grid_delta_y,
+            args.rotation.unwrap_or(0),
+        )
+    }
 }
