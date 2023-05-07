@@ -52,6 +52,10 @@
       type: 'linear',
       factor: factor,
     },
+    exp(exponent=1): {
+      type: 'exp',
+      exponent: exponent,
+    },
   },
   color_map_1d(gradient, map): {
     gradient: gradient,
@@ -60,6 +64,14 @@
   post_processing: {
     normalize: {
       process: 'normalize',
+    },
+    clamp_and_normalize(min=0, max=1): {
+      process: 'clamp_and_normalize',
+      min: min,
+      max: max,
+    },
+    gradient(gradient): gradient + {
+      process: 'gradient',
     },
     clahe(contrast_limit, bin_count, tile_size_x, tile_size_y): {
       process: 'clahe',
