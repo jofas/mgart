@@ -1,7 +1,7 @@
 /target
 
 # files I use for debugging
-config.jsonnet
+/config.jsonnet
 test.py
 
 /*.png
